@@ -59,11 +59,13 @@ class ModuleGenerator extends BaseGenerator<void, ({String module})> {
       final progress = logger.progress('Baking module "$module" via Mason...');
       final generator = await MasonGenerator.fromBundle(moduleBundle);
       final target = DirectoryGeneratorTarget(targetDir);
-      final dartVersion = sdkService.dartVersion;
 
       final generatedFiles = await generator.generate(
         target,
-        vars: <String, dynamic>{'module': module, 'dart_sdk': dartVersion},
+        vars: <String, dynamic>{
+          'module': module,
+          'dart_sdk': '"${sdkService.dartVersion}"',
+        },
       );
       progress.complete(
         'Baked ${generatedFiles.length} files into modules/$module',
