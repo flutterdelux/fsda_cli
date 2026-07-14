@@ -1,0 +1,7 @@
+{
+  "@@locale": "id",
+  "@failure{{module.pascalCase()}}NotFound": {
+    "description": "========================= Failure ========================="
+  },
+  "failure{{module.pascalCase()}}NotFound": "{{module.titleCase()}} tidak ditemukan"
+}

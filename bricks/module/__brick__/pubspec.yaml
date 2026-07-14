@@ -1,0 +1,26 @@
+name: {{module.snakeCase()}}
+description: A clean architecture module for {{module.snakeCase()}}.
+version: 1.0.0
+publish_to: 'none'
+
+environment:
+  sdk: {{dart_sdk}}
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  app_core:
+    path: ../../packages/app_core
+  app_l10n:
+    path: ../../packages/app_l10n
+  app_ui:
+    path: ../../packages/app_ui
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  generate: true

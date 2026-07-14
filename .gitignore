@@ -1,0 +1,25 @@
+# https://dart.dev/guides/libraries/private-files
+# Created by 'dart pub'
+.dart_tool/
+.packages
+.pub/
+
+# Hasil kompilasi / binary build (SANGAT PENTING)
+build/
+
+# IDE & Editor Settings (agar settingan laptopmu tidak terbawa)
+.idea/
+.vscode/
+*.iml
+
+# OS Generated Files (file sampah sistem)
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+
+# Log files
+*.log
+
+docs/

@@ -1,0 +1,11 @@
+dependencies:
+  - freezed_annotation
+
+dev_dependencies:
+  - flutter_lints
+  - build_runner
+  - freezed
+
+post_hooks:
+  - dart pub get
+  - dart run build_runner build --force-jit --delete-conflicting-outputs

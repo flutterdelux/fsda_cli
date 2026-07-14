@@ -1,0 +1,25 @@
+dependencies:
+  - shared_preferences
+
+dev_dependencies:
+  - lints
+  - test
+
+core_di:
+  import: |
+    "import 'package:infra_shared_preferences/infra_shared_preferences.dart';"
+  code: |
+    sl.registerLazySingleton<LocalStorage>(
+      () => SharedPreferencesLocalStorage(sharedPreferences: sl()),
+    );
+
+external_di:
+  import: |
+    "import 'package:shared_preferences/shared_preferences.dart';"
+  code: |
+    sl.registerSingletonAsync<SharedPreferences>(
+      () => SharedPreferences.getInstance(),
+    );
+
+app_dependencies:
+  - shared_preferences

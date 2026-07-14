@@ -1,0 +1,31 @@
+package_rename_config:
+  android:
+    app_name: {{app.titleCase()}}
+    package_name: com.fdelux.{{app.camelCase().lowerCase()}}
+    override_old_package: com.example.{{app.lowerCase()}}
+    lang: kotlin
+
+  ios:
+    app_name: {{app.titleCase()}}
+    bundle_name: {{app.camelCase().lowerCase()}}
+    bundle_id: com.fdelux.{{app.camelCase().lowerCase()}}
+
+  web:
+    app_name: {{app.titleCase()}}
+    description: {{app.titleCase()}}
+
+  linux:
+    app_name: {{app.titleCase()}}
+    package_name: com.fdelux.{{app.camelCase().lowerCase()}}
+    exe_name: {{app.camelCase().lowerCase()}}-linux-x64
+
+  windows:
+    app_name: {{app.titleCase()}}
+    organization: FDelux
+    copyright_notice: Copyright ©️ 2026 FDelux. All rights reserved.
+    exe_name: {{app.camelCase().lowerCase()}}-win32
+
+  macos:
+    app_name: {{app.titleCase()}}
+    bundle_id: com.fdelux.{{app.camelCase().lowerCase()}}
+    copyright_notice: Copyright ©️ 2026 FDelux. All rights reserved.

@@ -1,0 +1,53 @@
+remote_data_source_contract:
+  import: |
+    import '../dtos/{{feature.snakeCase()}}_dto.dart';
+  code: |
+    Stream<List<{{feature.pascalCase()}}Dto>> {{method.camelCase()}}();
+
+remote_data_source_impl:
+  import: |
+    import '../dtos/{{feature.snakeCase()}}_dto.dart';
+  code: |
+    @override
+    Stream<List<{{feature.pascalCase()}}Dto>> {{method.camelCase()}}() {
+      return _apiClient.stream<List>('/{{feature.paramCase()}}s/stream').map((data) {
+        return data
+            .map((e) => {{feature.pascalCase()}}Dto.fromJson(e as Map<String, dynamic>))
+            .toList();
+      });
+    }
+
+repository_contract:
+  import: |
+    import '../entities/{{feature.snakeCase()}}_entity.dart';
+  code: |
+    StreamResult<List<{{feature.pascalCase()}}Entity>> {{method.camelCase()}}();
+
+repository_impl:
+  import: |
+    import '../../domain/entities/{{feature.snakeCase()}}_entity.dart';
+  code: |
+    @override
+    StreamResult<List<{{feature.pascalCase()}}Entity>> {{method.camelCase()}}() async* {
+      try {
+        final stream = _remoteDataSource.{{method.camelCase()}}();
+
+        await for (final dtos in stream) {
+          final entities = dtos.map((dto) => dto.toEntity()).toList();
+          yield Result.success(entities);
+        }
+      } catch (e, st) {
+        yield handleException('{{method.camelCase()}}', e, st);
+      }
+    }
+
+export:
+  domain: |
+    export 'domain/entities/{{feature.snakeCase()}}_entity.dart';
+    export 'domain/usecases/{{feature.snakeCase()}}_{{slice.snakeCase()}}_use_case.dart';
+  logic: |
+    export 'logic/{{slice.snakeCase()}}/{{feature.snakeCase()}}_{{slice.snakeCase()}}_cubit.dart';
+    export 'logic/{{slice.snakeCase()}}/{{feature.snakeCase()}}_{{slice.snakeCase()}}_state.dart';
+
+post_hooks:
+  - dart run build_runner build --force-jit --delete-conflicting-outputs

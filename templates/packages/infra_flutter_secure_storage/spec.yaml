@@ -1,0 +1,23 @@
+dependencies:
+  - flutter_secure_storage
+
+dev_dependencies:
+  - lints
+  - test
+
+core_di:
+  import: |
+    "import 'package:infra_flutter_secure_storage/infra_flutter_secure_storage.dart';"
+  code: |
+    sl.registerLazySingleton<SecureLocalStorage>(
+      () => SecureLocalStorageImpl(flutterSecureStorage: sl()),
+    );
+
+external_di:
+  import: |
+    "import 'package:flutter_secure_storage/flutter_secure_storage.dart';"
+  code: |
+    sl.registerLazySingleton<FlutterSecureStorage>(() => FlutterSecureStorage());
+
+app_dependencies:
+  - flutter_secure_storage

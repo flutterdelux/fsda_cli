@@ -1,0 +1,73 @@
+remote_data_source_contract:
+  import: |
+    import '../dtos/{{feature.snakeCase()}}_dto.dart';
+    import '../requests/{{feature.snakeCase()}}_{{slice.snakeCase()}}_request.dart';
+  code: |
+    Stream<{{feature.pascalCase()}}Dto> {{method.camelCase()}}(
+      {{feature.pascalCase()}}{{slice.pascalCase()}}Request {{feature.camelCase()}}{{slice.pascalCase()}}Request,
+    );
+
+remote_data_source_impl:
+  import: |
+    import '../dtos/{{feature.snakeCase()}}_dto.dart';
+    import '../requests/{{feature.snakeCase()}}_{{slice.snakeCase()}}_request.dart';
+  code: |
+    @override
+    Stream<{{feature.pascalCase()}}Dto> {{method.camelCase()}}(
+      {{feature.pascalCase()}}{{slice.pascalCase()}}Request {{feature.camelCase()}}{{slice.pascalCase()}}Request,
+    ) async* {
+      final path = '/{{feature.paramCase()}}s/${{{feature.camelCase()}}{{slice.pascalCase()}}Request.id}/{{slice.paramCase()}}/stream';
+      try {
+        await for (final data in _apiClient.stream<Map<String, dynamic>>(path)) {
+          yield {{feature.pascalCase()}}Dto.fromJson(data);
+        }
+      } catch (e, st) {
+        if (e is AppException) {
+          if (e.message.contains('status code') && e.message.contains('404')) {
+            throw {{module.pascalCase()}}Exception.{{feature.camelCase()}}NotFound(msg: e.message, st: st);
+          }
+        }
+        throw {{module.pascalCase()}}Exception.fromException(e, st: st);
+      }
+    }
+
+repository_contract:
+  import: |
+    import '../entities/{{feature.snakeCase()}}_entity.dart';
+    import '../params/{{feature.snakeCase()}}_{{slice.snakeCase()}}_param.dart';
+  code: |
+    StreamResult<{{feature.pascalCase()}}Entity> {{method.camelCase()}}({{feature.pascalCase()}}{{slice.pascalCase()}}Param param);
+
+repository_impl:
+  import: |
+    import '../../domain/entities/{{feature.snakeCase()}}_entity.dart';
+    import '../../domain/params/{{feature.snakeCase()}}_{{slice.snakeCase()}}_param.dart';
+    import '../requests/{{feature.snakeCase()}}_{{slice.snakeCase()}}_request.dart';
+  code: |
+    @override
+    StreamResult<{{feature.pascalCase()}}Entity> {{method.camelCase()}}(
+      {{feature.pascalCase()}}{{slice.pascalCase()}}Param param,
+    ) async* {
+      try {
+        final request = {{feature.pascalCase()}}{{slice.pascalCase()}}Request.fromParam(param);
+        final stream = _remoteDataSource.{{method.camelCase()}}(request);
+
+        await for (final dto in stream) {
+          final entity = dto.toEntity();
+          yield Result.success(entity);
+        }
+      } catch (e, st) {
+        yield handleException('{{method.camelCase()}}', e, st);
+      }
+    }
+
+export:
+  domain: |
+    export 'domain/entities/{{feature.snakeCase()}}_entity.dart';
+    export 'domain/usecases/{{feature.snakeCase()}}_{{slice.snakeCase()}}_use_case.dart';
+  logic: |
+    export 'logic/{{slice.snakeCase()}}/{{feature.snakeCase()}}_{{slice.snakeCase()}}_cubit.dart';
+    export 'logic/{{slice.snakeCase()}}/{{feature.snakeCase()}}_{{slice.snakeCase()}}_state.dart';
+
+post_hooks:
+  - dart run build_runner build --force-jit --delete-conflicting-outputs

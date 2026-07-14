@@ -1,0 +1,29 @@
+l10n:
+  path: apps/{{app.snakeCase()}}/lib/app/main_app.dart
+  imports:
+    - "import 'package:{{module.snakeCase()}}/{{module.snakeCase()}}.dart';"
+  code: |
+    ...{{module.pascalCase()}}Localizations.localizationsDelegates,
+
+failure_x:
+  path: apps/{{app.snakeCase()}}/lib/core/extensions/failure_x.dart
+  imports:
+    - "import 'package:{{module.snakeCase()}}/{{module.snakeCase()}}.dart';"
+  code: |
+    if (this is {{module.pascalCase()}}Failure) {
+      return (this as {{module.pascalCase()}}Failure).localize(context);
+    }
+
+di:
+  path: apps/{{app.snakeCase()}}/lib/core/di/di.dart
+  imports:
+    - "import '../../modules/{{module.snakeCase()}}/{{module.snakeCase()}}_di.dart';"
+  code: |
+    {{module.pascalCase()}}Di.register();
+
+route:
+  path: apps/{{app.snakeCase()}}/lib/app/app_router.dart
+  imports:
+    - "import '../modules/{{module.snakeCase()}}/{{module.snakeCase()}}_route.dart';"
+  code: |
+    {{module.pascalCase()}}Route.base,

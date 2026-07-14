@@ -1,0 +1,29 @@
+{
+  "create": "Create",
+  "add": "Add",
+  "edit": "Edit",
+  "update": "Update",
+  "remove": "Remove",
+  "delete": "Delete",
+  "refresh": "Refresh",
+  "retry": "Retry",
+  "back": "Back",
+  "backToHome": "Back to Home",
+  "seeAll": "See All",
+  "more": "More",
+  "invalidArgumentPageTitle": "Invalid Argument",
+  "invalidArgumentPageMessage": "The requested operation could not be performed due to an invalid argument.",
+  "notFoundPageTitle": "Not Found",
+  "notFoundPageMessage": "The page you are looking for does not exist.",
+  "unknownError": "Unknown error",
+  
+  "@coreFailureUnauthenticated": {
+    "description": "========================= Core =================="
+  },
+  "coreFailureUnauthenticated": "Unauthenticated",
+  "coreFailureServiceUnavailable": "Service unavailable",
+  "coreFailureNetworkError": "Network error",
+  "coreFailureTimeoutError": "Request timed out",
+  "coreFailureServerError": "Server error",
+  "coreFailureCacheError": "Cache error"
+}

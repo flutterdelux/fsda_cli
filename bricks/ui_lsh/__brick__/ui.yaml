@@ -1,0 +1,16 @@
+arb: |
+  "{{feature.camelCase()}}{{slice.pascalCase()}}Title": "{{feature.titleCase()}} {{slice.titleCase()}}",
+  "{{feature.camelCase()}}{{slice.pascalCase()}}EmptyTitle": "No {{feature.titleCase()}} Found",
+  "{{feature.camelCase()}}{{slice.pascalCase()}}EmptyMessage": "No {{feature.titleCase().lowerCase()}} found at the moment",
+  "{{feature.camelCase()}}{{slice.pascalCase()}}ErrorTitle": "Failed to Load {{feature.titleCase()}} {{slice.titleCase()}}"
+
+export:
+  ui: |
+    export 'ui/{{slice.snakeCase()}}/widgets/{{feature.snakeCase()}}_{{slice.snakeCase()}}_content.dart';
+    export 'ui/{{slice.snakeCase()}}/widgets/{{feature.snakeCase()}}_{{slice.snakeCase()}}_empty_feedback.dart';
+    export 'ui/{{slice.snakeCase()}}/widgets/{{feature.snakeCase()}}_{{slice.snakeCase()}}_error_feedback.dart';
+    export 'ui/{{slice.snakeCase()}}/widgets/{{feature.snakeCase()}}_{{slice.snakeCase()}}_section.dart';
+    export 'ui/{{slice.snakeCase()}}/widgets/{{feature.snakeCase()}}_{{slice.snakeCase()}}_skeleton.dart';
+
+post_hooks:
+  - flutter gen-l10n

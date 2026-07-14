@@ -1,0 +1,13 @@
+arb: |
+  "{{feature.camelCase()}}{{slice.pascalCase()}}Title": "{{feature.titleCase()}} {{slice.titleCase()}}",
+  "{{feature.camelCase()}}{{slice.pascalCase()}}ErrorTitle": "Failed to Load {{feature.titleCase()}}"
+
+export:
+  ui: |
+    export 'ui/{{slice.snakeCase()}}/widgets/{{feature.snakeCase()}}_content.dart';
+    export 'ui/{{slice.snakeCase()}}/widgets/{{feature.snakeCase()}}_error_feedback.dart';
+    export 'ui/{{slice.snakeCase()}}/widgets/{{feature.snakeCase()}}_section.dart';
+    export 'ui/{{slice.snakeCase()}}/widgets/{{feature.snakeCase()}}_skeleton.dart';
+
+post_hooks:
+  - flutter gen-l10n

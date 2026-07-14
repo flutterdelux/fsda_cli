@@ -1,0 +1,13 @@
+dependencies:
+  - shimmer
+  - gap
+  - extended_image
+  - flutter_colorpicker
+  - dotted_border
+  - intl
+   
+dev_dependencies:
+  - flutter_lints
+
+post_hooks:
+  - dart pub get

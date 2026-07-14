@@ -1,0 +1,116 @@
+include: package:lints/recommended.yaml
+
+analyzer:
+  language:
+    # Forces you to explicitly cast 'dynamic' types. Prevents hidden runtime crashes.
+    # Bad:  int x = json['id'];         (json['id'] is dynamic)
+    # Good: int x = json['id'] as int;
+    strict-casts: true
+
+  errors:
+    missing_required_param: error
+    missing_return: error
+    invalid_annotation_target: ignore
+
+linter:
+  rules:
+    # --------------------------------------------------------------------------
+    # 1. PERFORMANCE & MEMORY
+    # --------------------------------------------------------------------------
+
+    # Use 'const' for instantiating objects that can be compile-time constants.
+    # Bad:  var p = Point(0, 0);
+    # Good: var p = const Point(0, 0);
+    - prefer_const_constructors
+
+    # Avoid using redundant string interpolations when the expression is already a String.
+    # Bad:  var name = '$username';
+    # Good: var name = username;
+    - unnecessary_string_interpolations
+
+    # Use .isEmpty instead of checking length. It is faster on certain collections.
+    # Bad:  if (list.length == 0)
+    # Good: if (list.isEmpty)
+    - prefer_is_empty
+
+    # Use .isNotEmpty instead of checking length or negating .isEmpty.
+    # Bad:  if (list.length > 0)  ||  if (!list.isEmpty)
+    # Good: if (list.isNotEmpty)
+    - prefer_is_not_empty
+
+    # --------------------------------------------------------------------------
+    # 2. SAFETY & BUG PREVENTION
+    # --------------------------------------------------------------------------
+
+    # Discourage the use of raw print() in production. Use a logging package instead.
+    # Bad:  print('User logged in');
+    # Good: logger.info('User logged in');
+    - avoid_print
+
+    # If a local variable is never reassigned, declare it as 'final' to prevent accidental mutations.
+    # Bad:  var tax = 0.11; // never changed later
+    # Good: final tax = 0.11;
+    - prefer_final_locals
+
+    # Always put @override on methods that override a superclass.
+    # Bad:  void run() { ... }       // inside a subclass
+    # Good: @override void run() { ... }
+    - annotate_overrides
+
+    # Do not use 'await' on expressions that do not return a Future.
+    # Bad:  var number = await 42;
+    # Good: var number = 42;
+    - await_only_futures
+
+    # Silently firing a Future without awaiting it can cause unhandled exceptions.
+    # Bad:  saveToDatabase(); // returns Future<void>, but ignored
+    # Good: await saveToDatabase();  OR  unawaited(saveToDatabase());
+    - unawaited_futures
+
+    # Catch blocks should not be left empty without at least a comment.
+    # Bad:  try { doX(); } catch (e) {}
+    # Good: try { doX(); } catch (e) { log(e); }
+    - empty_catches
+
+    # --------------------------------------------------------------------------
+    # 3. NAMING CONVENTIONS
+    # --------------------------------------------------------------------------
+
+    # Classes, enums, and typedefs must use UpperCamelCase.
+    # Bad:  class user_model {}
+    # Good: class UserModel {}
+    - camel_case_types
+
+    # Library declarations must use snake_case.
+    # Bad:  library AuthHelper;
+    # Good: library auth_helper;
+    - library_names
+
+    # Library import prefixes must use snake_case.
+    # Bad:  import 'dart:math' as MathLib;
+    # Good: import 'dart:math' as math_lib;
+    - library_prefixes
+
+    # Variables, functions, and parameters must use lowerCamelCase.
+    # Bad:  String First_Name = "John";
+    # Good: String firstName = "John";
+    - non_constant_identifier_names
+
+    # --------------------------------------------------------------------------
+    # 4. IMPORTS & STRUCTURE
+    # --------------------------------------------------------------------------
+
+    # Use relative imports for files inside the same 'lib' directory.
+    # Bad:  import 'package:my_app/src/utils.dart'; (when inside lib/src/auth.dart)
+    # Good: import 'utils.dart';
+    - prefer_relative_imports
+
+    # Never use relative paths to reach into or out of the 'lib' directory.
+    # Bad:  import '../lib/service.dart'; (when inside test/my_test.dart)
+    # Good: import 'package:my_app/service.dart';
+    - avoid_relative_lib_imports
+
+    # Enforces a strict, clean order for imports (dart: -> package: -> relative -> exports).
+    # Bad:  import 'my_util.dart'; \n import 'dart:io';
+    # Good: import 'dart:io'; \n\n import 'my_util.dart';
+    - directives_ordering

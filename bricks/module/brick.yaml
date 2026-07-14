@@ -1,0 +1,14 @@
+name: module
+description: FSDA clean architecture module blueprint.
+version: 1.0.0+1
+environment:
+  mason: ">=0.1.0-dev.54 <0.1.0"
+vars:
+  module:
+    type: string
+    description: The snake_case name of the module (e.g. finance)
+    prompt: What is the module name?
+  dart_sdk:
+    type: string
+    description: The Dart SDK constraint for the module (e.g. ">=3.0.0 <4.0.0", ^3.0.0)
+    prompt: What is the Dart SDK constraint for the module?

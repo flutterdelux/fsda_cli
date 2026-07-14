@@ -1,0 +1,114 @@
+local_data_source_contract:
+  import: |
+    import '../dtos/{{feature.snakeCase()}}_dto.dart';
+  code: |
+    Future<List<{{feature.pascalCase()}}Dto>> {{method.camelCase()}}();
+    Future<void> cache{{feature.pascalCase()}}{{slice.pascalCase()}}(List<{{feature.pascalCase()}}Dto> data);
+
+local_data_source_impl:
+  import: |
+    import '../dtos/{{feature.snakeCase()}}_dto.dart';
+    import '{{feature.snakeCase()}}_local_data_source.dart';
+  code: |
+    @override
+    Future<List<{{feature.pascalCase()}}Dto>> {{method.camelCase()}}() async {
+      try {
+        final rows = await _client.findAll('{{feature.snakeCase()}}s');
+        return rows.map((row) => {{feature.pascalCase()}}Dto.fromJson(row)).toList();
+      } catch (e, st) {
+        throw CoreException.cacheError(
+          msg: 'Failed to load notes from local cache: $e',
+          st: st,
+        );
+      }
+    }
+
+    @override
+    Future<void> cache{{feature.pascalCase()}}{{slice.pascalCase()}}(List<{{feature.pascalCase()}}Dto> data) async {
+      try {
+        await _client.insertMany(
+          '{{feature.snakeCase()}}s',
+          data.map((item) => item.toJson()).toList(),
+        );
+      } catch (e, st) {
+        throw CoreException.cacheError(
+          msg: 'Failed to cache notes to local storage: $e',
+          st: st,
+        );
+      }
+    }
+
+remote_data_source_contract:
+  import: |
+    import '../dtos/{{feature.snakeCase()}}_dto.dart';
+  code: |
+    Future<List<{{feature.pascalCase()}}Dto>> {{method.camelCase()}}();
+
+remote_data_source_impl:
+  import: |
+    import '../dtos/{{feature.snakeCase()}}_dto.dart';
+    import '../responses/{{feature.snakeCase()}}_{{slice.snakeCase()}}_response.dart';
+  code: |
+    @override
+    Future<List<{{feature.pascalCase()}}Dto>> {{method.camelCase()}}() async {
+      final response = await _apiClient.get<Map<String, dynamic>>('/{{feature.snakeCase()}}s');
+      if (response.statusCode == 200) {
+        final {{feature.camelCase()}}{{slice.pascalCase()}}Response = {{feature.pascalCase()}}{{slice.pascalCase()}}Response.fromJson(response.body);
+        if ({{feature.camelCase()}}{{slice.pascalCase()}}Response.data != null) {
+          return {{feature.camelCase()}}{{slice.pascalCase()}}Response.data!;
+        }
+        throw const {{module.pascalCase()}}Exception.{{feature.camelCase()}}NotFound();
+      }
+
+      throw {{module.pascalCase()}}Exception.fromApiResponse(response);
+    }
+
+repository_contract:
+  import: |
+    import '../entities/{{feature.snakeCase()}}_entity.dart';
+  code: |
+    AsyncResult<List<{{feature.pascalCase()}}Entity>> {{method.camelCase()}}();
+
+repository_impl:
+  import: |
+    import '../../domain/entities/{{feature.snakeCase()}}_entity.dart';
+    import '../../domain/repositories/{{feature.snakeCase()}}_repository.dart';
+    import '../datasources/{{feature.snakeCase()}}_local_data_source.dart';
+    import '../datasources/{{feature.snakeCase()}}_remote_data_source.dart';
+  code: |
+    @override
+    AsyncResult<List<{{feature.pascalCase()}}Entity>> {{method.camelCase()}}() async {
+      final isOnline = await _networkInfo.hasInternetAccess;
+
+      if (isOnline) {
+        try {
+          final {{feature.camelCase()}}Dtos = await _remoteDataSource.{{method.camelCase()}}();
+          await _localDataSource.cache{{feature.pascalCase()}}{{slice.pascalCase()}}({{feature.camelCase()}}Dtos);
+        } catch (e, st) {
+          log.warning(
+            '{{method.camelCase()}} refresh cache failed',
+            error: e,
+            stackTrace: st,
+          );
+        }
+      }
+
+      try {
+        final cached{{feature.pascalCase()}}{{slice.pascalCase()}} = await _localDataSource.{{method.camelCase()}}();
+
+        return Result.success(cached{{feature.pascalCase()}}{{slice.pascalCase()}}.map((dto) => dto.toEntity()).toList());
+      } catch (e, st) {
+        return handleException('{{method.camelCase()}}', e, st);
+      }
+    }
+
+export:
+  domain: |
+    export 'domain/entities/{{feature.snakeCase()}}_entity.dart';
+    export 'domain/usecases/{{feature.snakeCase()}}_{{slice.snakeCase()}}_use_case.dart';
+  logic: |
+    export 'logic/{{slice.snakeCase()}}/{{feature.snakeCase()}}_{{slice.snakeCase()}}_cubit.dart';
+    export 'logic/{{slice.snakeCase()}}/{{feature.snakeCase()}}_{{slice.snakeCase()}}_state.dart';
+
+post_hooks:
+  - dart run build_runner build --force-jit --delete-conflicting-outputs

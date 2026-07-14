@@ -1,0 +1,7 @@
+dev_dependencies:
+  - flutter_lints
+  - build_runner
+
+post_hooks:
+  - dart pub get
+  - flutter gen-l10n

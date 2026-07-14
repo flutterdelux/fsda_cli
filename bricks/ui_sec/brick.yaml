@@ -1,0 +1,15 @@
+name: ui_sec
+description: FSDA UI Section blueprint.
+version: 1.0.0+1
+environment:
+  mason: ">=0.1.0-dev.54 <0.1.0"
+vars:
+  module:
+    type: string
+    description: The snake_case name of the module (e.g. travel)
+  feature:
+    type: string
+    description: The snake_case name of the feature (e.g. destination)
+  slice:
+    type: string
+    description: The snake_case name of the slice (e.g. popular)

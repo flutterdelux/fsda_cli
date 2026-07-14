@@ -1,0 +1,26 @@
+arb: |
+  "failure{{feature.pascalCase()}}FormInvalid": "Please fill in all required fields correctly",
+  "{{feature.camelCase()}}{{slice.pascalCase()}}Title": "{{slice.titleCase()}} {{feature.titleCase()}}",
+  "{{feature.camelCase()}}{{slice.pascalCase()}}Action": "{{slice.titleCase()}}",
+  "{{feature.camelCase()}}{{slice.pascalCase()}}Success": "{{feature.titleCase()}} created successfully",
+  "{{feature.camelCase()}}FieldTitleLabel": "Title",
+  "{{feature.camelCase()}}FieldTitleHint": "Enter title...",
+  "{{feature.camelCase()}}FieldTitleInvalidEmpty": "Title cannot be empty",
+  "{{feature.camelCase()}}FieldDescriptionLabel": "Description",
+  "{{feature.camelCase()}}FieldDescriptionHint": "Enter description...",
+  "{{feature.camelCase()}}FieldDescriptionInvalidEmpty": "Description cannot be empty"
+
+export:
+  logic: |
+    export 'logic/{{slice.snakeCase()}}/{{feature.snakeCase()}}_{{slice.snakeCase()}}_form_cubit.dart';
+    export 'logic/{{slice.snakeCase()}}/{{feature.snakeCase()}}_{{slice.snakeCase()}}_form_state.dart';
+  ui: |
+    export 'ui/{{slice.snakeCase()}}/views/{{feature.snakeCase()}}_{{slice.snakeCase()}}_view.dart';
+    export 'ui/{{slice.snakeCase()}}/widgets/{{feature.snakeCase()}}_{{slice.snakeCase()}}_button.dart';
+    export 'ui/{{slice.snakeCase()}}/widgets/{{feature.snakeCase()}}_{{slice.snakeCase()}}_form.dart';
+    export 'ui/shared/widgets/{{feature.snakeCase()}}_description_field.dart';
+    export 'ui/shared/widgets/{{feature.snakeCase()}}_title_field.dart';
+
+post_hooks:
+  - flutter gen-l10n
+  - dart run build_runner build --force-jit --delete-conflicting-outputs

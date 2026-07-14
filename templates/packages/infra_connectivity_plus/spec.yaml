@@ -1,0 +1,23 @@
+dependencies:
+  - connectivity_plus
+
+dev_dependencies:
+  - lints
+  - test
+
+core_di:
+  import: |
+    "import 'package:infra_connectivity_plus/infra_connectivity_plus.dart';"
+  code: |
+    sl.registerLazySingleton<NetworkInfo>(
+      () => NetworkInfoImpl(connectivity: sl()),
+    );
+
+external_di:
+  import: |
+    "import 'package:connectivity_plus/connectivity_plus.dart';"
+  code: |
+    sl.registerLazySingleton<Connectivity>(() => Connectivity());
+
+app_dependencies:
+  - connectivity_plus

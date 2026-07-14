@@ -1,0 +1,31 @@
+dependencies:
+  - dio
+
+dev_dependencies:
+  - lints
+  - test
+
+core_di:
+  import: |
+    import 'package:infra_dio/infra_dio.dart';
+    import '../externals/network_timeout_config.dart';
+  code: |
+    sl.registerLazySingleton<ApiClient>(
+      () => DioApiClient(
+        dio: sl(),
+        baseUrl: '',
+        connectTimeout: NetworkTimeoutConfig.connectTimeout,
+        sendTimeout: NetworkTimeoutConfig.sendTimeout,
+        receiveTimeout: NetworkTimeoutConfig.receiveTimeout,
+        streamConnectionTimeout: NetworkTimeoutConfig.streamConnectionTimeout,
+      ),
+    );
+
+external_di:
+  import: |
+    import 'package:dio/dio.dart';
+  code: |
+    sl.registerLazySingleton<Dio>(() => Dio());
+
+app_dependencies:
+  - dio

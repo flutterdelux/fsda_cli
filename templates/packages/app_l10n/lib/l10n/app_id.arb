@@ -1,0 +1,29 @@
+{
+  "create": "Buat",
+  "add": "Tambah",
+  "edit": "Ubah",
+  "update": "Perbarui",
+  "remove": "Hapus",
+  "delete": "Hapus",
+  "refresh": "Segarkan",
+  "retry": "Coba lagi",
+  "back": "Kembali",
+  "backToHome": "Kembali ke Beranda",
+  "seeAll": "Lihat Semua",
+  "more": "Lainnya",
+  "invalidArgumentPageTitle": "Argumen Tidak Valid",
+  "invalidArgumentPageMessage": "Operasi yang diminta tidak dapat dilakukan karena argumen tidak valid.",
+  "notFoundPageTitle": "Tidak Ditemukan",
+  "notFoundPageMessage": "Halaman yang Anda cari tidak ada.",
+  "unknownError": "Kesalahan tidak diketahui",
+
+  "@coreFailureUnauthenticated": {
+    "description": "========================= Core =================="
+  },
+  "coreFailureUnauthenticated": "Tidak terautentikasi",
+  "coreFailureServiceUnavailable": "Layanan tidak tersedia",
+  "coreFailureNetworkError": "Kesalahan jaringan",
+  "coreFailureTimeoutError": "Permintaan habis waktu",
+  "coreFailureServerError": "Kesalahan server",
+  "coreFailureCacheError": "Kesalahan cache"
+}

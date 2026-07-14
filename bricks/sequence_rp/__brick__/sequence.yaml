@@ -1,0 +1,73 @@
+remote_data_source_contract:
+  import: |
+    import '../dtos/{{feature.snakeCase()}}_dto.dart';
+    import '../requests/{{feature.snakeCase()}}_{{slice.snakeCase()}}_request.dart';
+  code: |
+    Future<{{feature.pascalCase()}}Dto> {{method.camelCase()}}({{feature.pascalCase()}}{{slice.pascalCase()}}Request request);
+
+remote_data_source_impl:
+  import: |
+    import '../dtos/{{feature.snakeCase()}}_dto.dart';
+    import '../requests/{{feature.snakeCase()}}_{{slice.snakeCase()}}_request.dart';
+    import '../responses/{{feature.snakeCase()}}_{{slice.snakeCase()}}_response.dart';
+  code: |
+    @override
+    Future<{{feature.pascalCase()}}Dto> {{method.camelCase()}}({{feature.pascalCase()}}{{slice.pascalCase()}}Request request) async {
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        '/{{feature.paramCase()}}s/${request.id}',
+      );
+
+      if (response.statusCode == 200) {
+        final {{feature.camelCase()}}{{slice.pascalCase()}}Response = {{feature.pascalCase()}}{{slice.pascalCase()}}Response.fromJson(
+          response.body,
+        );
+        if ({{feature.camelCase()}}{{slice.pascalCase()}}Response.data != null) {
+          return {{feature.camelCase()}}{{slice.pascalCase()}}Response.data!;
+        }
+
+        throw CoreException.serverError(
+          msg: '{{feature.pascalCase()}}{{slice.pascalCase()}} data is null',
+          st: StackTrace.current,
+        );
+      }
+
+      throw {{module.pascalCase()}}Exception.fromApiResponse(
+        response,
+        st: StackTrace.current,
+      );
+    }
+
+repository_contract:
+  import: |
+    import '../entities/{{feature.snakeCase()}}_entity.dart';
+    import '../params/{{feature.snakeCase()}}_{{slice.snakeCase()}}_param.dart';
+  code: |
+    AsyncResult<{{feature.pascalCase()}}Entity> {{method.camelCase()}}({{feature.pascalCase()}}{{slice.pascalCase()}}Param param);
+
+repository_impl:
+  import: |
+    import '../../domain/entities/{{feature.snakeCase()}}_entity.dart';
+    import '../../domain/params/{{feature.snakeCase()}}_{{slice.snakeCase()}}_param.dart';
+    import '../requests/{{feature.snakeCase()}}_{{slice.snakeCase()}}_request.dart';
+  code: |
+    @override
+    AsyncResult<{{feature.pascalCase()}}Entity> {{method.camelCase()}}({{feature.pascalCase()}}{{slice.pascalCase()}}Param param) async {
+      try {
+        final request = {{feature.pascalCase()}}{{slice.pascalCase()}}Request.fromParam(param);
+        final {{feature.camelCase()}}Dto = await _remoteDataSource.{{method.camelCase()}}(request);
+        return Result.success({{feature.camelCase()}}Dto.toEntity());
+      } catch (e, st) {
+        return handleException('{{method.camelCase()}}', e, st);
+      }
+    }
+
+export:
+  domain: |
+    export 'domain/entities/{{feature.snakeCase()}}_entity.dart';
+    export 'domain/usecases/{{feature.snakeCase()}}_{{slice.snakeCase()}}_use_case.dart';
+  logic: |
+    export 'logic/{{slice.snakeCase()}}/{{feature.snakeCase()}}_{{slice.snakeCase()}}_cubit.dart';
+    export 'logic/{{slice.snakeCase()}}/{{feature.snakeCase()}}_{{slice.snakeCase()}}_state.dart';
+
+post_hooks:
+  - dart run build_runner build --force-jit --delete-conflicting-outputs

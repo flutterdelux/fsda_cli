@@ -1,0 +1,18 @@
+dependencies:
+  - logging
+
+dev_dependencies:
+  - lints
+  - test
+
+core_di:
+  import: |
+    import 'package:infra_logging/infra_logging.dart';
+    import 'package:logging/logging.dart';
+  code: |
+    sl.registerFactoryParam<AppLogger, String, void>(
+      (name, _) => LoggingImpl(logger: Logger(name)),
+    );
+
+app_dependencies:
+  - logging

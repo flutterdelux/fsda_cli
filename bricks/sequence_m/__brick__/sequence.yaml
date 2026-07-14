@@ -1,0 +1,38 @@
+remote_data_source_contract:
+  code: |
+    Future<void> {{method.camelCase()}}();
+
+remote_data_source_impl:
+  code: |
+    @override
+    Future<void> {{method.camelCase()}}() async {
+      final response = await _apiClient.patch<Map>('/{{#paramCase}}{{feature}}{{/paramCase}}/{{#paramCase}}{{slice}}{{/paramCase}}');
+      if (response.statusCode == 200) return;
+      throw {{module.pascalCase()}}Exception.fromApiResponse(response);
+    }
+
+repository_contract:
+  code: |
+    AsyncResult<void> {{method.camelCase()}}();
+
+repository_impl:
+  code: |
+    @override
+    AsyncResult<void> {{method.camelCase()}}() async {
+      try {
+        await _remoteDataSource.{{method.camelCase()}}();
+        return const Result.success(null);
+      } catch (e, st) {
+        return handleException('{{method.camelCase()}}', e, st);
+      }
+    }
+
+export:
+  domain: |
+    export 'domain/usecases/{{feature.snakeCase()}}_{{slice.snakeCase()}}_use_case.dart';
+  logic: |
+    export 'logic/{{slice.snakeCase()}}/{{feature.snakeCase()}}_{{slice.snakeCase()}}_cubit.dart';
+    export 'logic/{{slice.snakeCase()}}/{{feature.snakeCase()}}_{{slice.snakeCase()}}_state.dart';
+
+post_hooks:
+  - dart run build_runner build --force-jit --delete-conflicting-outputs

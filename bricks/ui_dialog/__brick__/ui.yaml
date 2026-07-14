@@ -1,0 +1,12 @@
+arb: |
+  "{{feature.camelCase()}}{{slice.pascalCase()}}DialogTitle": "{{slice.titleCase()}} {{feature.titleCase()}}",
+  "{{feature.camelCase()}}{{slice.pascalCase()}}DialogMessage": "Are you sure you want to {{slice.titleCase()}} this {{feature.titleCase()}}?",
+  "{{feature.camelCase()}}{{slice.pascalCase()}}DialogConfirm": "Yes",
+  "{{feature.camelCase()}}{{slice.pascalCase()}}DialogCancel": "Cancel"
+
+export:
+  ui: |
+    export 'ui/{{slice.snakeCase()}}/widgets/{{feature.snakeCase()}}_{{slice.snakeCase()}}_dialog.dart';
+
+post_hooks:
+  - flutter gen-l10n

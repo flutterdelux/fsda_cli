@@ -1,0 +1,11 @@
+arb: |
+  "{{feature.camelCase()}}{{slice.pascalCase()}}PopupMenuItem": "{{slice.titleCase()}} {{feature.titleCase()}}",
+  "{{feature.camelCase()}}{{slice.pascalCase()}}Success": "{{slice.titleCase()}} {{feature.titleCase()}} successfully",
+  "{{feature.camelCase()}}{{slice.pascalCase()}}OverlayMessage": "{{slice.titleCase()}} {{feature.titleCase()}}...",
+
+export:
+  ui: |
+    export 'ui/{{slice.snakeCase()}}/widgets/{{feature.snakeCase()}}_{{slice.snakeCase()}}_popup_menu_item.dart';
+
+post_hooks:
+  - flutter gen-l10n

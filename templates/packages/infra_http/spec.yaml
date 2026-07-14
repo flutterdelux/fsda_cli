@@ -1,0 +1,31 @@
+dependencies:
+  - http
+
+dev_dependencies:
+  - lints
+  - test
+
+core_di:
+  import: |
+    import 'package:infra_http/infra_http.dart';
+    import '../externals/network_timeout_config.dart';
+  code: |
+    sl.registerLazySingleton<ApiClient>(
+      () => HttpApiClient(
+        client: sl(),
+        baseUrl: '',
+        requestTimeout: NetworkTimeoutConfig.requestTimeout,
+        streamConnectionTimeout: NetworkTimeoutConfig.streamConnectionTimeout,
+      ),
+    );
+
+external_di:
+  import: |
+    import 'package:http/http.dart' as http;
+  code: |
+    sl.registerLazySingleton<http.Client>(
+      () => http.Client(),
+    );
+
+app_dependencies:
+  - http
