@@ -1,3 +1,7 @@
+## 1.0.4
+
+- fix: triple brace for bricks app & module
+
 ## 1.0.3
 
 - refactor: dart sdk string character
