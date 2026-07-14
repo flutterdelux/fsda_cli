@@ -1,3 +1,7 @@
+## 1.0.3
+
+- refactor: dart sdk string character
+
 ## 1.0.2
 
 - Fix: app mason brick template to use dart sdk version with string format

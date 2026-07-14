@@ -51,7 +51,7 @@ class FileService {
 
         content = content.replaceFirst(
           RegExp(r'environment:\r?\n\s+sdk:'),
-          'environment:\n  sdk: "${sdkService.dartVersion}"',
+          'environment:\n  sdk: ${sdkService.dartVersion}',
         );
 
         await targetFile.create(recursive: true);

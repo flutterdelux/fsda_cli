@@ -64,7 +64,7 @@ class ModuleGenerator extends BaseGenerator<void, ({String module})> {
         target,
         vars: <String, dynamic>{
           'module': module,
-          'dart_sdk': '"${sdkService.dartVersion}"',
+          'dart_sdk': sdkService.dartVersion,
         },
       );
       progress.complete(

@@ -78,10 +78,7 @@ class AppGenerator extends BaseGenerator<void, ({String app})> {
 
       await generator.generate(
         target,
-        vars: <String, dynamic>{
-          'app': app,
-          'dart_sdk': '"${sdkService.dartVersion}"',
-        },
+        vars: <String, dynamic>{'app': app, 'dart_sdk': sdkService.dartVersion},
       );
       progress.complete('Baked app template successfully');
 
