@@ -1,3 +1,7 @@
+## 1.0.5
+
+- fix: module & app bundle
+
 ## 1.0.4
 
 - fix: triple brace for bricks app & module
