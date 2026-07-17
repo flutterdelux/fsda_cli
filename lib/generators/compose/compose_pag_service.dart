@@ -612,7 +612,7 @@ class ComposePagService {
 
     final viewReturn = _buildViewReturn(
       viewInfo: viewInfo,
-      contentExpression: '_buildPrimaryContent(context)',
+      contentExpression: '_buildContent(context)',
     );
 
     final providerCascade = logic.bootstrapMethod == null
@@ -627,7 +627,7 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
 $refreshMethodCode
 $loadMoreMethodCode
 $onItemTapMethodCode
-  Widget _buildPrimaryContent(BuildContext context) {
+  Widget _buildContent(BuildContext context) {
     return BlocBuilder<${logic.logicClass}, ${logic.stateClass}>(
       builder: (_, state) {
         final isLoading = state.$isLoadingField;

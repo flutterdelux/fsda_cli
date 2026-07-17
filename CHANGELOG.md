@@ -1,3 +1,8 @@
+## 1.0.7
+
+- refactor:
+    - _buildPrimaryContent => _buildContent
+
 ## 1.0.6
 
 - fix: ignore part skeleton
