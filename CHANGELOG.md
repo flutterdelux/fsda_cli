@@ -1,3 +1,7 @@
+## 1.0.6
+
+- fix: ignore part skeleton
+
 ## 1.0.5
 
 - fix: module & app bundle

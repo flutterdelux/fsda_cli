@@ -521,7 +521,9 @@ class ComposeMainService
         error = classInfo;
       } else if (path.endsWith('_empty_feedback.dart') && empty == null) {
         empty = classInfo;
-      } else if (path.endsWith('_skeleton.dart') && skeleton == null) {
+      } else if (path.endsWith('_skeleton.dart') &&
+          skeleton == null &&
+          !path.contains('parts')) {
         skeleton = classInfo;
       }
     }
