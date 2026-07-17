@@ -1,3 +1,7 @@
+## 1.0.8
+
+- gitignore to module brick
+
 ## 1.0.7
 
 - refactor:
