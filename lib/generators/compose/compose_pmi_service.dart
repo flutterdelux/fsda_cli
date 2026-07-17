@@ -573,7 +573,8 @@ class ComposePmiService {
         emptyFeedbackClass = className;
       } else if (entity.path.endsWith('_error_feedback.dart')) {
         errorFeedbackClass = className;
-      } else if (entity.path.endsWith('_skeleton.dart')) {
+      } else if (entity.path.endsWith('_skeleton.dart') &&
+          !entity.path.contains('parts')) {
         skeletonClass = className;
       }
     }

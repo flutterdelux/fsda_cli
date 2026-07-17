@@ -998,7 +998,7 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
 
     final buildPrimaryContentMethod =
         hasView && _viewNeedsPrimaryContent(viewInfo)
-        ? _buildPrimaryContentMethod(
+        ? _buildContentMethod(
             logic: primaryLogic,
             uiComponents: uiComponents,
             loadedPayload: loadedPayload,
@@ -1335,7 +1335,7 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
   }''';
   }
 
-  String _buildPrimaryContentMethod({
+  String _buildContentMethod({
     required _LogicTarget logic,
     required _UiComponents uiComponents,
     required _LoadedPayload? loadedPayload,
@@ -1411,7 +1411,7 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
       }
     }
 
-    return '''  Widget _buildPrimaryContent(BuildContext context) {
+    return '''  Widget _buildContent(BuildContext context) {
     return BlocBuilder<${logic.logicClass}, ${logic.stateClass}>(
       builder: (_, state) => state.maybeWhen(
         ${branches.join('\n        ')}
@@ -1712,7 +1712,7 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
           final type = viewInfo.fieldTypes[field];
 
           if (field == 'content' || field == 'form') {
-            return '$field: _buildPrimaryContent(context),';
+            return '$field: _buildContent(context),';
           }
 
           if (_isCallbackField(type: type, field: field)) {

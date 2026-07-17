@@ -2,6 +2,9 @@
 
 - refactor:
     - _buildPrimaryContent => _buildContent
+- fix: 
+    - ignore part skeleton for compose pag service
+    - ignore part skeleton for compose pmi service
 
 ## 1.0.6
 
