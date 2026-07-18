@@ -6,11 +6,11 @@ import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
 import '../enums/ui_code.dart';
-import '../generated/bricks/ui_detail_bundle.dart';
 import '../generated/bricks/ui_dialog_bundle.dart';
 import '../generated/bricks/ui_form_bundle.dart';
 import '../generated/bricks/ui_lsh_bundle.dart';
 import '../generated/bricks/ui_lsv_bundle.dart';
+import '../generated/bricks/ui_main_bundle.dart';
 import '../generated/bricks/ui_pag_bundle.dart';
 import '../generated/bricks/ui_pmi_bundle.dart';
 import '../generated/bricks/ui_sec_bundle.dart';
@@ -322,7 +322,7 @@ class UiGenerator
 
   MasonBundle _resolveUiBundle(UiCode uiCode) {
     return switch (uiCode) {
-      UiCode.detail => uiDetailBundle,
+      UiCode.main => uiMainBundle,
       UiCode.dialog => uiDialogBundle,
       UiCode.form => uiFormBundle,
       UiCode.lsh => uiLshBundle,

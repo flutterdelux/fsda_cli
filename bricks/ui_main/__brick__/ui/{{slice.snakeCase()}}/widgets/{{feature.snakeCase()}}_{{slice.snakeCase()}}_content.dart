@@ -4,10 +4,10 @@ import 'package:intl/intl.dart';
 
 import '../../../domain/entities/{{feature.snakeCase()}}_entity.dart';
 
-class {{feature.pascalCase()}}DetailContent extends StatelessWidget {
+class {{feature.pascalCase()}}{{slice.pascalCase()}}Content extends StatelessWidget {
   final {{feature.pascalCase()}}Entity {{feature.camelCase()}};
   final Future<void> Function() onPullRefresh;
-  const {{feature.pascalCase()}}DetailContent({
+  const {{feature.pascalCase()}}{{slice.pascalCase()}}Content({
     super.key,
     required this.{{feature.camelCase()}},
     required this.onPullRefresh,

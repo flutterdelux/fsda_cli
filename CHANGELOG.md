@@ -1,3 +1,9 @@
+## 1.0.9
+
+- refactor:
+    - ui detail brick (error feedback)
+    - ui detail bundle brick => ui main bundle brick
+
 ## 1.0.8
 
 - gitignore to module brick

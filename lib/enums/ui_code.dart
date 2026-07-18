@@ -1,5 +1,5 @@
 enum UiCode {
-  detail('detail', 'Detail Content'),
+  main('main', ' Main Content'),
   dialog('dialog', 'Alert Dialog'),
   form('form', 'Form'),
   lsh('lsh', 'List Horizontal'),

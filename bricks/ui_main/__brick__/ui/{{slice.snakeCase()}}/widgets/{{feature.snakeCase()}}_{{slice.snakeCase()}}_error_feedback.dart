@@ -3,10 +3,10 @@ import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 import '../../../../../generated/{{module.snakeCase()}}_localizations.dart';
 
-class {{feature.pascalCase()}}DetailError extends StatelessWidget {
+class {{feature.pascalCase()}}{{slice.pascalCase()}}ErrorFeedback extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
-  const {{feature.pascalCase()}}DetailError({
+  const {{feature.pascalCase()}}{{slice.pascalCase()}}ErrorFeedback({
     super.key,
     required this.message,
     required this.onRetry,
@@ -17,7 +17,7 @@ class {{feature.pascalCase()}}DetailError extends StatelessWidget {
     final appL10n = AppLocalizations.of(context)!;
     final l10n = {{module.pascalCase()}}Localizations.of(context)!;
     return AppErrorFeedback(
-      title: l10n.{{feature.camelCase()}}DetailErrorTitle,
+      title: l10n.{{feature.camelCase()}}{{slice.pascalCase()}}ErrorTitle,
       message: message,
       onRetry: onRetry,
       retryText: appL10n.retry,
