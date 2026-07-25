@@ -3,17 +3,17 @@ import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 import '../../../../../generated/{{module.snakeCase()}}_localizations.dart';
 
-class {{feature.pascalCase()}}ListEmptyFeedback extends StatelessWidget {
+class {{feature.pascalCase()}}{{slice.pascalCase()}}EmptyFeedback extends StatelessWidget {
   final VoidCallback onRefresh;
-  const {{feature.pascalCase()}}ListEmptyFeedback({super.key, required this.onRefresh});
+  const {{feature.pascalCase()}}{{slice.pascalCase()}}EmptyFeedback({super.key, required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
     final appL10n = AppLocalizations.of(context)!;
     final l10n = {{module.pascalCase()}}Localizations.of(context)!;
     return AppEmptyFeedback(
-      title: l10n.{{feature.camelCase()}}ListEmptyTitle,
-      message: l10n.{{feature.camelCase()}}ListEmptyMessage,
+      title: l10n.{{feature.camelCase()}}{{slice.pascalCase()}}EmptyTitle,
+      message: l10n.{{feature.camelCase()}}{{slice.pascalCase()}}EmptyMessage,
       onRefresh: onRefresh,
       refreshText: appL10n.refresh,
     );

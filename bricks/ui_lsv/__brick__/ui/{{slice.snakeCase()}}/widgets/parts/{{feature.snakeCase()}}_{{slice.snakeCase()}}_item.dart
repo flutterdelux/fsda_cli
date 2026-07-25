@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 
 import '../../../../domain/entities/{{feature.snakeCase()}}_entity.dart';
 
-class {{feature.pascalCase()}}ListItem extends StatelessWidget {
+class {{feature.pascalCase()}}{{slice.pascalCase()}}Item extends StatelessWidget {
   final int index;
   final {{feature.pascalCase()}}Entity {{feature.camelCase()}};
   final void Function() onTap;
-  const {{feature.pascalCase()}}ListItem({
+  const {{feature.pascalCase()}}{{slice.pascalCase()}}Item({
     super.key,
     required this.index,
     required this.{{feature.camelCase()}},

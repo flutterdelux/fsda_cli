@@ -9,7 +9,7 @@ class {{feature.pascalCase()}}ListView extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = {{module.pascalCase()}}Localizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.{{feature.camelCase()}}ListTitle)),
+      appBar: AppBar(title: Text(l10n.{{feature.camelCase()}}{{slice.pascalCase()}}Title)),
       body: content,
     );
   }

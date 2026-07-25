@@ -1,11 +1,11 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 
-import 'parts/{{feature.snakeCase()}}_list_item_skeleton.dart';
+import 'parts/{{feature.snakeCase()}}_{{slice.snakeCase()}}_item_skeleton.dart';
 
-class {{feature.pascalCase()}}ListSkeleton extends StatelessWidget {
+class {{feature.pascalCase()}}{{slice.pascalCase()}}Skeleton extends StatelessWidget {
   final int itemCount;
-  const {{feature.pascalCase()}}ListSkeleton({super.key, this.itemCount = 10});
+  const {{feature.pascalCase()}}{{slice.pascalCase()}}Skeleton({super.key, this.itemCount = 10});
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +18,7 @@ class {{feature.pascalCase()}}ListSkeleton extends StatelessWidget {
         AppSpacing.screen + padding.bottom,
       ),
       itemBuilder: (context, index) {
-        return const {{feature.pascalCase()}}ListItemSkeleton();
+        return const {{feature.pascalCase()}}{{slice.pascalCase()}}ItemSkeleton();
       },
       separatorBuilder: (context, index) => const Divider(),
       itemCount: itemCount,

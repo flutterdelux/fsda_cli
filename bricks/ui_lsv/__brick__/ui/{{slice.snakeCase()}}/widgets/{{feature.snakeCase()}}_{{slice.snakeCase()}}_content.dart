@@ -1,12 +1,12 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 import '../../../domain/entities/{{feature.snakeCase()}}_entity.dart';
-import 'parts/{{feature.snakeCase()}}_list_item.dart';
+import 'parts/{{feature.snakeCase()}}_{{slice.snakeCase()}}_item.dart';
 
-class {{feature.pascalCase()}}ListContent extends StatelessWidget {
+class {{feature.pascalCase()}}{{slice.pascalCase()}}Content extends StatelessWidget {
   final List<{{feature.pascalCase()}}Entity> list;
   final void Function({{feature.pascalCase()}}Entity item) onItemTap;
-  const {{feature.pascalCase()}}ListContent({
+  const {{feature.pascalCase()}}{{slice.pascalCase()}}Content({
     super.key,
     required this.list,
     required this.onItemTap,
