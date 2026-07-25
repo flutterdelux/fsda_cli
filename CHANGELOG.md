@@ -1,3 +1,8 @@
+## 1.0.11
+
+- refactor:
+    - regen lsv brick template
+
 ## 1.0.10
 
 - refactor:
