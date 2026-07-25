@@ -1,7 +1,7 @@
 abstract final class CliInfo {
   static const name = 'fsda_cli';
   static const executable = 'fsda';
-  static const version = '1.0.12';
+  static const version = '1.0.13';
   static const description = 'Feature Slice Driven Architecture CLI';
 
   static String getConfigYaml({

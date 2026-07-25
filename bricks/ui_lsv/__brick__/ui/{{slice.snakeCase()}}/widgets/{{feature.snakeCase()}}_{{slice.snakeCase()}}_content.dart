@@ -26,7 +26,7 @@ class {{feature.pascalCase()}}{{slice.pascalCase()}}Content extends StatelessWid
       separatorBuilder: (context, index) => const Divider(),
       itemBuilder: (context, index) {
         final {{feature.camelCase()}} = list[index];
-        return {{feature.pascalCase()}}ListItem(
+        return {{feature.pascalCase()}}{{slice.pascalCase()}}Item(
           index: index,
           {{feature.camelCase()}}: {{feature.camelCase()}},
           onTap: () => onItemTap({{feature.camelCase()}}),
