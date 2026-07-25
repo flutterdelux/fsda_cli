@@ -1,16 +1,16 @@
 arb: |
-  "{{feature.camelCase()}}ListTitle": "{{feature.titleCase()}} List",
-  "{{feature.camelCase()}}ListEmptyTitle": "No {{feature.titleCase()}} Found",
-  "{{feature.camelCase()}}ListEmptyMessage": "No {{feature.titleCase().lowerCase()}} found at the moment",
-  "{{feature.camelCase()}}ListErrorTitle": "Failed to Load {{feature.titleCase()}} List"
+  "{{feature.camelCase()}}{{slice.pascalCase()}}Title": "{{feature.titleCase()}} {{slice.pascalCase()}}",
+  "{{feature.camelCase()}}{{slice.pascalCase()}}EmptyTitle": "No {{feature.titleCase()}} {{slice.pascalCase()}} Found",
+  "{{feature.camelCase()}}{{slice.pascalCase()}}EmptyMessage": "No {{feature.titleCase()}} {{slice.pascalCase()}} found at the moment",
+  "{{feature.camelCase()}}{{slice.pascalCase()}}ErrorTitle": "Failed to Load {{feature.titleCase()}} {{slice.pascalCase()}}"
 
 export:
   ui: |
-    export 'ui/{{slice.snakeCase()}}/views/{{feature.snakeCase()}}_list_view.dart';
-    export 'ui/{{slice.snakeCase()}}/widgets/{{feature.snakeCase()}}_list_content.dart';
-    export 'ui/{{slice.snakeCase()}}/widgets/{{feature.snakeCase()}}_list_empty_feedback.dart';
-    export 'ui/{{slice.snakeCase()}}/widgets/{{feature.snakeCase()}}_list_error_feedback.dart';
-    export 'ui/{{slice.snakeCase()}}/widgets/{{feature.snakeCase()}}_list_skeleton.dart';
+    export 'ui/{{slice.snakeCase()}}/views/{{feature.snakeCase()}}_{{slice.snakeCase()}}_view.dart';
+    export 'ui/{{slice.snakeCase()}}/widgets/{{feature.snakeCase()}}_{{slice.snakeCase()}}_content.dart';
+    export 'ui/{{slice.snakeCase()}}/widgets/{{feature.snakeCase()}}_{{slice.snakeCase()}}_empty_feedback.dart';
+    export 'ui/{{slice.snakeCase()}}/widgets/{{feature.snakeCase()}}_{{slice.snakeCase()}}_error_feedback.dart';
+    export 'ui/{{slice.snakeCase()}}/widgets/{{feature.snakeCase()}}_{{slice.snakeCase()}}_skeleton.dart';
 
 post_hooks:
   - flutter gen-l10n

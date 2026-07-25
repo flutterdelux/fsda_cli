@@ -1,3 +1,8 @@
+## 1.0.10
+
+- refactor:
+    - ui lsv brick (list->slice)
+
 ## 1.0.9
 
 - refactor:

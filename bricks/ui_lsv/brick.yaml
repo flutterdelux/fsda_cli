@@ -10,3 +10,6 @@ vars:
   feature:
     type: string
     description: The snake_case name of the feature (e.g. wallet)
+  slice:
+    type: string
+    description: The snake_case name of the slice (e.g. list)
