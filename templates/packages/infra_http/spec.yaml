@@ -8,7 +8,7 @@ dev_dependencies:
 core_di:
   import: |
     import 'package:infra_http/infra_http.dart';
-    import '../externals/network_timeout_config.dart';
+    import '../network/network_timeout_config.dart';
   code: |
     sl.registerLazySingleton<ApiClient>(
       () => HttpApiClient(

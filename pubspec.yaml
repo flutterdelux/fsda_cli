@@ -1,11 +1,11 @@
 name: fsda_cli
 description: Feature Slice Driven Architecture CLI for workspace scaffolding and code generation.
-version: 1.0.13
+version: 1.0.14
 repository: https://github.com/flutterdelux/fsda_cli
 license: BSD-3-Clause
 
 environment:
-  sdk: '>=3.10.7 <4.0.0'
+  sdk: ">=3.10.7 <4.0.0"
 
 dependencies:
   analyzer: ^12.1.0

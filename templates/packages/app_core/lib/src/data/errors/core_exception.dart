@@ -36,6 +36,9 @@ sealed class CoreException with _$CoreException implements AppException {
     StackTrace? st,
   }) = _UnauthenticatedError;
 
+  const factory CoreException.unauthorizedError({String? msg, StackTrace? st}) =
+      _UnauthorizedError;
+
   @override
   String get message => when(
     cacheError: (msg, _) => msg ?? 'Cache/Local storage failure',
@@ -43,6 +46,7 @@ sealed class CoreException with _$CoreException implements AppException {
     networkError: (msg, _) => msg ?? 'Network connection failed',
     timeoutError: (msg, _) => msg ?? 'Request timeout',
     unauthenticatedError: (msg, _) => msg ?? 'User session invalid',
+    unauthorizedError: (msg, _) => msg ?? 'User unauthorized',
     serviceUnavailable: (msg, _) => msg ?? 'Service unavailable',
   );
 
@@ -56,6 +60,7 @@ sealed class CoreException with _$CoreException implements AppException {
     timeoutError: (_, _) => CoreFailure.timeoutError,
     cacheError: (_, _) => CoreFailure.cacheError,
     unauthenticatedError: (_, _) => CoreFailure.unauthenticated,
+    unauthorizedError: (_, _) => CoreFailure.unauthorized,
     serviceUnavailable: (_, _) => CoreFailure.serviceUnavailable,
   );
 
@@ -67,9 +72,16 @@ sealed class CoreException with _$CoreException implements AppException {
     final msg = e.toString().toLowerCase();
 
     if (msg.contains('unauthenticated') ||
+        msg.contains('Unauthenticated') ||
         msg.contains('401') ||
         msg.contains('jwt')) {
       return CoreException.unauthenticatedError(msg: msg, st: st);
+    }
+
+    if (msg.contains('unauthorized') ||
+        msg.contains('Unauthorized') ||
+        msg.contains('403')) {
+      return CoreException.unauthorizedError(msg: msg, st: st);
     }
 
     if (e is SocketException ||

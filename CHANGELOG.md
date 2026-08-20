@@ -1,3 +1,12 @@
+## 1.0.14
+
+- fix:
+    - mason brick template for main ui bundle
+- refactor:
+    - location of network_timeout_config.dart
+- add:
+    - unauthorized exception and failure in core package
+
 ## 1.0.13
 
 - refactor:
