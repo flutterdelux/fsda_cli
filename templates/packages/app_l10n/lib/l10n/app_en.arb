@@ -21,6 +21,7 @@
     "description": "========================= Core =================="
   },
   "coreFailureUnauthenticated": "Unauthenticated",
+  "coreFailureUnauthorized": "Unauthorized",
   "coreFailureServiceUnavailable": "Service unavailable",
   "coreFailureNetworkError": "Network error",
   "coreFailureTimeoutError": "Request timed out",

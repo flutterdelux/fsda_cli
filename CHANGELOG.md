@@ -1,3 +1,9 @@
+## 1.0.15
+
+- fix:
+    - mason brick template for app bundle
+    - package template for app_l10n
+
 ## 1.0.14
 
 - fix:

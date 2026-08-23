@@ -21,6 +21,7 @@
     "description": "========================= Core =================="
   },
   "coreFailureUnauthenticated": "Tidak terautentikasi",
+  "coreFailureUnauthorized": "Tidak diizinkan",
   "coreFailureServiceUnavailable": "Layanan tidak tersedia",
   "coreFailureNetworkError": "Kesalahan jaringan",
   "coreFailureTimeoutError": "Permintaan habis waktu",

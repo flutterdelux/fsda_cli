@@ -14,6 +14,7 @@ extension FailureX on Failure {
         .timeoutError => l10n.coreFailureTimeoutError,
         .serverError => l10n.coreFailureServerError,
         .unauthenticated => l10n.coreFailureUnauthenticated,
+        .unauthorized => l10n.coreFailureUnauthorized,
         .serviceUnavailable => l10n.coreFailureServiceUnavailable,
       };
     }
