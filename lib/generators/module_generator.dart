@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 
 import '../constants/cli_rules.dart';
 import '../generated/bricks/module_bundle.dart';
+import '../services/operation_report_service.dart';
 import '../services/sdk_service.dart';
 import 'base_generator.dart';
 
@@ -36,6 +37,7 @@ class ModuleGenerator extends BaseGenerator<void, ({String module})> {
   @override
   Future<void> generate(({String module}) args) async {
     final module = args.module;
+    final report = OperationReportService();
 
     final nameRegExp = RegExp(CliRules.moduleNamePattern);
     if (!nameRegExp.hasMatch(module)) {
@@ -80,10 +82,33 @@ class ModuleGenerator extends BaseGenerator<void, ({String module})> {
       );
       if (!templateSuccess) return;
 
+      final createdFiles = await _collectFilesRecursively(targetDir.path);
+      for (final filePath in createdFiles) {
+        report.addCreated(filePath);
+      }
+
       logger.success('Module "$module" created successfully');
+      report.logSummary(logger, operationLabel: 'fsda gen-module');
     } catch (e) {
       logger.error('$e');
       return;
     }
+  }
+
+  Future<List<String>> _collectFilesRecursively(String rootPath) async {
+    final rootDir = Directory(rootPath);
+    if (!await rootDir.exists()) {
+      return const <String>[];
+    }
+
+    final files = <String>[];
+    await for (final entity in rootDir.list(recursive: true)) {
+      if (entity is File) {
+        files.add(entity.path);
+      }
+    }
+
+    files.sort();
+    return files;
   }
 }

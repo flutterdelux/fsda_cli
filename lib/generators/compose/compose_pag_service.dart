@@ -4,6 +4,7 @@ import 'package:mason/mason.dart';
 import 'package:path/path.dart' as p;
 
 import '../../services/logger_service.dart';
+import '../../services/operation_report_service.dart';
 import 'compose_types.dart';
 
 class ComposePagService {
@@ -12,6 +13,8 @@ class ComposePagService {
   const ComposePagService({required this.logger});
 
   Future<void> generate(ComposeArgs args) async {
+    final report = OperationReportService();
+    final strict = args.strict;
     final root = Directory.current.path;
     final moduleFeaturePath = p.join(
       root,
@@ -90,10 +93,31 @@ class ComposePagService {
     );
 
     final pageFile = File(pagePath);
-    await pageFile.create(recursive: true);
-    await pageFile.writeAsString(
-      '${_normalizeBlankLines(pageCode).trimRight()}\n',
-    );
+    if (await pageFile.exists()) {
+      logger.info(
+        'Skipped page generation because target already exists: apps/${args.app}/lib/modules/${args.module}/features/${args.feature}/pages/$pageFileName',
+      );
+      report.addSkipped(pagePath);
+
+      if (strict) {
+        logger.error(
+          'Strict mode: generation aborted because target page already exists.',
+        );
+        report.logSummary(logger, operationLabel: 'fsda compose-pag');
+        exitCode = 1;
+        return;
+      }
+    } else {
+      await pageFile.create(recursive: true);
+      await pageFile.writeAsString(
+        '${_normalizeBlankLines(pageCode).trimRight()}\n',
+      );
+      report.addCreated(pagePath);
+
+      logger.info(
+        'Generated page: apps/${args.app}/lib/modules/${args.module}/features/${args.feature}/pages/$pageFileName',
+      );
+    }
 
     final routeFile = File(routeFilePath);
     if (!await routeFile.exists()) {
@@ -102,7 +126,7 @@ class ComposePagService {
       return;
     }
 
-    await _syncRouteFile(
+    final routeUpdated = await _syncRouteFile(
       routeFile: routeFile,
       pagePath: pagePath,
       pageClass: pageClass,
@@ -110,15 +134,27 @@ class ComposePagService {
       updateBaseBuilder: true,
     );
 
+    if (routeUpdated) {
+      report.addUpdated(routeFilePath);
+    } else {
+      report.addSkipped(routeFilePath);
+    }
+
     logger.success(
       'compose-pag generated for slice "${args.slice}" in feature "${args.feature}" (module: "${args.module}", app: "${args.app}").',
     );
-    logger.info(
-      'Generated page: apps/${args.app}/lib/modules/${args.module}/features/${args.feature}/pages/$pageFileName',
-    );
-    logger.info(
-      'Updated base route + child route: apps/${args.app}/lib/modules/${args.module}/${args.module}_route.dart',
-    );
+
+    if (routeUpdated) {
+      logger.info(
+        'Updated base route + child route: apps/${args.app}/lib/modules/${args.module}/${args.module}_route.dart',
+      );
+    } else {
+      logger.info(
+        'Route file already up to date: apps/${args.app}/lib/modules/${args.module}/${args.module}_route.dart',
+      );
+    }
+
+    report.logSummary(logger, operationLabel: 'fsda compose-pag');
   }
 
   Future<List<_LogicTarget>> _collectLogicTargets(String logicDirPath) async {
@@ -612,24 +648,8 @@ class ComposePagService {
       onItemTapMethodName: onItemTapMethodName,
     );
 
-    final viewReturn = _buildViewReturn(
-      viewInfo: viewInfo,
-      contentExpression: '_buildContent(context)',
-    );
-
-    final providerCascade = logic.bootstrapMethod == null
-        ? ''
-        : '..${logic.bootstrapMethod!}()';
-
-    final classBody =
-        '''
-class $pageClass extends StatelessWidget with PageProviderMixin {
-  const $pageClass({super.key});
-
-$refreshMethodCode
-$loadMoreMethodCode
-$onItemTapMethodCode
-  Widget _buildContent(BuildContext context) {
+    final buildContentMethod =
+        '''  Widget _buildContent(BuildContext context) {
     return BlocBuilder<${logic.logicClass}, ${logic.stateClass}>(
       builder: (_, state) {
         final isLoading = state.$isLoadingField;
@@ -652,8 +672,25 @@ $onItemTapMethodCode
         return $contentExpr;
       },
     );
-  }
+  }''';
 
+    final viewReturn = _buildViewReturn(
+      viewInfo: viewInfo,
+      contentExpression: '_buildContent(context)',
+    );
+
+    final providerCascade = logic.bootstrapMethod == null
+        ? ''
+        : '..${logic.bootstrapMethod!}()';
+
+    final classBody =
+        '''
+class $pageClass extends StatelessWidget with PageProviderMixin {
+  const $pageClass({super.key});
+
+$refreshMethodCode
+$loadMoreMethodCode
+$onItemTapMethodCode
   @override
   Widget build(BuildContext context) {
     return buildPage(
@@ -664,6 +701,8 @@ $onItemTapMethodCode
       },
     );
   }
+
+$buildContentMethod
 }
 ''';
 
@@ -834,7 +873,7 @@ $classBody''';
     return 'const SizedBox.shrink()';
   }
 
-  Future<void> _syncRouteFile({
+  Future<bool> _syncRouteFile({
     required File routeFile,
     required String pagePath,
     required String pageClass,
@@ -842,6 +881,7 @@ $classBody''';
     required bool updateBaseBuilder,
   }) async {
     var source = await routeFile.readAsString();
+    final before = source;
 
     final routeDir = p.dirname(routeFile.path);
     final relativePageImport = p
@@ -889,9 +929,15 @@ $classBody''';
       );
     }
 
-    await routeFile.writeAsString(
-      '${_normalizeBlankLines(source).trimRight()}\n',
-    );
+    final normalized = '${_normalizeBlankLines(source).trimRight()}\n';
+    final normalizedBefore = '${_normalizeBlankLines(before).trimRight()}\n';
+
+    if (normalized == normalizedBefore) {
+      return false;
+    }
+
+    await routeFile.writeAsString(normalized);
+    return true;
   }
 
   String _syncBaseBuilder({required String source}) {

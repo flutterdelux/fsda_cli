@@ -8,20 +8,26 @@ import 'package:path/path.dart' as p;
 import '../enums/di_class_type.dart';
 import '../models/di_class_info.dart';
 import '../models/di_param.dart';
+import '../services/operation_report_service.dart';
 import '../visitors/di_ast_visitor.dart';
 import 'base_generator.dart';
 
 class DiGenerator
-    extends BaseGenerator<void, ({String feature, String module, String app})> {
+    extends
+        BaseGenerator<
+          void,
+          ({String feature, String module, String app, bool strict})
+        > {
   const DiGenerator({required super.logger});
 
   @override
   Future<void> generate(
-    ({String feature, String module, String app}) args,
+    ({String feature, String module, String app, bool strict}) args,
   ) async {
     final feature = args.feature;
     final module = args.module;
     final app = args.app;
+    final strict = args.strict;
 
     final featureRoot = Directory(
       p.join(
@@ -104,16 +110,31 @@ class DiGenerator
           .compareTo(orderedTypes.indexOf(b.type!)),
     );
 
-    var diSource = await diFile.readAsString();
+    final report = OperationReportService();
+    final originalDiSource = await diFile.readAsString();
+    var diSource = originalDiSource;
     final featureDiMethod = '_${feature.camelCase}Di';
+    var methodCreated = false;
+    var addedRegistrationCount = 0;
 
     if (_containsFeatureMethod(diSource, featureDiMethod)) {
-      diSource = _replaceFeatureMethod(
+      final upsertResult = _appendMissingRegistrationsToFeatureMethod(
         source: diSource,
         methodName: featureDiMethod,
         classes: diClasses,
-        featureName: feature,
+        strict: strict,
       );
+
+      if (upsertResult.conflictMessage != null) {
+        logger.error(upsertResult.conflictMessage!);
+        report.addSkipped(diFilePath);
+        report.logSummary(logger, operationLabel: 'fsda di');
+        exitCode = 1;
+        return;
+      }
+
+      diSource = upsertResult.source;
+      addedRegistrationCount = upsertResult.addedCount;
     } else {
       diSource = _insertFeatureMethod(
         source: diSource,
@@ -122,12 +143,50 @@ class DiGenerator
         classes: diClasses,
         featureName: feature,
       );
+      methodCreated = diSource != originalDiSource;
+      addedRegistrationCount = _buildRegistrationLines(diClasses).length;
     }
 
-    diSource = _insertRegisterCall(diSource, featureDiMethod);
+    final registerResult = _insertRegisterCall(diSource, featureDiMethod);
+
+    if (strict && registerResult.conflictMessage != null) {
+      logger.error(registerResult.conflictMessage!);
+      report.addSkipped(diFilePath);
+      report.logSummary(logger, operationLabel: 'fsda di');
+      exitCode = 1;
+      return;
+    }
+
+    diSource = registerResult.source;
+
+    if (diSource == originalDiSource) {
+      report.addSkipped(diFilePath);
+      logger.info(
+        'DI registration for feature [$feature] is already up to date. No injection applied.',
+      );
+      report.logSummary(logger, operationLabel: 'fsda di');
+      return;
+    }
 
     await diFile.writeAsString(diSource);
-    logger.success('Successfully injected feature [$feature] into DI.');
+    report.addInjected(diFilePath);
+
+    if (methodCreated) {
+      logger.info(
+        'Created new DI method [$featureDiMethod] with $addedRegistrationCount registration line(s).',
+      );
+    } else if (addedRegistrationCount > 0) {
+      logger.info(
+        'Injected $addedRegistrationCount new registration line(s) into [$featureDiMethod].',
+      );
+    }
+
+    if (registerResult.inserted) {
+      logger.info('Injected missing register call: $featureDiMethod().');
+    }
+
+    logger.success('Successfully synchronized feature [$feature] into DI.');
+    report.logSummary(logger, operationLabel: 'fsda di');
   }
 
   Future<List<File>> _collectDartFiles(String dirPath) async {
@@ -150,42 +209,142 @@ class DiGenerator
     return methodPattern.hasMatch(source);
   }
 
-  String _replaceFeatureMethod({
+  ({String source, int addedCount, String? conflictMessage})
+  _appendMissingRegistrationsToFeatureMethod({
     required String source,
     required String methodName,
     required List<DiClassInfo> classes,
-    required String featureName,
+    required bool strict,
   }) {
     final offsets = _findMethodOffsets(source: source, methodName: methodName);
-    if (offsets == null) return source;
-
-    var replaceStart = offsets.methodStart;
-    final featureComment = '  // $featureName feature';
-    final commentOffset = source.lastIndexOf(
-      featureComment,
-      offsets.methodStart,
-    );
-    if (commentOffset != -1) {
-      final between = source.substring(
-        commentOffset + featureComment.length,
-        offsets.methodStart,
-      );
-      if (RegExp(r'^\s*$').hasMatch(between)) {
-        replaceStart = commentOffset;
+    if (offsets == null) {
+      if (strict) {
+        return (
+          source: source,
+          addedCount: 0,
+          conflictMessage:
+              'Strict mode: target feature DI method "$methodName" exists but could not be parsed safely for injection.',
+        );
       }
+
+      return (source: source, addedCount: 0, conflictMessage: null);
     }
 
-    final methodBlock = _buildFeatureMethod(
-      featureName: featureName,
-      methodName: methodName,
-      classes: classes,
-    );
+    var nextSource = source;
+    var addedCount = 0;
+    final emittedClasses = <String>{};
 
-    return source.replaceRange(
-      replaceStart,
-      offsets.closeBrace + 1,
-      methodBlock,
-    );
+    for (final cls in classes) {
+      if (!emittedClasses.add(cls.className)) {
+        continue;
+      }
+
+      if (_featureMethodContainsClassRegistration(
+        source: nextSource,
+        methodName: methodName,
+        className: cls.className,
+      )) {
+        continue;
+      }
+
+      final line = _buildRegistrationLine(cls);
+      if (line == null) {
+        continue;
+      }
+
+      final updatedSource = _insertLineBeforeMethodClose(
+        source: nextSource,
+        methodName: methodName,
+        line: line,
+      );
+
+      if (updatedSource == nextSource) {
+        if (strict) {
+          return (
+            source: source,
+            addedCount: 0,
+            conflictMessage:
+                'Strict mode: failed to inject registration into method "$methodName" safely.',
+          );
+        }
+        continue;
+      }
+
+      nextSource = updatedSource;
+      addedCount += 1;
+    }
+
+    return (source: nextSource, addedCount: addedCount, conflictMessage: null);
+  }
+
+  bool _featureMethodContainsClassRegistration({
+    required String source,
+    required String methodName,
+    required String className,
+  }) {
+    final body = _extractMethodBody(source: source, methodName: methodName);
+    if (body == null) {
+      return false;
+    }
+
+    final classReferenceRegex = RegExp('\\b${RegExp.escape(className)}\\s*\\(');
+    return classReferenceRegex.hasMatch(body);
+  }
+
+  String _insertLineBeforeMethodClose({
+    required String source,
+    required String methodName,
+    required String line,
+  }) {
+    final offsets = _findMethodOffsets(source: source, methodName: methodName);
+    if (offsets == null) {
+      return source;
+    }
+
+    final closeBraceLineStart = source.lastIndexOf('\n', offsets.closeBrace);
+    final insertOffset = closeBraceLineStart == -1
+        ? offsets.closeBrace
+        : closeBraceLineStart + 1;
+
+    return source.replaceRange(insertOffset, insertOffset, '$line\n');
+  }
+
+  String? _extractMethodBody({
+    required String source,
+    required String methodName,
+  }) {
+    final offsets = _findMethodOffsets(source: source, methodName: methodName);
+    if (offsets == null) {
+      return null;
+    }
+
+    final openBraceOffset = source.indexOf('{', offsets.methodStart);
+    if (openBraceOffset == -1 || openBraceOffset >= offsets.closeBrace) {
+      return null;
+    }
+
+    return source.substring(openBraceOffset + 1, offsets.closeBrace);
+  }
+
+  List<String> _buildRegistrationLines(List<DiClassInfo> classes) {
+    final lines = <String>[];
+    final seen = <String>{};
+
+    for (final cls in classes) {
+      final line = _buildRegistrationLine(cls);
+      if (line == null) {
+        continue;
+      }
+
+      final normalized = line.trim();
+      if (!seen.add(normalized)) {
+        continue;
+      }
+
+      lines.add(line);
+    }
+
+    return lines;
   }
 
   ({int methodStart, int closeBrace})? _findMethodOffsets({
@@ -208,14 +367,23 @@ class DiGenerator
     return (methodStart: match.start, closeBrace: closeBraceOffset);
   }
 
-  String _insertRegisterCall(String source, String methodName) {
+  ({String source, bool inserted, String? conflictMessage}) _insertRegisterCall(
+    String source,
+    String methodName,
+  ) {
     final registerCall = '    $methodName();';
-    if (source.contains(registerCall)) return source;
+    if (source.contains(registerCall)) {
+      return (source: source, inserted: false, conflictMessage: null);
+    }
 
     if (source.contains('// reg feature di')) {
-      return source.replaceFirst(
-        '// reg feature di',
-        '// reg feature di\n$registerCall',
+      return (
+        source: source.replaceFirst(
+          '// reg feature di',
+          '// reg feature di\n$registerCall',
+        ),
+        inserted: true,
+        conflictMessage: null,
       );
     }
 
@@ -223,16 +391,34 @@ class DiGenerator
       r'static\s+(?:Future<void>|void)\s+register\s*\(\s*\)\s*(?:async\s*)?\{',
     );
     final match = registerStartRegex.firstMatch(source);
-    if (match == null) return source;
+    if (match == null) {
+      return (
+        source: source,
+        inserted: false,
+        conflictMessage:
+            'Strict mode: could not find register() method or "// reg feature di" checkpoint to insert call for "$methodName".',
+      );
+    }
 
     final openBraceOffset = source.indexOf('{', match.start);
     final closeBraceOffset = _findClosingBrace(source, openBraceOffset);
-    if (closeBraceOffset == -1) return source;
+    if (closeBraceOffset == -1) {
+      return (
+        source: source,
+        inserted: false,
+        conflictMessage:
+            'Strict mode: could not locate closing brace of register() method for call injection.',
+      );
+    }
 
-    return source.replaceRange(
-      closeBraceOffset,
-      closeBraceOffset,
-      '\n$registerCall\n  ',
+    return (
+      source: source.replaceRange(
+        closeBraceOffset,
+        closeBraceOffset,
+        '\n$registerCall\n  ',
+      ),
+      inserted: true,
+      conflictMessage: null,
     );
   }
 

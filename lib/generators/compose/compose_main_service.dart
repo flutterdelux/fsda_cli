@@ -4,6 +4,7 @@ import 'package:mason/mason.dart';
 import 'package:path/path.dart' as p;
 
 import '../../enums/compose_page_mode.dart';
+import '../../services/operation_report_service.dart';
 import '../base_generator.dart';
 
 class ComposeMainService
@@ -17,6 +18,7 @@ class ComposeMainService
             String slice,
             String targetPage,
             ComposePageMode pageMode,
+            bool strict,
           })
         > {
   const ComposeMainService({required super.logger});
@@ -30,6 +32,7 @@ class ComposeMainService
       String slice,
       String targetPage,
       ComposePageMode pageMode,
+      bool strict,
     })
     args,
   ) async {
@@ -39,6 +42,7 @@ class ComposeMainService
     final slice = args.slice;
     final targetPage = args.targetPage;
     final pageMode = args.pageMode;
+    final strict = args.strict;
 
     final root = Directory.current.path;
 
@@ -58,6 +62,7 @@ class ComposeMainService
     final appLibPath = p.join(root, 'apps', app, 'lib');
     final appModulePath = p.join(appLibPath, 'modules', module);
     final routeFilePath = p.join(appModulePath, '${module}_route.dart');
+    final report = OperationReportService();
 
     final logicTargets = await _collectLogicTargets(logicDirPath);
     if (logicTargets.isEmpty) {
@@ -112,6 +117,7 @@ class ComposeMainService
           '${_normalizeBlankLines(scaffoldPageCode).trimRight()}\n',
         );
         createdInjectScaffold = true;
+        report.addCreated(pagePath);
       }
 
       final existingSource = await pageFile.readAsString();
@@ -133,9 +139,18 @@ class ComposeMainService
         return;
       }
 
-      await pageFile.writeAsString(
-        '${_normalizeBlankLines(injected).trimRight()}\n',
-      );
+      final nextPageSource = '${_normalizeBlankLines(injected).trimRight()}\n';
+      final previousPageSource =
+          '${_normalizeBlankLines(existingSource).trimRight()}\n';
+
+      if (nextPageSource != previousPageSource) {
+        await pageFile.writeAsString(nextPageSource);
+        if (!createdInjectScaffold) {
+          report.addInjected(pagePath);
+        }
+      } else if (!createdInjectScaffold) {
+        report.addSkipped(pagePath);
+      }
 
       logger.success(
         'Compose generated for slice "$slice" in feature "$feature" (module: "$module", app: "$app").',
@@ -175,16 +190,39 @@ class ComposeMainService
         return;
       }
 
-      await pageFile.create(recursive: true);
-      await pageFile.writeAsString(
-        '${_normalizeBlankLines(pageCode).trimRight()}\n',
-      );
+      if (await pageFile.exists()) {
+        logger.info(
+          'Skipped page generation because target already exists: apps/$app/lib/modules/$module/features/$feature/pages/$pageFileName',
+        );
+        report.addSkipped(pagePath);
+
+        if (strict) {
+          logger.error(
+            'Strict mode: generation aborted because target page already exists.',
+          );
+          report.logSummary(
+            logger,
+            operationLabel: pageMode == ComposePageMode.form
+                ? 'fsda compose-form'
+                : 'fsda compose-main',
+          );
+          exitCode = 1;
+          return;
+        }
+      } else {
+        await pageFile.create(recursive: true);
+        await pageFile.writeAsString(
+          '${_normalizeBlankLines(pageCode).trimRight()}\n',
+        );
+        report.addCreated(pagePath);
+
+        logger.info(
+          'Generated page: apps/$app/lib/modules/$module/features/$feature/pages/$pageFileName',
+        );
+      }
 
       logger.success(
         'Compose generated for slice "$slice" in feature "$feature" (module: "$module", app: "$app").',
-      );
-      logger.info(
-        'Generated page: apps/$app/lib/modules/$module/features/$feature/pages/$pageFileName',
       );
     }
 
@@ -195,7 +233,7 @@ class ComposeMainService
       return;
     }
 
-    await _syncRouteFile(
+    final routeUpdated = await _syncRouteFile(
       routeFile: routeFile,
       pagePath: pagePath,
       pageClass: pageClass,
@@ -203,15 +241,34 @@ class ComposeMainService
       pageMode: pageMode,
     );
 
-    if (pageMode == ComposePageMode.main || pageMode == ComposePageMode.form) {
+    if (routeUpdated) {
+      report.addUpdated(routeFilePath);
+    } else {
+      report.addSkipped(routeFilePath);
+    }
+
+    if (routeUpdated &&
+        (pageMode == ComposePageMode.main ||
+            pageMode == ComposePageMode.form)) {
       logger.info(
         'Updated base route + child route: apps/$app/lib/modules/$module/${module}_route.dart',
       );
-    } else {
+    } else if (routeUpdated) {
       logger.info(
         'Updated child route + navigation helper: apps/$app/lib/modules/$module/${module}_route.dart',
       );
+    } else {
+      logger.info(
+        'Route file already up to date: apps/$app/lib/modules/$module/${module}_route.dart',
+      );
     }
+
+    final operationLabel = switch (pageMode) {
+      ComposePageMode.main => 'fsda compose-main',
+      ComposePageMode.form => 'fsda compose-form',
+      ComposePageMode.injectOnly => 'fsda compose',
+    };
+    report.logSummary(logger, operationLabel: operationLabel);
   }
 
   Future<List<_LogicTarget>> _collectLogicTargets(String logicDirPath) async {
@@ -1013,6 +1070,19 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
         ? _buildLoadingOverlayMethod(primaryLogic)
         : '';
 
+    final functionalMethods = <String>[
+      if (primaryActionMethod.isNotEmpty) primaryActionMethod.trimRight(),
+      if (onItemTapMethod.isNotEmpty) onItemTapMethod.trimRight(),
+      if (listenerMethods.isNotEmpty) listenerMethods.trimRight(),
+    ].join('\n\n');
+
+    final widgetHelperMethods = <String>[
+      if (buildPrimaryContentMethod.isNotEmpty)
+        buildPrimaryContentMethod.trimRight(),
+      if (buildLoadingOverlayMethod.isNotEmpty)
+        buildLoadingOverlayMethod.trimRight(),
+    ].join('\n\n');
+
     final bodyReturn = hasView
         ? _buildViewReturn(
             viewInfo: viewInfo,
@@ -1033,7 +1103,7 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
 class $pageClass extends StatelessWidget with PageProviderMixin {
   const $pageClass({super.key});
 
-${primaryActionMethod.isEmpty ? '' : '$primaryActionMethod\n'}${onItemTapMethod.isEmpty ? '' : '$onItemTapMethod\n'}${listenerMethods.isEmpty ? '' : '$listenerMethods\n\n'}${buildPrimaryContentMethod.isEmpty ? '' : '$buildPrimaryContentMethod\n\n'}${buildLoadingOverlayMethod.isEmpty ? '' : '$buildLoadingOverlayMethod\n\n'}  @override
+${functionalMethods.isEmpty ? '' : '\n$functionalMethods\n'}  @override
   Widget build(BuildContext context) {
     return buildPage(
       providers: [
@@ -1045,6 +1115,8 @@ ${primaryActionMethod.isEmpty ? '' : '$primaryActionMethod\n'}${onItemTapMethod.
       },
     );
   }
+
+${widgetHelperMethods.isEmpty ? '' : '$widgetHelperMethods\n'}
 }
 ''';
 
@@ -1798,7 +1870,7 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
     return buffer.toString();
   }
 
-  Future<void> _syncRouteFile({
+  Future<bool> _syncRouteFile({
     required File routeFile,
     required String pagePath,
     required String pageClass,
@@ -1806,6 +1878,7 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
     required ComposePageMode pageMode,
   }) async {
     var source = await routeFile.readAsString();
+    final before = source;
 
     final routeDir = p.dirname(routeFile.path);
     final relativePageImport = p
@@ -1853,9 +1926,15 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
       );
     }
 
-    await routeFile.writeAsString(
-      '${_normalizeBlankLines(source).trimRight()}\n',
-    );
+    final normalized = '${_normalizeBlankLines(source).trimRight()}\n';
+    final normalizedBefore = '${_normalizeBlankLines(before).trimRight()}\n';
+
+    if (normalized == normalizedBefore) {
+      return false;
+    }
+
+    await routeFile.writeAsString(normalized);
+    return true;
   }
 
   String _syncBaseBuilder({required String source}) {

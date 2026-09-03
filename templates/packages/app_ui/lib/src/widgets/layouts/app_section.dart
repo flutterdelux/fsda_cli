@@ -5,13 +5,13 @@ class AppSection extends StatelessWidget {
   /// use `AppSectionHeader` for global app style
   final Widget header;
   final double headerGap;
-  final Widget content;
+  final Widget child;
   final EdgeInsetsGeometry margin;
 
   const AppSection({
     super.key,
     required this.header,
-    required this.content,
+    required this.child,
     this.headerGap = 12,
     this.margin = EdgeInsets.zero,
   });
@@ -23,7 +23,7 @@ class AppSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
-        children: [header, Gap(headerGap), content],
+        children: [header, Gap(headerGap), child],
       ),
     );
   }

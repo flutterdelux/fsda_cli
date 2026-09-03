@@ -21,6 +21,12 @@ class GenUiCommand extends Command<void> {
         abbr: 'u',
         help:
             'UI code. Current supported code: ${UiCode.values.map((e) => e.code).join(', ')}',
+      )
+      ..addFlag(
+        'strict',
+        negatable: false,
+        help:
+            'Fail when command would skip generation due existing files or unsafe injection targets.',
       );
   }
 
@@ -33,7 +39,7 @@ class GenUiCommand extends Command<void> {
 
   @override
   String get invocation =>
-      'fsda gen-ui <slice> -f <feature> -m <module> -u <ui_code>';
+      'fsda gen-ui <slice> -f <feature> -m <module> -u <ui_code> [--strict]';
 
   @override
   Future<void> run() async {
@@ -51,6 +57,7 @@ class GenUiCommand extends Command<void> {
     final feature = argResults?['feature'] as String?;
     final module = argResults?['module'] as String?;
     final ui = argResults?['ui'] as String?;
+    final strict = argResults?['strict'] as bool? ?? false;
 
     final missingFlags = <String>[];
     if (feature == null || feature.isEmpty) missingFlags.add('--feature');
@@ -122,6 +129,7 @@ class GenUiCommand extends Command<void> {
       feature: feature,
       module: module,
       ui: uiCode,
+      strict: strict,
     ));
   }
 }

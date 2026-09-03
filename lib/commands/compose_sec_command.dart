@@ -18,7 +18,7 @@ class ComposeSecCommand extends ComposeBaseCommand {
 
   @override
   String get invocation =>
-      'fsda compose-sec <slice> -f <feature> -m <module> -a <app> -p <target_page>';
+      'fsda compose-sec <slice> -f <feature> -m <module> -a <app> -p <target_page> [--strict]';
 
   @override
   Future<void> runValidated(args) async {

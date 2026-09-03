@@ -11,7 +11,7 @@ class {{feature.pascalCase()}}DescriptionField extends StatelessWidget {
     final l10n = {{module.pascalCase()}}Localizations.of(context)!;
     return AppSection(
       header: AppSectionHeader(titleText: l10n.{{feature.camelCase()}}FieldDescriptionLabel),
-      content: AppTextField(
+      child: AppTextField(
         controller: controller,
         hintText: l10n.{{feature.camelCase()}}FieldDescriptionHint,
         minLines: 5,

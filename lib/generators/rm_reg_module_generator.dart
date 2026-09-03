@@ -7,6 +7,7 @@ import 'package:yaml/yaml.dart';
 
 import '../generated/bricks/reg_module_bundle.dart';
 import '../services/memory_generator_target.dart';
+import '../services/operation_report_service.dart';
 import 'base_generator.dart';
 
 class RmRegModuleGenerator
@@ -17,6 +18,7 @@ class RmRegModuleGenerator
   Future<void> generate(({String app, String module}) arg) async {
     final appName = arg.app;
     final moduleName = arg.module;
+    final report = OperationReportService();
 
     logger.info(
       'Removing module "$moduleName" registration from "$appName"...',
@@ -30,15 +32,69 @@ class RmRegModuleGenerator
       logger.error(
         'Failed to resolve reg.yaml manifest for module "$moduleName".',
       );
+      report.logSummary(logger, operationLabel: 'fsda rm-reg');
+      exitCode = 1;
       return;
     }
 
-    await _removeDependency(appName: appName, moduleName: moduleName);
+    final pubspecPath = p.join(
+      Directory.current.path,
+      'apps',
+      appName,
+      'pubspec.yaml',
+    );
+    final dependencyRemoved = await _removeDependency(
+      appName: appName,
+      moduleName: moduleName,
+    );
+    if (dependencyRemoved) {
+      report.addRemoved(pubspecPath);
+    } else {
+      report.addSkipped(pubspecPath);
+    }
 
-    await _removeInjection(manifest['di'] as YamlMap?);
-    await _removeInjection(manifest['route'] as YamlMap?);
-    await _removeInjection(manifest['l10n'] as YamlMap?);
-    await _removeInjection(manifest['failure_x'] as YamlMap?);
+    final diPath = (manifest['di'] as YamlMap?)?['path'] as String?;
+    final diChanged = await _removeInjection(manifest['di'] as YamlMap?);
+    if (diPath != null) {
+      if (diChanged) {
+        report.addUpdated(diPath);
+      } else {
+        report.addSkipped(diPath);
+      }
+    }
+
+    final routePath = (manifest['route'] as YamlMap?)?['path'] as String?;
+    final routeChanged = await _removeInjection(manifest['route'] as YamlMap?);
+    if (routePath != null) {
+      if (routeChanged) {
+        report.addUpdated(routePath);
+      } else {
+        report.addSkipped(routePath);
+      }
+    }
+
+    final l10nPath = (manifest['l10n'] as YamlMap?)?['path'] as String?;
+    final l10nChanged = await _removeInjection(manifest['l10n'] as YamlMap?);
+    if (l10nPath != null) {
+      if (l10nChanged) {
+        report.addUpdated(l10nPath);
+      } else {
+        report.addSkipped(l10nPath);
+      }
+    }
+
+    final failureXPath =
+        (manifest['failure_x'] as YamlMap?)?['path'] as String?;
+    final failureXChanged = await _removeInjection(
+      manifest['failure_x'] as YamlMap?,
+    );
+    if (failureXPath != null) {
+      if (failureXChanged) {
+        report.addUpdated(failureXPath);
+      } else {
+        report.addSkipped(failureXPath);
+      }
+    }
 
     final wrapperDir = Directory(
       p.join(
@@ -55,9 +111,13 @@ class RmRegModuleGenerator
       logger.info(
         'Removed wrapper directory: apps/$appName/lib/modules/$moduleName',
       );
+      report.addRemoved(wrapperDir.path);
+    } else {
+      report.addSkipped(wrapperDir.path);
     }
 
     logger.success('Module "$moduleName" unregistered from "$appName".');
+    report.logSummary(logger, operationLabel: 'fsda rm-reg');
   }
 
   Future<YamlMap?> _loadRegManifest({
@@ -83,7 +143,7 @@ class RmRegModuleGenerator
     return null;
   }
 
-  Future<void> _removeDependency({
+  Future<bool> _removeDependency({
     required String appName,
     required String moduleName,
   }) async {
@@ -93,7 +153,7 @@ class RmRegModuleGenerator
 
     if (!await pubspecFile.exists()) {
       logger.error('pubspec.yaml not found for app "$appName".');
-      return;
+      return false;
     }
 
     final lines = await pubspecFile.readAsLines();
@@ -121,19 +181,22 @@ class RmRegModuleGenerator
       await pubspecFile.writeAsString('${updatedLines.join('\n')}\n');
       logger.info('Removed pubspec dependency for "$moduleName".');
     }
+
+    return removed;
   }
 
-  Future<void> _removeInjection(YamlMap? yamlRaw) async {
+  Future<bool> _removeInjection(YamlMap? yamlRaw) async {
     final path = yamlRaw?['path'] as String?;
     final imports = yamlRaw?['imports'] as YamlList?;
     final code = yamlRaw?['code'] as String?;
 
-    if (path == null) return;
+    if (path == null) return false;
 
     final file = File(path);
-    if (!await file.exists()) return;
+    if (!await file.exists()) return false;
 
     var source = await file.readAsString();
+    final original = source;
 
     if (imports != null) {
       for (final item in imports) {
@@ -154,6 +217,7 @@ class RmRegModuleGenerator
 
     source = source.replaceAll(RegExp(r'\n{3,}'), '\n\n').trimRight();
     await file.writeAsString('$source\n');
+    return '$source\n' != original;
   }
 
   String _removeInjectedCode(String source, String rawCode) {

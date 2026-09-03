@@ -37,7 +37,13 @@ class GenSliceCommand extends Command<void> {
         help:
             'Optional UI code(s). Repeat -u or pass comma-separated values. Supported: ${UiCode.values.map((e) => e.code).join(', ')}',
       )
-      ..addOption('method', abbr: 'd', help: 'Optional custom method name.');
+      ..addOption('method', abbr: 'd', help: 'Optional custom method name.')
+      ..addFlag(
+        'strict',
+        negatable: false,
+        help:
+            'Fail when command would skip generation due existing files or unsafe injection targets.',
+      );
   }
 
   @override
@@ -49,7 +55,7 @@ class GenSliceCommand extends Command<void> {
 
   @override
   String get invocation =>
-      'fsda gen-slice <slice> -f <feature> -m <module> -s <sequence_code> [-d <method>] [-u <ui_code>]...';
+      'fsda gen-slice <slice> -f <feature> -m <module> -s <sequence_code> [-d <method>] [-u <ui_code>]... [--strict]';
 
   @override
   Future<void> run() async {
@@ -83,6 +89,7 @@ class GenSliceCommand extends Command<void> {
     }
 
     final method = argResults?['method'] as String?;
+    final strict = argResults?['strict'] as bool? ?? false;
 
     final missingFlags = <String>[];
     if (feature == null || feature.isEmpty) missingFlags.add('--feature');
@@ -185,7 +192,11 @@ class GenSliceCommand extends Command<void> {
       module: module,
       sequence: sequenceCode,
       method: resolvedMethod,
+      strict: strict,
     ));
+    if (exitCode != 0) {
+      return;
+    }
 
     for (final uiCode in uiCodes) {
       await uiGenerator.generate((
@@ -193,7 +204,12 @@ class GenSliceCommand extends Command<void> {
         feature: feature,
         module: module,
         ui: uiCode,
+        strict: strict,
       ));
+
+      if (exitCode != 0) {
+        return;
+      }
     }
   }
 }

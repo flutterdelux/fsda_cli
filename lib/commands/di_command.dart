@@ -26,11 +26,16 @@ class DiCommand extends Command {
         'module',
         abbr: 'm',
         help: 'Target module name (e.g., finance).',
+      )
+      ..addFlag(
+        'strict',
+        negatable: false,
+        help: 'Fail when required DI injection cannot be applied safely.',
       );
   }
 
   @override
-  String get invocation => 'fsda di <feature> -m <module> -a <app>';
+  String get invocation => 'fsda di <feature> -m <module> -a <app> [--strict]';
 
   @override
   Future<void> run() async {
@@ -48,6 +53,7 @@ class DiCommand extends Command {
     final feature = args.first;
     final app = argResults?['app'] as String?;
     final module = argResults?['module'] as String?;
+    final strict = argResults?['strict'] as bool? ?? false;
 
     if (app == null || module == null) {
       throw UsageException(
@@ -83,6 +89,11 @@ class DiCommand extends Command {
       );
     }
 
-    await diGenerator.generate((feature: feature, module: module, app: app));
+    await diGenerator.generate((
+      feature: feature,
+      module: module,
+      app: app,
+      strict: strict,
+    ));
   }
 }

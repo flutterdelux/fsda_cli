@@ -23,7 +23,7 @@ class ComposeGenerator extends BaseGenerator<void, ComposeArgs> {
 
   @override
   Future<void> generate(ComposeArgs args) async {
-    // Backward-compatible default behavior for legacy compose command usage.
+    // Default direct generator entrypoint maps to compose-main.
     await composeMain(args);
   }
 
@@ -36,6 +36,7 @@ class ComposeGenerator extends BaseGenerator<void, ComposeArgs> {
       slice: args.slice,
       targetPage: args.targetPage,
       pageMode: ComposePageMode.main,
+      strict: args.strict,
     ));
     _logComposeDone();
   }
@@ -49,6 +50,7 @@ class ComposeGenerator extends BaseGenerator<void, ComposeArgs> {
       slice: args.slice,
       targetPage: args.targetPage,
       pageMode: ComposePageMode.form,
+      strict: args.strict,
     ));
     _logComposeDone();
   }

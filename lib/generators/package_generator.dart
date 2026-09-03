@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 
 import '../generated/package_bundle.dart';
 import '../services/bundle_service.dart';
+import '../services/operation_report_service.dart';
 import '../services/process_service.dart';
 import 'base_generator.dart';
 
@@ -22,6 +23,8 @@ class PackageGenerator extends BaseGenerator<bool, String> {
 
   @override
   Future<bool> generate(String packageName) async {
+    final report = OperationReportService();
+
     if (packageName.isEmpty) {
       logger.error('Package name is required');
       return false;
@@ -56,13 +59,36 @@ class PackageGenerator extends BaseGenerator<bool, String> {
       );
       if (!templateSuccess) return false;
 
+      final createdFiles = await _collectFilesRecursively(targetPath);
+      for (final filePath in createdFiles) {
+        report.addCreated(filePath);
+      }
+
       logger.success(
         'Package $packageName has been successfully created at $targetPath',
       );
+      report.logSummary(logger, operationLabel: 'fsda add-pckg');
       return true;
     } catch (e) {
       logger.error('$e');
       return false;
     }
+  }
+
+  Future<List<String>> _collectFilesRecursively(String rootPath) async {
+    final rootDir = Directory(rootPath);
+    if (!await rootDir.exists()) {
+      return const <String>[];
+    }
+
+    final files = <String>[];
+    await for (final entity in rootDir.list(recursive: true)) {
+      if (entity is File) {
+        files.add(entity.path);
+      }
+    }
+
+    files.sort();
+    return files;
   }
 }

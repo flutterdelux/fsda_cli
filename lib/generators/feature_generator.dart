@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import '../constants/cli_info.dart';
 import '../enums/data_source_mode.dart';
 import '../generated/bricks/feature_bundle.dart';
+import '../services/operation_report_service.dart';
 import 'base_generator.dart';
 
 const _postHooks = ['flutter gen-l10n'];
@@ -30,6 +31,7 @@ class FeatureGenerator
     final feature = args.feature;
     final module = args.module;
     final dataSourceMode = args.dataSourceMode;
+    final report = OperationReportService();
 
     final barrelFilePath = p.join(
       Directory.current.path,
@@ -96,16 +98,23 @@ class FeatureGenerator
         featureName: feature,
       );
 
-      await _injectFeatureNotFoundContracts(
+      final injectedErrorContracts = await _injectFeatureNotFoundContracts(
         moduleName: module,
         featureName: feature,
       );
+      for (final filePath in injectedErrorContracts) {
+        report.addInjected(filePath);
+      }
 
-      final arbInjected = await _injectArbBoundary(
+      final arbTouchedPaths = await _injectArbBoundary(
         moduleName: module,
         featureName: feature,
       );
-      if (arbInjected) {
+      for (final filePath in arbTouchedPaths) {
+        report.addInjected(filePath);
+      }
+
+      if (arbTouchedPaths.isNotEmpty) {
         final progress = logger.progress('Running post-hooks for "$feature"');
         await hookService!.runHook(
           hooks: _postHooks,
@@ -114,11 +123,23 @@ class FeatureGenerator
         progress.complete('Completed post-hooks for "$feature"');
       }
 
-      await _updateModuleBarrel(
+      final moduleBarrelChanged = await _updateModuleBarrel(
         moduleBarrelPath: barrelFilePath,
-        moduleSnake: module,
         featureSnake: feature,
       );
+
+      if (moduleBarrelChanged) {
+        report.addUpdated(barrelFilePath);
+      } else {
+        report.addSkipped(barrelFilePath);
+      }
+
+      final createdFiles = await _collectFilesRecursively(targetDir.path);
+      for (final filePath in createdFiles) {
+        report.addCreated(filePath);
+      }
+
+      report.logSummary(logger, operationLabel: 'fsda gen-feature');
     } catch (e) {
       logger.error('$e');
       return;
@@ -131,6 +152,7 @@ class FeatureGenerator
     final feature = args.feature;
     final module = args.module;
     final dataSourceMode = args.dataSourceMode;
+    final report = OperationReportService();
 
     final targetDir = Directory(
       p.join(
@@ -191,9 +213,23 @@ class FeatureGenerator
         featureName: feature,
       );
 
+      final barrelPath = p.join(targetDir.path, '${feature}_feature.dart');
+      if (await File(barrelPath).exists()) {
+        report.addUpdated(barrelPath);
+      }
+
+      for (final filePath in syncResult.addedPaths) {
+        report.addCreated(filePath);
+      }
+
+      for (final filePath in syncResult.keptPaths) {
+        report.addSkipped(filePath);
+      }
+
       progress.complete(
         'Baseline refresh completed. Added ${syncResult.addedCount} missing file(s), kept ${syncResult.keptCount} existing file(s).',
       );
+      report.logSummary(logger, operationLabel: 'fsda regen-feature');
     } catch (e) {
       logger.error('$e');
       return;
@@ -202,6 +238,23 @@ class FeatureGenerator
         await tempDir.delete(recursive: true);
       }
     }
+  }
+
+  Future<List<String>> _collectFilesRecursively(String rootPath) async {
+    final rootDir = Directory(rootPath);
+    if (!await rootDir.exists()) {
+      return const <String>[];
+    }
+
+    final files = <String>[];
+    await for (final entity in rootDir.list(recursive: true)) {
+      if (entity is File) {
+        files.add(entity.path);
+      }
+    }
+
+    files.sort();
+    return files;
   }
 
   Future<void> _applyDataSourceMode({
@@ -395,16 +448,31 @@ class FeatureGenerator
     }
   }
 
-  Future<({int addedCount, int keptCount})> _copyMissingFiles({
+  Future<
+    ({
+      int addedCount,
+      int keptCount,
+      List<String> addedPaths,
+      List<String> keptPaths,
+    })
+  >
+  _copyMissingFiles({
     required String sourceRoot,
     required String targetRoot,
   }) async {
     var addedCount = 0;
     var keptCount = 0;
+    final addedPaths = <String>[];
+    final keptPaths = <String>[];
 
     final sourceDir = Directory(sourceRoot);
     if (!await sourceDir.exists()) {
-      return (addedCount: addedCount, keptCount: keptCount);
+      return (
+        addedCount: addedCount,
+        keptCount: keptCount,
+        addedPaths: addedPaths,
+        keptPaths: keptPaths,
+      );
     }
 
     await for (final entity in sourceDir.list(recursive: true)) {
@@ -415,15 +483,22 @@ class FeatureGenerator
 
       if (await targetFile.exists()) {
         keptCount++;
+        keptPaths.add(targetFile.path);
         continue;
       }
 
       await targetFile.parent.create(recursive: true);
       await entity.copy(targetFile.path);
       addedCount++;
+      addedPaths.add(targetFile.path);
     }
 
-    return (addedCount: addedCount, keptCount: keptCount);
+    return (
+      addedCount: addedCount,
+      keptCount: keptCount,
+      addedPaths: addedPaths,
+      keptPaths: keptPaths,
+    );
   }
 
   Future<void> _syncFeatureBarrelDataExports({
@@ -517,22 +592,31 @@ class FeatureGenerator
     await file.writeAsString('${filtered.join('\n')}\n');
   }
 
-  Future<void> _updateModuleBarrel({
+  Future<bool> _updateModuleBarrel({
     required String moduleBarrelPath,
-    required String moduleSnake,
     required String featureSnake,
   }) async {
     if (fileService == null) {
       logger.error('FileService is required to update module barrel file');
-      return;
+      return false;
     }
 
     final exportStatement =
         "export 'src/features/$featureSnake/${featureSnake}_feature.dart';";
 
-    return fileService!.updateFile(
+    final moduleBarrelFile = File(moduleBarrelPath);
+    if (!await moduleBarrelFile.exists()) {
+      logger.error('Module barrel file not found at $moduleBarrelPath');
+      return false;
+    }
+
+    final content = await moduleBarrelFile.readAsString();
+    if (content.contains(exportStatement)) {
+      return false;
+    }
+
+    await fileService!.updateFile(
       path: moduleBarrelPath,
-      cancelWhen: (content) => content.contains(exportStatement),
       updateLines: (lines) {
         // find the last export statement for features to insert after it
         final insertIndex = lines.lastIndexWhere(
@@ -546,12 +630,15 @@ class FeatureGenerator
         }
       },
     );
+
+    return true;
   }
 
-  Future<void> _injectFeatureNotFoundContracts({
+  Future<Set<String>> _injectFeatureNotFoundContracts({
     required String moduleName,
     required String featureName,
   }) async {
+    final touchedPaths = <String>{};
     final moduleLib = p.join(
       Directory.current.path,
       'modules',
@@ -589,21 +676,34 @@ class FeatureGenerator
       moduleName: moduleName,
       featureName: featureName,
     );
+    if (injectedException) {
+      touchedPaths.add(exceptionPath);
+    }
+
     final injectedFailure = await _upsertFailureFeatureNotFound(
       path: failurePath,
       featureName: featureName,
     );
+    if (injectedFailure) {
+      touchedPaths.add(failurePath);
+    }
+
     final injectedFailureX = await _upsertFailureXFeatureNotFound(
       path: failureXPath,
       moduleName: moduleName,
       featureName: featureName,
     );
+    if (injectedFailureX) {
+      touchedPaths.add(failureXPath);
+    }
 
     if (injectedException || injectedFailure || injectedFailureX) {
       logger.success(
         'Injected "${featureName.camelCase}NotFound" into shared error contracts for module "$moduleName".',
       );
     }
+
+    return touchedPaths;
   }
 
   Future<bool> _upsertExceptionFeatureNotFound({
@@ -805,10 +905,11 @@ class FeatureGenerator
     return '$bodyTrimRight$suffix\n$indent$caseExpression';
   }
 
-  Future<bool> _injectArbBoundary({
+  Future<Set<String>> _injectArbBoundary({
     required String moduleName,
     required String featureName,
   }) async {
+    final touchedPaths = <String>{};
     final l10nDir = Directory(
       p.join(Directory.current.path, 'modules', moduleName, 'lib', 'l10n'),
     );
@@ -817,7 +918,7 @@ class FeatureGenerator
       logger.info(
         'L10n directory not found in module "$moduleName", skipping ARB injection.',
       );
-      return false;
+      return touchedPaths;
     }
 
     final arbFiles = l10nDir
@@ -826,7 +927,7 @@ class FeatureGenerator
         .where((file) => file.path.endsWith('.arb'))
         .toList();
 
-    if (arbFiles.isEmpty) return false;
+    if (arbFiles.isEmpty) return touchedPaths;
 
     final featureCamel = featureName.camelCase;
     final featurePascal = featureName.pascalCase;
@@ -838,8 +939,6 @@ class FeatureGenerator
     final failureTextKey = 'failure${featurePascal}NotFound';
 
     const encoder = JsonEncoder.withIndent('  ');
-    var hasAnyInjection = false;
-
     for (final file in arbFiles) {
       final fileName = p.basename(file.path);
       try {
@@ -895,16 +994,16 @@ class FeatureGenerator
 
         await file.writeAsString('$prettyJson\n');
         logger.success('Injected ARB boundary for "$featureName" to $fileName');
-        hasAnyInjection = true;
+        touchedPaths.add(file.path);
       } catch (e) {
         logger.error(
           'Failed to inject ARB boundary for "$featureName" in $fileName: $e',
         );
-        return false;
+        return touchedPaths;
       }
     }
 
-    return hasAnyInjection;
+    return touchedPaths;
   }
 
   Map<String, dynamic> _insertArbEntryAfterFirstFailure({

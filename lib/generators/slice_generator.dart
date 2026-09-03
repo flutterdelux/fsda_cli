@@ -20,6 +20,7 @@ import '../generated/bricks/sequence_rpag_bundle.dart';
 import '../generated/bricks/sequence_rs_bundle.dart';
 import '../generated/bricks/sequence_rsp_bundle.dart';
 import '../services/memory_generator_target.dart';
+import '../services/operation_report_service.dart';
 import 'base_generator.dart';
 
 typedef _SequenceSection = ({String imports, String code});
@@ -34,6 +35,7 @@ class SliceGenerator
             String module,
             SequenceCode sequence,
             String method,
+            bool strict,
           })
         > {
   SliceGenerator({
@@ -50,6 +52,7 @@ class SliceGenerator
       String module,
       SequenceCode sequence,
       String method,
+      bool strict,
     })
     args,
   ) async {
@@ -58,6 +61,7 @@ class SliceGenerator
     final moduleName = args.module;
     final sequence = args.sequence;
     final methodName = args.method;
+    final strict = args.strict;
 
     final isMutation = sequence.isMutation;
 
@@ -71,6 +75,7 @@ class SliceGenerator
     );
     final progress = logger.progress('Baking slice "$sliceName" in memory...');
     final memoryGeneratorTarget = MemoryGeneratorTarget();
+    final report = OperationReportService();
 
     try {
       final generator = await MasonGenerator.fromBundle(
@@ -120,10 +125,35 @@ class SliceGenerator
       );
 
       progress.update('Writing standalone slice files to disk...');
-      await fileService!.generateTemplate(
+      final templateWriteResult = await fileService!.generateTemplate(
         path: featureRoot,
         files: standaloneFilesToSave,
+        failOnExisting: strict,
       );
+
+      report.addCreatedTemplateFiles(
+        targetRoot: featureRoot,
+        relativeFiles: templateWriteResult.writtenFiles,
+      );
+      report.addSkippedTemplateFiles(
+        targetRoot: featureRoot,
+        relativeFiles: templateWriteResult.skippedFiles,
+      );
+
+      if (templateWriteResult.skippedCount > 0) {
+        logger.info(
+          'Skipped ${templateWriteResult.skippedCount} existing slice file(s) to prevent overwrite.',
+        );
+
+        if (strict || templateWriteResult.abortedDueToExisting) {
+          logger.error(
+            'Strict mode: generation aborted because some slice files already exist.',
+          );
+          report.logSummary(logger, operationLabel: 'fsda gen-slice');
+          exitCode = 1;
+          return;
+        }
+      }
 
       progress.update('Parsing sequence manifest & weaving checkpoint...');
       final doc = loadYaml(sequenceYamlRaw) as YamlMap;
@@ -152,53 +182,73 @@ class SliceGenerator
       final exportMap = doc['export'] as YamlMap?;
       final postHooks = List<String>.from(doc['post_hooks'] as List? ?? []);
 
-      await _injectDataSourceSection(
+      final remoteContractPath = p.join(
+        featureRoot,
+        'data',
+        'datasources',
+        '${args.feature}_remote_data_source.dart',
+      );
+      final remoteContractChanged = await _injectDataSourceSection(
         section: remoteDsContract,
         sectionName: 'remote_data_source_contract',
-        path: p.join(
-          featureRoot,
-          'data',
-          'datasources',
-          '${args.feature}_remote_data_source.dart',
-        ),
+        path: remoteContractPath,
         isMutation: isMutation,
+        strict: strict,
       );
+      if (remoteContractChanged) {
+        report.addInjected(remoteContractPath);
+      }
 
-      await _injectDataSourceSection(
+      final remoteImplPath = p.join(
+        featureRoot,
+        'data',
+        'datasources',
+        '${args.feature}_remote_data_source_impl.dart',
+      );
+      final remoteImplChanged = await _injectDataSourceSection(
         section: remoteDsImpl,
         sectionName: 'remote_data_source_impl',
-        path: p.join(
-          featureRoot,
-          'data',
-          'datasources',
-          '${args.feature}_remote_data_source_impl.dart',
-        ),
+        path: remoteImplPath,
         isMutation: isMutation,
+        strict: strict,
       );
+      if (remoteImplChanged) {
+        report.addInjected(remoteImplPath);
+      }
 
-      await _injectDataSourceSection(
+      final localContractPath = p.join(
+        featureRoot,
+        'data',
+        'datasources',
+        '${args.feature}_local_data_source.dart',
+      );
+      final localContractChanged = await _injectDataSourceSection(
         section: localDsContract,
         sectionName: 'local_data_source_contract',
-        path: p.join(
-          featureRoot,
-          'data',
-          'datasources',
-          '${args.feature}_local_data_source.dart',
-        ),
+        path: localContractPath,
         isMutation: isMutation,
+        strict: strict,
       );
+      if (localContractChanged) {
+        report.addInjected(localContractPath);
+      }
 
-      await _injectDataSourceSection(
+      final localImplPath = p.join(
+        featureRoot,
+        'data',
+        'datasources',
+        '${args.feature}_local_data_source_impl.dart',
+      );
+      final localImplChanged = await _injectDataSourceSection(
         section: localDsImpl,
         sectionName: 'local_data_source_impl',
-        path: p.join(
-          featureRoot,
-          'data',
-          'datasources',
-          '${args.feature}_local_data_source_impl.dart',
-        ),
+        path: localImplPath,
         isMutation: isMutation,
+        strict: strict,
       );
+      if (localImplChanged) {
+        report.addInjected(localImplPath);
+      }
 
       final repoContractPath = p.join(
         featureRoot,
@@ -206,15 +256,19 @@ class SliceGenerator
         'repositories',
         '${args.feature}_repository.dart',
       );
-      await _injectImports(
+      final repoContractImportChanged = await _injectImports(
         path: repoContractPath,
         imports: repoContract.imports,
       );
-      await _injectCode(
+      final repoContractCodeChanged = await _injectCode(
         path: repoContractPath,
         code: repoContract.code,
         isMutation: isMutation,
+        strict: strict,
       );
+      if (repoContractImportChanged || repoContractCodeChanged) {
+        report.addInjected(repoContractPath);
+      }
 
       final repoImplPath = p.join(
         featureRoot,
@@ -222,19 +276,33 @@ class SliceGenerator
         'repositories',
         '${args.feature}_repository_impl.dart',
       );
-      await _injectImports(path: repoImplPath, imports: repoImpl.imports);
-      await _injectCode(
+      final repoImplImportChanged = await _injectImports(
+        path: repoImplPath,
+        imports: repoImpl.imports,
+      );
+      final repoImplCodeChanged = await _injectCode(
         path: repoImplPath,
         code: repoImpl.code,
         isMutation: isMutation,
+        strict: strict,
       );
+      if (repoImplImportChanged || repoImplCodeChanged) {
+        report.addInjected(repoImplPath);
+      }
 
       if (exportMap != null && exportMap.isNotEmpty) {
         progress.update('Registering export to feature barrel...');
-        await _updateFeatureBarrelStructured(
-          path: p.join(featureRoot, '${featureName}_feature.dart'),
+        final featureBarrelPath = p.join(
+          featureRoot,
+          '${featureName}_feature.dart',
+        );
+        final barrelChanged = await _updateFeatureBarrelStructured(
+          path: featureBarrelPath,
           exportMap: exportMap,
         );
+        if (barrelChanged) {
+          report.addUpdated(featureBarrelPath);
+        }
       }
 
       if (postHooks.isNotEmpty) {
@@ -252,8 +320,10 @@ class SliceGenerator
       progress.complete(
         'Slice "$sliceName" successfully woven into "$featureName" feature! 🧵✨',
       );
+      report.logSummary(logger, operationLabel: 'fsda gen-slice');
     } catch (e) {
       progress.fail('Failed to stitch slice: $e');
+      exitCode = 1;
     }
   }
 
@@ -282,14 +352,15 @@ class SliceGenerator
     );
   }
 
-  Future<void> _injectDataSourceSection({
+  Future<bool> _injectDataSourceSection({
     required _SequenceSection section,
     required String path,
     required String sectionName,
     required bool isMutation,
+    required bool strict,
   }) async {
     if (section.imports.trim().isEmpty && section.code.trim().isEmpty) {
-      return;
+      return false;
     }
 
     if (!await File(path).exists()) {
@@ -298,16 +369,25 @@ class SliceGenerator
       );
     }
 
-    await _injectImports(path: path, imports: section.imports);
-    await _injectCode(path: path, code: section.code, isMutation: isMutation);
+    final importsChanged = await _injectImports(
+      path: path,
+      imports: section.imports,
+    );
+    final codeChanged = await _injectCode(
+      path: path,
+      code: section.code,
+      isMutation: isMutation,
+      strict: strict,
+    );
+    return importsChanged || codeChanged;
   }
 
-  Future<void> _injectImports({
+  Future<bool> _injectImports({
     required String path,
     required String imports,
   }) async {
     final file = File(path);
-    if (!await file.exists()) return;
+    if (!await file.exists()) return false;
 
     final importLines = imports
         .split('\n')
@@ -316,7 +396,7 @@ class SliceGenerator
         .toList();
 
     if (importLines.isEmpty) {
-      return;
+      return false;
     }
 
     String content = await file.readAsString();
@@ -328,7 +408,7 @@ class SliceGenerator
         .toList();
 
     if (missingImports.isEmpty) {
-      return;
+      return false;
     }
 
     final lastImportIndex = lines.lastIndexWhere(
@@ -347,19 +427,38 @@ class SliceGenerator
 
     content = '${_normalizeBlankLines(lines.join('\n')).trimRight()}\n';
     await file.writeAsString(content);
+    return true;
   }
 
-  Future<void> _injectCode({
+  Future<bool> _injectCode({
     required String path,
     required String code,
     required bool isMutation,
+    required bool strict,
   }) async {
-    if (code.trim().isEmpty) return;
+    if (code.trim().isEmpty) return false;
 
     final file = File(path);
-    if (!await file.exists()) return;
+    if (!await file.exists()) return false;
 
     String content = await file.readAsString();
+
+    final declarationLine = _extractDeclarationLine(code);
+    if (declarationLine != null &&
+        _containsLineLike(content, declarationLine)) {
+      logger.info(
+        'Skipping code injection in $path because declaration already exists.',
+      );
+      return false;
+    }
+
+    if (_containsSnippet(content, code)) {
+      logger.info(
+        'Skipping code injection in $path because snippet already exists.',
+      );
+      return false;
+    }
+
     final targetCheckpoint = isMutation
         ? CliInfo.mutationCheckpoint
         : CliInfo.retrievalCheckpoint;
@@ -374,13 +473,19 @@ class SliceGenerator
       );
     } else {
       // Scenario B: Checkpoint comment missing (removed by user)
+      if (strict) {
+        throw Exception(
+          'Strict mode: checkpoint "$targetCheckpoint" not found in $path. Refusing fallback injection before class closing brace.',
+        );
+      }
+
       final closingOffset = _findClassClosingBraceAST(content);
 
       if (closingOffset == -1) {
         logger.error(
           'Failed to find class closing brace in $path. Cannot inject code.',
         );
-        return;
+        return false;
       }
 
       final beforeBrace = content.substring(0, closingOffset);
@@ -390,18 +495,61 @@ class SliceGenerator
     }
 
     await file.writeAsString(content);
+    return true;
   }
 
-  Future<void> _updateFeatureBarrelStructured({
+  String? _extractDeclarationLine(String code) {
+    for (final rawLine in code.split('\n')) {
+      final line = rawLine.trim();
+      if (line.isEmpty || line.startsWith('@')) {
+        continue;
+      }
+
+      return line;
+    }
+
+    return null;
+  }
+
+  bool _containsLineLike(String source, String candidateLine) {
+    final normalized = candidateLine.trim();
+    if (normalized.isEmpty) {
+      return false;
+    }
+
+    final pattern = RegExp(
+      '^\\s*${RegExp.escape(normalized)}\\s*\$',
+      multiLine: true,
+    );
+
+    return pattern.hasMatch(source);
+  }
+
+  bool _containsSnippet(String source, String snippet) {
+    final normalizedSnippet = _normalizeForComparison(snippet);
+    if (normalizedSnippet.isEmpty) {
+      return false;
+    }
+
+    final normalizedSource = _normalizeForComparison(source);
+    return normalizedSource.contains(normalizedSnippet);
+  }
+
+  String _normalizeForComparison(String value) {
+    return value.replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
+  Future<bool> _updateFeatureBarrelStructured({
     required String path,
     required YamlMap exportMap,
   }) async {
     final file = File(path);
-    if (!await file.exists()) return;
+    if (!await file.exists()) return false;
 
     final content = await file.readAsString();
     final lines = content.split('\n');
     final existingStatements = lines.map((line) => line.trim()).toSet();
+    var changed = false;
 
     for (final layer in ['data', 'domain', 'logic', 'ui']) {
       final rawExports = exportMap[layer];
@@ -423,9 +571,15 @@ class SliceGenerator
       }
 
       existingStatements.addAll(validExports);
+      changed = true;
+    }
+
+    if (!changed) {
+      return false;
     }
 
     await file.writeAsString('${lines.join('\n')}\n');
+    return true;
   }
 
   List<String> _readExportStatements(dynamic rawExports) {

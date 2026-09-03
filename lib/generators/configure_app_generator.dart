@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 import '../generated/package_bundle.dart';
+import '../services/operation_report_service.dart';
 import '../services/process_service.dart';
 import 'base_generator.dart';
 import 'configure_app/app_dependency_installer.dart';
@@ -35,13 +36,28 @@ class ConfigureAppGenerator extends BaseGenerator<void, String> {
 
   @override
   Future<void> generate(String appName) async {
+    final report = OperationReportService();
     final appPath = p.join(Directory.current.path, 'apps', appName);
     final appPubspecFile = File(p.join(appPath, 'pubspec.yaml'));
+    final coreDiPath = p.join(appPath, 'lib', 'core', 'di', 'core_di.dart');
+    final externalDiPath = p.join(
+      appPath,
+      'lib',
+      'core',
+      'di',
+      'external_di.dart',
+    );
+    final externalsDirPath = p.join(appPath, 'lib', 'core', 'externals');
 
     if (!await appPubspecFile.exists()) {
       logger.error('pubspec.yaml not found for app "$appName".');
       return;
     }
+
+    final pubspecBefore = await _fileFingerprint(appPubspecFile.path);
+    final coreDiBefore = await _fileFingerprint(coreDiPath);
+    final externalDiBefore = await _fileFingerprint(externalDiPath);
+    final externalsBefore = await _snapshotFileFingerprints(externalsDirPath);
 
     final templatePackages = packageBundle.keys.toSet();
     final workspacePackages = await _collectWorkspacePackages();
@@ -149,7 +165,37 @@ class ConfigureAppGenerator extends BaseGenerator<void, String> {
       );
     }
 
+    final pubspecAfter = await _fileFingerprint(appPubspecFile.path);
+    final coreDiAfter = await _fileFingerprint(coreDiPath);
+    final externalDiAfter = await _fileFingerprint(externalDiPath);
+    final externalsAfter = await _snapshotFileFingerprints(externalsDirPath);
+
+    _appendFileDiff(
+      report: report,
+      path: appPubspecFile.path,
+      before: pubspecBefore,
+      after: pubspecAfter,
+    );
+    _appendFileDiff(
+      report: report,
+      path: coreDiPath,
+      before: coreDiBefore,
+      after: coreDiAfter,
+    );
+    _appendFileDiff(
+      report: report,
+      path: externalDiPath,
+      before: externalDiBefore,
+      after: externalDiAfter,
+    );
+    _appendSnapshotDiff(
+      report: report,
+      before: externalsBefore,
+      after: externalsAfter,
+    );
+
     logger.success('App "$appName" package dependencies are synchronized.');
+    report.logSummary(logger, operationLabel: 'fsda configure-app');
   }
 
   Future<Set<String>> _collectWorkspacePackages() async {
@@ -164,5 +210,92 @@ class ConfigureAppGenerator extends BaseGenerator<void, String> {
     }
 
     return packageNames;
+  }
+
+  Future<Map<String, int>> _snapshotFileFingerprints(String rootPath) async {
+    final rootDir = Directory(rootPath);
+    if (!await rootDir.exists()) {
+      return const <String, int>{};
+    }
+
+    final snapshot = <String, int>{};
+    await for (final entity in rootDir.list(recursive: true)) {
+      if (entity is! File) {
+        continue;
+      }
+
+      final bytes = await entity.readAsBytes();
+      snapshot[entity.path] = _fingerprintBytes(bytes);
+    }
+
+    return snapshot;
+  }
+
+  Future<int?> _fileFingerprint(String path) async {
+    final file = File(path);
+    if (!await file.exists()) {
+      return null;
+    }
+
+    final bytes = await file.readAsBytes();
+    return _fingerprintBytes(bytes);
+  }
+
+  void _appendFileDiff({
+    required OperationReportService report,
+    required String path,
+    required int? before,
+    required int? after,
+  }) {
+    if (before == null && after == null) {
+      return;
+    }
+
+    if (before == null && after != null) {
+      report.addCreated(path);
+      return;
+    }
+
+    if (before != null && after == null) {
+      report.addRemoved(path);
+      return;
+    }
+
+    if (before != after) {
+      report.addUpdated(path);
+    }
+  }
+
+  void _appendSnapshotDiff({
+    required OperationReportService report,
+    required Map<String, int> before,
+    required Map<String, int> after,
+  }) {
+    for (final entry in after.entries) {
+      final previous = before[entry.key];
+      if (previous == null) {
+        report.addCreated(entry.key);
+        continue;
+      }
+
+      if (previous != entry.value) {
+        report.addUpdated(entry.key);
+      }
+    }
+
+    for (final removedPath in before.keys) {
+      if (!after.containsKey(removedPath)) {
+        report.addRemoved(removedPath);
+      }
+    }
+  }
+
+  int _fingerprintBytes(List<int> bytes) {
+    var hash = 17;
+    for (final byte in bytes) {
+      hash = 37 * hash + byte;
+    }
+
+    return hash;
   }
 }

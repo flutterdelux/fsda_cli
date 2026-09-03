@@ -5,6 +5,7 @@ import 'package:yaml/yaml.dart';
 
 import '../generated/package_bundle.dart';
 import '../services/logger_service.dart';
+import '../services/operation_report_service.dart';
 import 'package_generator.dart';
 
 class ConfigureGenerator {
@@ -17,6 +18,8 @@ class ConfigureGenerator {
   });
 
   Future<void> generate() async {
+    final report = OperationReportService();
+
     try {
       final configFile = File('fsda.yaml');
       if (!await configFile.exists()) {
@@ -62,8 +65,10 @@ class ConfigureGenerator {
       final desiredPackages = configuredPackages.intersection(templatePackages);
 
       final packagesDir = Directory(p.join(Directory.current.path, 'packages'));
+      final beforeSnapshot = await _snapshotFileFingerprints(packagesDir.path);
       if (!await packagesDir.exists()) {
         await packagesDir.create(recursive: true);
+        report.addCreated(packagesDir.path);
       }
 
       final existingPackages = <String>{};
@@ -109,9 +114,69 @@ class ConfigureGenerator {
         return;
       }
 
+      final afterSnapshot = await _snapshotFileFingerprints(packagesDir.path);
+      _appendSnapshotDiff(
+        report: report,
+        before: beforeSnapshot,
+        after: afterSnapshot,
+      );
+
       logger.success('Workspace packages have been synchronized successfully.');
+      report.logSummary(logger, operationLabel: 'fsda configure');
     } catch (e) {
       logger.error('Failed to read fsda.yaml configuration: $e');
     }
+  }
+
+  Future<Map<String, int>> _snapshotFileFingerprints(String rootPath) async {
+    final rootDir = Directory(rootPath);
+    if (!await rootDir.exists()) {
+      return const <String, int>{};
+    }
+
+    final snapshot = <String, int>{};
+    await for (final entity in rootDir.list(recursive: true)) {
+      if (entity is! File) {
+        continue;
+      }
+
+      final bytes = await entity.readAsBytes();
+      snapshot[entity.path] = _fingerprintBytes(bytes);
+    }
+
+    return snapshot;
+  }
+
+  void _appendSnapshotDiff({
+    required OperationReportService report,
+    required Map<String, int> before,
+    required Map<String, int> after,
+  }) {
+    for (final entry in after.entries) {
+      final previous = before[entry.key];
+      if (previous == null) {
+        report.addCreated(entry.key);
+        continue;
+      }
+
+      if (previous != entry.value) {
+        report.addUpdated(entry.key);
+      }
+    }
+
+    for (final removedPath in before.keys) {
+      if (!after.containsKey(removedPath)) {
+        report.addRemoved(removedPath);
+      }
+    }
+  }
+
+  int _fingerprintBytes(List<int> bytes) {
+    var hash = 17;
+    for (final byte in bytes) {
+      hash = 37 * hash + byte;
+    }
+
+    return hash;
   }
 }

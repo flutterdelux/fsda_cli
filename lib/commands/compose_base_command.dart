@@ -15,7 +15,13 @@ abstract class ComposeBaseCommand extends Command<void> {
       ..addOption('feature', abbr: 'f', help: 'Target feature name.')
       ..addOption('module', abbr: 'm', help: 'Target module name.')
       ..addOption('app', abbr: 'a', help: 'Target app name.')
-      ..addOption('page', abbr: 'p', help: 'Target page name in snake_case.');
+      ..addOption('page', abbr: 'p', help: 'Target page name in snake_case.')
+      ..addFlag(
+        'strict',
+        negatable: false,
+        help:
+            'Fail when command would skip generation due existing files or requires implicit scaffold creation.',
+      );
   }
 
   Future<void> runValidated(ComposeArgs args);
@@ -37,6 +43,7 @@ abstract class ComposeBaseCommand extends Command<void> {
     final module = argResults?['module'] as String?;
     final app = argResults?['app'] as String?;
     final targetPage = argResults?['page'] as String?;
+    final strict = argResults?['strict'] as bool? ?? false;
 
     final missingFlags = <String>[];
     if (feature == null || feature.isEmpty) missingFlags.add('--feature');
@@ -131,6 +138,7 @@ abstract class ComposeBaseCommand extends Command<void> {
       feature: feature,
       slice: slice,
       targetPage: targetPage,
+      strict: strict,
     ));
   }
 }

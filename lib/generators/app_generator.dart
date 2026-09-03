@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 
 import '../constants/cli_messages.dart';
 import '../generated/bricks/app_bundle.dart';
+import '../services/operation_report_service.dart';
 import '../services/process_service.dart';
 import '../services/sdk_service.dart';
 import 'base_generator.dart';
@@ -42,6 +43,7 @@ class AppGenerator extends BaseGenerator<void, ({String app})> {
   @override
   Future<void> generate(({String app}) args) async {
     final app = args.app;
+    final report = OperationReportService();
 
     final targetDir = Directory(p.join(Directory.current.path, 'apps', app));
 
@@ -91,11 +93,34 @@ class AppGenerator extends BaseGenerator<void, ({String app})> {
       );
       if (!bundleSuccess) return;
 
+      final createdFiles = await _collectFilesRecursively(targetDir.path);
+      for (final filePath in createdFiles) {
+        report.addCreated(filePath);
+      }
+
       logger.success('App "$app" created successfully');
+      report.logSummary(logger, operationLabel: 'fsda gen-app');
 
       logger.log(CliMessages.appGeneratedNextSteps(app));
     } catch (e) {
       logger.error(e.toString());
     }
+  }
+
+  Future<List<String>> _collectFilesRecursively(String rootPath) async {
+    final rootDir = Directory(rootPath);
+    if (!await rootDir.exists()) {
+      return const <String>[];
+    }
+
+    final files = <String>[];
+    await for (final entity in rootDir.list(recursive: true)) {
+      if (entity is File) {
+        files.add(entity.path);
+      }
+    }
+
+    files.sort();
+    return files;
   }
 }

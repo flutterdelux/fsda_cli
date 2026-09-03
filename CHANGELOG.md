@@ -1,3 +1,13 @@
+## 1.0.16
+
+- refactor:
+    - explicit log generator
+    - snackbar extension with close action
+    - in AppSection (app_ui), content renamed to child
+    - position of certain elements in the UI for composition page
+        - functional method above build method
+        - widget methods below build method
+
 ## 1.0.15
 
 - fix:

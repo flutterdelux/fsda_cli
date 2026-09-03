@@ -18,7 +18,7 @@ class ComposeFormCommand extends ComposeBaseCommand {
 
   @override
   String get invocation =>
-      'fsda compose-form <slice> -f <feature> -m <module> -a <app> -p <target_page>';
+      'fsda compose-form <slice> -f <feature> -m <module> -a <app> -p <target_page> [--strict]';
 
   @override
   Future<void> runValidated(args) async {

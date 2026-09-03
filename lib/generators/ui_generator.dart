@@ -15,13 +15,20 @@ import '../generated/bricks/ui_pag_bundle.dart';
 import '../generated/bricks/ui_pmi_bundle.dart';
 import '../generated/bricks/ui_sec_bundle.dart';
 import '../services/memory_generator_target.dart';
+import '../services/operation_report_service.dart';
 import 'base_generator.dart';
 
 class UiGenerator
     extends
         BaseGenerator<
           void,
-          ({String slice, String feature, String module, UiCode ui})
+          ({
+            String slice,
+            String feature,
+            String module,
+            UiCode ui,
+            bool strict,
+          })
         > {
   UiGenerator({
     required super.logger,
@@ -31,12 +38,14 @@ class UiGenerator
 
   @override
   Future<void> generate(
-    ({String slice, String feature, String module, UiCode ui}) args,
+    ({String slice, String feature, String module, UiCode ui, bool strict})
+    args,
   ) async {
     final sliceName = args.slice;
     final featureName = args.feature;
     final moduleName = args.module;
     final uiCode = args.ui;
+    final strict = args.strict;
 
     if (fileService == null) {
       logger.error('FileService is required for weaving ui template.');
@@ -49,6 +58,7 @@ class UiGenerator
 
     final progress = logger.progress('Baking UI "$sliceName" in memory...');
     final memoryGeneratorTarget = MemoryGeneratorTarget();
+    final report = OperationReportService();
 
     try {
       final generator = await MasonGenerator.fromBundle(
@@ -95,10 +105,35 @@ class UiGenerator
       );
 
       progress.update('Writing standalone UI files to disk...');
-      await fileService!.generateTemplate(
+      final templateWriteResult = await fileService!.generateTemplate(
         path: featureRoot,
         files: standaloneFilesToSave,
+        failOnExisting: strict,
       );
+
+      report.addCreatedTemplateFiles(
+        targetRoot: featureRoot,
+        relativeFiles: templateWriteResult.writtenFiles,
+      );
+      report.addSkippedTemplateFiles(
+        targetRoot: featureRoot,
+        relativeFiles: templateWriteResult.skippedFiles,
+      );
+
+      if (templateWriteResult.skippedCount > 0) {
+        logger.info(
+          'Skipped ${templateWriteResult.skippedCount} existing UI file(s) to prevent overwrite.',
+        );
+
+        if (strict || templateWriteResult.abortedDueToExisting) {
+          logger.error(
+            'Strict mode: generation aborted because some UI files already exist.',
+          );
+          report.logSummary(logger, operationLabel: 'fsda gen-ui');
+          exitCode = 1;
+          return;
+        }
+      }
 
       progress.update('Parsing UI manifest...');
       final doc = loadYaml(uiYamlRaw) as YamlMap;
@@ -110,15 +145,29 @@ class UiGenerator
 
       if (exportMap != null && exportMap.isNotEmpty) {
         progress.update('Registering UI exports to feature barrel...');
-        await _updateFeatureBarrelStructured(
-          path: p.join(featureRoot, '${featureName}_feature.dart'),
+        final featureBarrelPath = p.join(
+          featureRoot,
+          '${featureName}_feature.dart',
+        );
+        final barrelChanged = await _updateFeatureBarrelStructured(
+          path: featureBarrelPath,
           exportMap: exportMap,
         );
+        if (barrelChanged) {
+          report.addUpdated(featureBarrelPath);
+        }
       }
 
       if (arbEntries.isNotEmpty) {
         progress.update('Injecting ARB entries to all .arb files...');
-        await _injectArbEntries(moduleName: moduleName, entries: arbEntries);
+        final touchedArbFiles = await _injectArbEntries(
+          moduleName: moduleName,
+          entries: arbEntries,
+        );
+
+        for (final arbFilePath in touchedArbFiles) {
+          report.addInjected(arbFilePath);
+        }
       }
 
       if (postHooks.isNotEmpty) {
@@ -136,21 +185,24 @@ class UiGenerator
       progress.complete(
         'UI "$sliceName" successfully woven into "$featureName" feature! 🎨',
       );
+      report.logSummary(logger, operationLabel: 'fsda gen-ui');
     } catch (e) {
       progress.fail('Failed to weave UI template: $e');
+      exitCode = 1;
     }
   }
 
-  Future<void> _updateFeatureBarrelStructured({
+  Future<bool> _updateFeatureBarrelStructured({
     required String path,
     required YamlMap exportMap,
   }) async {
     final file = File(path);
-    if (!await file.exists()) return;
+    if (!await file.exists()) return false;
 
     final content = await file.readAsString();
     final lines = content.split('\n');
     final existingStatements = lines.map((line) => line.trim()).toSet();
+    var changed = false;
 
     for (final layer in ['data', 'domain', 'logic', 'ui']) {
       final rawExports = exportMap[layer];
@@ -172,9 +224,15 @@ class UiGenerator
       }
 
       existingStatements.addAll(validExports);
+      changed = true;
+    }
+
+    if (!changed) {
+      return false;
     }
 
     await file.writeAsString('${lines.join('\n')}\n');
+    return true;
   }
 
   List<String> _readExportStatements(dynamic rawExports) {
@@ -242,10 +300,11 @@ class UiGenerator
     }
   }
 
-  Future<void> _injectArbEntries({
+  Future<Set<String>> _injectArbEntries({
     required String moduleName,
     required Map<String, dynamic> entries,
   }) async {
+    final touchedPaths = <String>{};
     final l10nDir = Directory(
       p.join(Directory.current.path, 'modules', moduleName, 'lib', 'l10n'),
     );
@@ -254,7 +313,7 @@ class UiGenerator
       logger.info(
         'L10n directory not found in module "$moduleName", skipping arb injection.',
       );
-      return;
+      return touchedPaths;
     }
 
     final arbFiles = l10nDir
@@ -267,7 +326,7 @@ class UiGenerator
       logger.info(
         'No .arb files found in module "$moduleName", skipping arb injection.',
       );
-      return;
+      return touchedPaths;
     }
 
     const encoder = JsonEncoder.withIndent('  ');
@@ -302,6 +361,7 @@ class UiGenerator
       touchedFiles += 1;
       totalAdded += added;
       await arbFile.writeAsString('${encoder.convert(arbMap)}\n');
+      touchedPaths.add(arbFile.path);
       final fileName = p.basename(arbFile.path);
       logger.success(
         'Injected $added ARB entr${added == 1 ? 'y' : 'ies'} into $fileName',
@@ -312,12 +372,13 @@ class UiGenerator
       logger.info(
         'ARB entries already exist in all module .arb files for "$moduleName".',
       );
-      return;
+      return touchedPaths;
     }
 
     logger.success(
       'Injected total $totalAdded ARB entr${totalAdded == 1 ? 'y' : 'ies'} across $touchedFiles .arb file${touchedFiles == 1 ? '' : 's'}.',
     );
+    return touchedPaths;
   }
 
   MasonBundle _resolveUiBundle(UiCode uiCode) {

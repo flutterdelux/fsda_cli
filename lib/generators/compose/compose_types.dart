@@ -4,4 +4,5 @@ typedef ComposeArgs = ({
   String feature,
   String slice,
   String targetPage,
+  bool strict,
 });

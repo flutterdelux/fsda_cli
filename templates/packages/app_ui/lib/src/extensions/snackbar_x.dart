@@ -6,37 +6,52 @@ import 'color_scheme_x.dart';
 
 /// Extension on [BuildContext] to provide a unified way to show system feedbacks.
 extension SnackbarX on BuildContext {
-  void showNetralSnackbar(String message, {bool isFloating = true}) {
+  void showNetralSnackbar(
+    String message, {
+    bool isFloating = true,
+    bool closeAction = false,
+  }) {
     final colorScheme = Theme.of(this).colorScheme;
     _show(
       message: message,
       backgroundColor: colorScheme.info,
       textColor: colorScheme.onInfo,
       isFloating: isFloating,
+      closeAction: closeAction,
     );
   }
 
   /// Shows a red-themed snackbar for error messages.
-  void showErrorSnackbar(String message, {bool isFloating = true}) {
+  void showErrorSnackbar(
+    String message, {
+    bool isFloating = true,
+    bool closeAction = false,
+  }) {
     final colorScheme = Theme.of(this).colorScheme;
     _show(
       message: message,
       backgroundColor: colorScheme.error,
       textColor: colorScheme.onError,
       isFloating: isFloating,
+      closeAction: closeAction,
     );
   }
 
   /// Shows a green-themed snackbar for success messages.
   ///
   /// Utilizes the [ColorSchemeX] extension for automatic brightness handling.
-  void showSuccessSnackbar(String message, {bool isFloating = true}) {
+  void showSuccessSnackbar(
+    String message, {
+    bool isFloating = true,
+    bool closeAction = false,
+  }) {
     final colorScheme = Theme.of(this).colorScheme;
     _show(
       message: message,
       backgroundColor: colorScheme.success,
       textColor: colorScheme.onSuccess,
       isFloating: isFloating,
+      closeAction: closeAction,
     );
   }
 
@@ -45,6 +60,7 @@ extension SnackbarX on BuildContext {
     required Color backgroundColor,
     required Color textColor,
     bool isFloating = true,
+    bool closeAction = false,
   }) {
     final textTheme = Theme.of(this).textTheme;
 
@@ -66,6 +82,7 @@ extension SnackbarX on BuildContext {
         shape: AppBorderTheme.shape,
         margin: isFloating ? const EdgeInsets.all(AppSpacing.md) : null,
         duration: const Duration(seconds: 3),
+        showCloseIcon: closeAction,
       ),
     );
   }

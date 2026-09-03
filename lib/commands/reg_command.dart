@@ -12,7 +12,14 @@ class RegCommand extends Command {
     required this.regModuleGenerator,
     required this.workspaceService,
   }) {
-    argParser.addOption('app', abbr: 'a', help: 'The name of the target app.');
+    argParser
+      ..addOption('app', abbr: 'a', help: 'The name of the target app.')
+      ..addFlag(
+        'strict',
+        negatable: false,
+        help:
+            'Fail when command would skip generation due existing files or unsafe injection targets.',
+      );
   }
 
   @override
@@ -22,7 +29,7 @@ class RegCommand extends Command {
   final String description = 'Compose module, feature to target app.';
 
   @override
-  String get invocation => 'fsda reg <module> -a <app>';
+  String get invocation => 'fsda reg <module> -a <app> [--strict]';
 
   @override
   Future<void> run() async {
@@ -44,6 +51,7 @@ class RegCommand extends Command {
     }
 
     final appName = argResults?['app'] as String?;
+    final strict = argResults?['strict'] as bool? ?? false;
     if (appName == null || appName.isEmpty) {
       throw UsageException('Missing required flag: --app (-a).', usage);
     }
@@ -67,6 +75,10 @@ class RegCommand extends Command {
       );
     }
 
-    await regModuleGenerator.generate((app: appName, module: module));
+    await regModuleGenerator.generate((
+      app: appName,
+      module: module,
+      strict: strict,
+    ));
   }
 }

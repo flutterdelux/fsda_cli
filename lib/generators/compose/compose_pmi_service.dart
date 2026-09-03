@@ -4,6 +4,7 @@ import 'package:mason/mason.dart';
 import 'package:path/path.dart' as p;
 
 import '../../services/logger_service.dart';
+import '../../services/operation_report_service.dart';
 import 'compose_types.dart';
 
 class ComposePmiService {
@@ -12,6 +13,8 @@ class ComposePmiService {
   const ComposePmiService({required this.logger});
 
   Future<void> generate(ComposeArgs args, {bool sectionMode = false}) async {
+    final report = OperationReportService();
+    final strict = args.strict;
     final root = Directory.current.path;
     final moduleFeaturePath = p.join(
       root,
@@ -63,6 +66,19 @@ class ComposePmiService {
     final pageFile = File(pagePath);
     var createdScaffold = false;
     if (!await pageFile.exists()) {
+      if (strict) {
+        logger.error(
+          'Strict mode: generation aborted because target page does not exist and would require scaffold creation.',
+        );
+        report.addSkipped(pagePath);
+        report.logSummary(
+          logger,
+          operationLabel: sectionMode ? 'fsda compose-sec' : 'fsda compose-pmi',
+        );
+        exitCode = 1;
+        return;
+      }
+
       final scaffoldPageCode = _buildEmptyScaffoldPageCode(
         appLibPath: appLibPath,
         pageClass: pageClass,
@@ -75,9 +91,11 @@ class ComposePmiService {
         '${_normalizeBlankLines(scaffoldPageCode).trimRight()}\n',
       );
       createdScaffold = true;
+      report.addCreated(pagePath);
     }
 
     var source = await pageFile.readAsString();
+    final initialPageSource = source;
 
     final diImport = p
         .relative(p.join(appLibPath, 'core', 'di', 'di.dart'), from: pageDir)
@@ -269,9 +287,18 @@ class ComposePmiService {
       );
     }
 
-    await pageFile.writeAsString(
-      '${_normalizeBlankLines(source).trimRight()}\n',
-    );
+    final nextPageSource = '${_normalizeBlankLines(source).trimRight()}\n';
+    final previousPageSource =
+        '${_normalizeBlankLines(initialPageSource).trimRight()}\n';
+
+    if (nextPageSource != previousPageSource) {
+      await pageFile.writeAsString(nextPageSource);
+      if (!createdScaffold) {
+        report.addInjected(pagePath);
+      }
+    } else if (!createdScaffold) {
+      report.addSkipped(pagePath);
+    }
 
     final routeFile = File(routeFilePath);
     if (!await routeFile.exists()) {
@@ -280,13 +307,19 @@ class ComposePmiService {
       return;
     }
 
-    await _syncRouteFile(
+    final routeUpdated = await _syncRouteFile(
       routeFile: routeFile,
       pagePath: pagePath,
       pageClass: pageClass,
       targetPage: args.targetPage,
       updateBaseBuilder: false,
     );
+
+    if (routeUpdated) {
+      report.addUpdated(routeFilePath);
+    } else {
+      report.addSkipped(routeFilePath);
+    }
 
     logger.success(
       '${sectionMode ? 'compose-sec' : 'compose-pmi'} generated for slice "${args.slice}" in feature "${args.feature}" (module: "${args.module}", app: "${args.app}").',
@@ -300,8 +333,20 @@ class ComposePmiService {
       );
       logger.info('Execution trigger method: $executionMethodName(context)');
     }
-    logger.info(
-      'Updated child route + navigation helper: apps/${args.app}/lib/modules/${args.module}/${args.module}_route.dart',
+
+    if (routeUpdated) {
+      logger.info(
+        'Updated child route + navigation helper: apps/${args.app}/lib/modules/${args.module}/${args.module}_route.dart',
+      );
+    } else {
+      logger.info(
+        'Route file already up to date: apps/${args.app}/lib/modules/${args.module}/${args.module}_route.dart',
+      );
+    }
+
+    report.logSummary(
+      logger,
+      operationLabel: sectionMode ? 'fsda compose-sec' : 'fsda compose-pmi',
     );
   }
 
@@ -906,6 +951,17 @@ class ComposePmiService {
     if (methodBlock.trim().isEmpty) return source;
     if (source.contains(signature)) return source;
 
+    final isWidgetMethod =
+        signature.startsWith('Widget ') ||
+        signature.startsWith('Future<Widget> ');
+    if (isWidgetMethod) {
+      final classCloseIndex = source.lastIndexOf('}');
+      if (classCloseIndex == -1) return source;
+
+      final block = '\n\n${methodBlock.trimRight()}\n';
+      return source.replaceRange(classCloseIndex, classCloseIndex, block);
+    }
+
     final overrideMatch = RegExp(r'\n\s*@override').firstMatch(source);
     if (overrideMatch == null) return source;
 
@@ -1131,7 +1187,7 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
 ''';
   }
 
-  Future<void> _syncRouteFile({
+  Future<bool> _syncRouteFile({
     required File routeFile,
     required String pagePath,
     required String pageClass,
@@ -1139,6 +1195,7 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
     required bool updateBaseBuilder,
   }) async {
     var source = await routeFile.readAsString();
+    final before = source;
 
     final routeDir = p.dirname(routeFile.path);
     final relativePageImport = p
@@ -1186,9 +1243,15 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
       );
     }
 
-    await routeFile.writeAsString(
-      '${_normalizeBlankLines(source).trimRight()}\n',
-    );
+    final normalized = '${_normalizeBlankLines(source).trimRight()}\n';
+    final normalizedBefore = '${_normalizeBlankLines(before).trimRight()}\n';
+
+    if (normalized == normalizedBefore) {
+      return false;
+    }
+
+    await routeFile.writeAsString(normalized);
+    return true;
   }
 
   String _syncBaseBuilder({required String source}) {
