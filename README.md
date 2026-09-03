@@ -2,6 +2,7 @@
 
 Feature Slice Driven Architecture CLI for workspace scaffolding and code generation.
 
+
 ## 🚀 Installation
 
 Before installing FSDA CLI, make sure your computer has:

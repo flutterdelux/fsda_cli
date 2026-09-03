@@ -22,4 +22,4 @@ ehthumbs.db
 # Log files
 *.log
 
-docs/
+docs/local-test/

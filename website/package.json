@@ -1,0 +1,31 @@
+{
+    "name": "fsda-cli-docs",
+    "private": true,
+    "version": "1.0.16",
+    "scripts": {
+        "start": "docusaurus start",
+        "build": "docusaurus build",
+        "serve": "docusaurus serve",
+        "clear": "docusaurus clear",
+        "swizzle": "docusaurus swizzle",
+        "docs:version": "docusaurus docs:version",
+        "typecheck": "tsc --noEmit",
+        "deploy": "docusaurus deploy"
+    },
+    "dependencies": {
+        "@docusaurus/core": "^3.9.0",
+        "@docusaurus/preset-classic": "^3.9.0",
+        "clsx": "^2.1.1",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0"
+    },
+    "devDependencies": {
+        "@docusaurus/module-type-aliases": "^3.9.0",
+        "@types/react": "^18.2.55",
+        "@types/react-dom": "^18.2.19",
+        "typescript": "~5.4.0"
+    },
+    "engines": {
+        "node": ">=18.0"
+    }
+}
