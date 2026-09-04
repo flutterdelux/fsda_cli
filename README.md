@@ -15,6 +15,10 @@ Then, run the following command to install FSDA CLI globally:
 dart pub global activate fsda_cli
 ```
 
+## Documentation
+
+For detailed usage instructions and guides, please refer to the [FSDA CLI Documentation](https://flutterdelux.github.io/fsda_cli/).
+
 ## Workspace Rule
 
 Run most commands from workspace root containing fsda.yaml.
