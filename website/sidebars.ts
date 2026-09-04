@@ -19,7 +19,7 @@ const sidebars: SidebarsConfig = {
       ],
     },
     'workflow',
-    'versioning',
+    'releases',
   ],
 };
 

@@ -16,6 +16,7 @@
                 "commands/commands-maintenance"
             ]
         },
-        "workflow"
+        "workflow",
+        "releases"
     ]
 }

@@ -5,13 +5,37 @@ title: Composition Commands
 
 Composition commands integrate generated feature slices into app pages and routes.
 
+## Shared Preconditions
+
+- Run from workspace root.
+- Target module wrapper in app must already exist (`fsda reg <module> -a <app>`).
+- Target feature and slice logic must exist.
+- Module route file `apps/<app>/lib/modules/<module>/<module>_route.dart` must exist.
+
 ## compose-main
 
 ```bash
 fsda compose-main <slice> -f <feature> -m <module> -a <app> -p <target_page> [--strict]
 ```
 
-Creates a main page composition flow and syncs base route + child route.
+Creates a new view-driven page composition and syncs route wiring.
+
+What happens:
+
+- Requires a view under `modules/<module>/lib/src/features/<feature>/ui/<slice>/views`.
+- Generates page file: `apps/<app>/lib/modules/<module>/features/<feature>/pages/<target_page>.dart`.
+- Injects provider/listener wiring based on detected logic class.
+- Updates module route file with base route + child route + navigation helper.
+- Prints affected paths summary.
+
+Rerun behavior:
+
+- If target page already exists, page generation is skipped.
+- Route update runs idempotently.
+
+Strict mode behavior:
+
+- Fails when target page already exists.
 
 ## compose-form
 
@@ -19,7 +43,21 @@ Creates a main page composition flow and syncs base route + child route.
 fsda compose-form <slice> -f <feature> -m <module> -a <app> -p <target_page> [--strict]
 ```
 
-Creates a form-based page composition flow and syncs base route + child route.
+Creates a form-style page composition and syncs route wiring.
+
+What happens:
+
+- Same pipeline as `compose-main`, but generated page scaffold is form-oriented.
+- Updates module route file with base route + child route + navigation helper.
+
+Rerun behavior:
+
+- If target page already exists, page generation is skipped.
+- Route update runs idempotently.
+
+Strict mode behavior:
+
+- Fails when target page already exists.
 
 ## compose-pag
 
@@ -29,13 +67,46 @@ fsda compose-pag <slice> -f <feature> -m <module> -a <app> -p <target_page> [--s
 
 Creates a pagination page composition flow.
 
+What happens:
+
+- Requires view scaffold and pagination content widget from the slice UI.
+- Generates page file in app module feature pages directory.
+- Builds pagination wiring (refresh/loadMore behavior based on detected logic methods/state shape).
+- Updates module route file with base route + child route + navigation helper.
+
+Rerun behavior:
+
+- If target page already exists, page generation is skipped.
+- Route update runs idempotently.
+
+Strict mode behavior:
+
+- Fails when target page already exists.
+
 ## compose-pmi
 
 ```bash
 fsda compose-pmi <slice> -f <feature> -m <module> -a <app> -p <target_page> [--strict]
 ```
 
-Injects popup menu action + required provider/listener/method wiring to target page.
+Injects popup menu action flow into a target page.
+
+What happens:
+
+- Looks for popup menu item widget from slice UI widgets.
+- Injects imports, provider/listener wiring, execution method, and popup action handler into target page.
+- If target page does not exist:
+	- non-strict mode creates a minimal scaffold page first, then injects
+	- strict mode fails
+- Updates module route file with child route + navigation helper.
+
+Rerun behavior:
+
+- Injection is upsert-style and avoids duplicate snippets.
+
+Strict mode behavior:
+
+- Fails if target page is missing and scaffold creation would be required.
 
 ## compose-sec
 
@@ -43,7 +114,25 @@ Injects popup menu action + required provider/listener/method wiring to target p
 fsda compose-sec <slice> -f <feature> -m <module> -a <app> -p <target_page> [--strict]
 ```
 
-Injects section composition with provider bootstrap and execution trigger method.
+Injects section composition into a target page.
+
+What happens:
+
+- Injects provider bootstrap and generated execution method.
+- Generates a section widget method in the target page.
+- If target page does not exist:
+	- non-strict mode creates a minimal scaffold page first
+	- strict mode fails
+- Updates module route file with child route + navigation helper.
+- Section placement in page layout is manual by design.
+
+Rerun behavior:
+
+- Injection is upsert-style and avoids duplicate snippets.
+
+Strict mode behavior:
+
+- Fails if target page is missing and scaffold creation would be required.
 
 ## Strict Mode Behavior
 

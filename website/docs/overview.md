@@ -14,6 +14,7 @@ FSDA CLI is a command-line tool for building and maintaining Flutter workspaces 
 - Compose generated feature slices into app pages and routes.
 - Register and remove module wrappers into/from applications.
 - Keep generated output auditable with affected-path summaries.
+- Track behavior changes using release and migration notes.
 
 ## Design Principles
 
@@ -38,3 +39,5 @@ High-level command groups:
 - Maintenance: fix-import
 
 Continue to Installation for prerequisites and setup steps.
+
+After that, use Releases & Migration Notes to understand version-to-version behavior changes.

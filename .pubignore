@@ -1,0 +1,17 @@
+# Documentation and site artifacts
+website/
+docs/
+
+# Generated local binary artifacts
+build/
+
+# Maintainer/dev-only scaffolding sources
+bricks/
+templates/
+tool/
+
+# CI and repository metadata
+.github/
+
+# Local/temporary editor files
+.DS_Store

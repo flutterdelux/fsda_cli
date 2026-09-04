@@ -5,20 +5,20 @@ import Heading from '@theme/Heading';
 
 const cards = [
   {
-    title: 'Generate Fast',
-    text: 'Scaffold app, module, feature, slice, and UI templates with strict-safe generation defaults.',
+    title: 'Safe Reruns',
+    text: 'Generator output is non-destructive by default: existing files are skipped to avoid accidental overwrite.',
   },
   {
-    title: 'Compose Precisely',
-    text: 'Compose flows are split by mode: compose-main, compose-form, compose-pag, compose-pmi, compose-sec.',
+    title: 'Strict When Needed',
+    text: 'Enable --strict for fail-fast behavior when files already exist or safe injection anchors are missing.',
   },
   {
-    title: 'Auditable Output',
-    text: 'Each major operation reports created, injected, updated, skipped, or removed paths.',
+    title: 'Explicit Compose Modes',
+    text: 'Choose compose mode by intent: main, form, pagination, popup menu action, or section injection.',
   },
   {
-    title: 'Versioned Docs',
-    text: 'Documentation is versioned and published automatically to GitHub Pages from this repository.',
+    title: 'Traceable File Changes',
+    text: 'Major commands print affected path summaries so every generated or injected file is easy to audit.',
   },
 ];
 
@@ -34,15 +34,15 @@ export default function Home(): JSX.Element {
             FSDA CLI Documentation
           </Heading>
           <p className="hero__subtitle">
-            Public, versioned documentation for Feature Slice Driven Architecture CLI.
-            Learn the architecture, install quickly, and run production-safe command workflows.
+            Build FSDA workspaces with predictable generation, explicit composition flows,
+            and command outputs you can verify before commit.
           </p>
           <div className="heroCta">
             <Link className="button button--primary button--lg" to="/docs/overview">
-              Start With Overview
+              Open Overview
             </Link>
             <Link className="button button--secondary button--lg" to="/docs/commands">
-              Explore Commands
+              Command Deep Dive
             </Link>
           </div>
           <div className="heroCardGrid">
