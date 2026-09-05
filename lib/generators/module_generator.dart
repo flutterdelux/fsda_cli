@@ -82,10 +82,10 @@ class ModuleGenerator extends BaseGenerator<void, ({String module})> {
       );
       if (!templateSuccess) return;
 
-      final createdFiles = await _collectFilesRecursively(targetDir.path);
-      for (final filePath in createdFiles) {
-        report.addCreated(filePath);
-      }
+      await _appendImportantCreatedPaths(
+        report: report,
+        moduleRoot: targetDir.path,
+      );
 
       logger.success('Module "$module" created successfully');
       report.logSummary(logger, operationLabel: 'fsda gen-module');
@@ -95,20 +95,36 @@ class ModuleGenerator extends BaseGenerator<void, ({String module})> {
     }
   }
 
-  Future<List<String>> _collectFilesRecursively(String rootPath) async {
-    final rootDir = Directory(rootPath);
-    if (!await rootDir.exists()) {
-      return const <String>[];
+  Future<void> _appendImportantCreatedPaths({
+    required OperationReportService report,
+    required String moduleRoot,
+  }) async {
+    final moduleDir = Directory(moduleRoot);
+    if (!await moduleDir.exists()) {
+      return;
     }
 
-    final files = <String>[];
-    await for (final entity in rootDir.list(recursive: true)) {
-      if (entity is File) {
-        files.add(entity.path);
+    report.addCreated(moduleDir.path);
+
+    final libDir = Directory(p.join(moduleRoot, 'lib'));
+    if (await libDir.exists()) {
+      report.addCreated(libDir.path);
+    }
+
+    final importantFiles = <String>[
+      'pubspec.yaml',
+      'analysis_options.yaml',
+      'build.yaml',
+      'l10n.yaml',
+      'lib/${p.basename(moduleRoot)}.dart',
+    ];
+
+    for (final relativePath in importantFiles) {
+      final file = File(p.join(moduleRoot, relativePath));
+      if (!await file.exists()) {
+        continue;
       }
+      report.addCreated(file.path);
     }
-
-    files.sort();
-    return files;
   }
 }

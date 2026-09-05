@@ -9,8 +9,7 @@ Solution:
 ''';
 
   static String appGeneratedNextSteps(String appName) =>
-      '''
-----------------------------------------
+     '''------------------------------------------------------------
 Next steps:
 1. Navigate to the app directory: cd apps/$appName
 2. Edit apps/$appName/package_rename_config.yaml to set your app's package name (App ID)
@@ -23,7 +22,7 @@ Next steps:
 7. Edit app logo:
    - apps/$appName/assets/images/logo.png
 8. Run the app: flutter run
------------------------------------------''';
+------------------------------------------------------------''';
 
   static String workspaceCreatedNextSteps(String workspaceName) =>
       '''------------------------------------------------------------

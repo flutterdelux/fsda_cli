@@ -6,9 +6,11 @@ import 'package:path/path.dart' as p;
 import 'logger_service.dart';
 
 class OperationReportService {
+  static const _divider =
+      '------------------------------------------------------------';
+
   final SplayTreeSet<String> _createdPaths = SplayTreeSet<String>();
   final SplayTreeSet<String> _injectedPaths = SplayTreeSet<String>();
-  final SplayTreeSet<String> _updatedPaths = SplayTreeSet<String>();
   final SplayTreeSet<String> _removedPaths = SplayTreeSet<String>();
   final SplayTreeSet<String> _skippedPaths = SplayTreeSet<String>();
 
@@ -21,7 +23,8 @@ class OperationReportService {
   }
 
   void addUpdated(String path) {
-    _updatedPaths.add(_normalizePath(path));
+    // We treat updated and injected as the same reporting category.
+    addInjected(path);
   }
 
   void addRemoved(String path) {
@@ -53,22 +56,23 @@ class OperationReportService {
   bool get hasAnyChange =>
       _createdPaths.isNotEmpty ||
       _injectedPaths.isNotEmpty ||
-      _updatedPaths.isNotEmpty ||
       _removedPaths.isNotEmpty;
 
   void logSummary(LoggerService logger, {required String operationLabel}) {
+    logger.log(_divider);
     logger.info('Affected paths for $operationLabel:');
 
     if (!hasAnyChange && _skippedPaths.isEmpty) {
       logger.log('- no file change detected');
+      logger.log(_divider);
       return;
     }
 
     _logSection(logger, label: 'created', paths: _createdPaths);
     _logSection(logger, label: 'injected', paths: _injectedPaths);
-    _logSection(logger, label: 'updated', paths: _updatedPaths);
     _logSection(logger, label: 'removed', paths: _removedPaths);
     _logSection(logger, label: 'skipped', paths: _skippedPaths);
+    logger.log(_divider);
   }
 
   void _logSection(
@@ -87,7 +91,12 @@ class OperationReportService {
   }
 
   String _normalizePath(String path) {
-    final normalized = p.normalize(path);
+    var normalized = p.normalize(path);
+
+    // .gitkeep is implementation detail; surface its parent folder instead.
+    if (p.basename(normalized) == '.gitkeep') {
+      normalized = p.dirname(normalized);
+    }
 
     if (p.isAbsolute(normalized)) {
       return p

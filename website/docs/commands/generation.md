@@ -20,7 +20,7 @@ What happens:
 - Applies FSDA app brick overlay.
 - Adds app dependencies/dev dependencies.
 - Runs configured post-hooks.
-- Prints affected paths summary.
+- Prints concise affected paths (important app roots/config/lib targets), not every platform/template file.
 
 Rerun behavior:
 
@@ -39,7 +39,7 @@ What happens:
 - Bakes module brick into `modules/<module>`.
 - Adds module dependencies/dev dependencies.
 - Runs module post-hooks (`flutter gen-l10n` and `build_runner`).
-- Prints affected paths summary.
+- Prints concise affected paths (important module roots/config/lib targets), not every generated/internal artifact.
 
 Rerun behavior:
 

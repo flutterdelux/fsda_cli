@@ -93,10 +93,10 @@ class AppGenerator extends BaseGenerator<void, ({String app})> {
       );
       if (!bundleSuccess) return;
 
-      final createdFiles = await _collectFilesRecursively(targetDir.path);
-      for (final filePath in createdFiles) {
-        report.addCreated(filePath);
-      }
+      await _appendImportantCreatedPaths(
+        report: report,
+        appRoot: targetDir.path,
+      );
 
       logger.success('App "$app" created successfully');
       report.logSummary(logger, operationLabel: 'fsda gen-app');
@@ -107,20 +107,39 @@ class AppGenerator extends BaseGenerator<void, ({String app})> {
     }
   }
 
-  Future<List<String>> _collectFilesRecursively(String rootPath) async {
-    final rootDir = Directory(rootPath);
-    if (!await rootDir.exists()) {
-      return const <String>[];
+  Future<void> _appendImportantCreatedPaths({
+    required OperationReportService report,
+    required String appRoot,
+  }) async {
+    final appDir = Directory(appRoot);
+    if (!await appDir.exists()) {
+      return;
     }
 
-    final files = <String>[];
-    await for (final entity in rootDir.list(recursive: true)) {
-      if (entity is File) {
-        files.add(entity.path);
+    report.addCreated(appDir.path);
+
+    final importantDirs = <String>['lib', 'assets/images', 'docs'];
+    for (final relativePath in importantDirs) {
+      final dir = Directory(p.join(appRoot, relativePath));
+      if (!await dir.exists()) {
+        continue;
       }
+      report.addCreated(dir.path);
     }
 
-    files.sort();
-    return files;
+    final importantFiles = <String>[
+      'pubspec.yaml',
+      'analysis_options.yaml',
+      'flutter_launcher_icons.yaml',
+      'package_rename_config.yaml',
+    ];
+
+    for (final relativePath in importantFiles) {
+      final file = File(p.join(appRoot, relativePath));
+      if (!await file.exists()) {
+        continue;
+      }
+      report.addCreated(file.path);
+    }
   }
 }

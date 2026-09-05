@@ -23,7 +23,7 @@ FSDA CLI is a command-line tool for building and maintaining Flutter workspaces 
 - Idempotent injection:
   rerunning commands should only add missing parts.
 - Visibility-first execution:
-  key commands print created, injected, updated, removed, and skipped paths.
+  key commands print created, injected, removed, and skipped paths.
 - Structured composition:
   compose commands are explicit by mode (main, form, pag, pmi, sec).
 

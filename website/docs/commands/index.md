@@ -9,7 +9,7 @@ This section documents command behavior by real side effects.
 For each command group, the focus is:
 
 - what files/folders are created
-- what code is injected or updated
+- what code is injected/modified
 - what gets skipped on rerun
 - what changes when `--strict` is enabled
 
@@ -17,7 +17,7 @@ For each command group, the focus is:
 
 - Run commands from the workspace root that contains `fsda.yaml`.
 - The only command designed to run outside an existing workspace is `fsda create <workspace_name>`.
-- Most generation/composition/registration flows print affected path summaries (`created`, `injected`, `updated`, `removed`, `skipped`).
+- Most generation/composition/registration flows print affected path summaries (`created`, `injected`, `removed`, `skipped`).
 
 ## Command Groups
 

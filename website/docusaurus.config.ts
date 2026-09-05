@@ -60,26 +60,6 @@ const config: Config = {
       title: 'FSDA CLI',
       items: [
         {
-          to: '/docs/overview',
-          label: 'Overview',
-          position: 'left',
-        },
-        {
-          to: '/docs/installation',
-          label: 'Installation',
-          position: 'left',
-        },
-        {
-          to: '/docs/commands',
-          label: 'Commands',
-          position: 'left',
-        },
-        {
-          to: '/docs/workflow',
-          label: 'Workflow',
-          position: 'left',
-        },
-        {
           type: 'docsVersionDropdown',
           position: 'right',
           dropdownActiveClassDisabled: true,
