@@ -6,13 +6,19 @@ import 'package:path/path.dart' as p;
 import '../constants/cli_rules.dart';
 import '../enums/ui_code.dart';
 import '../generators/ui_generator.dart';
+import '../services/logger_service.dart';
 import '../services/workspace_service.dart';
 
 class GenUiCommand extends Command<void> {
   final UiGenerator uiGenerator;
+  final LoggerService logger;
   final WorkspaceService workspaceService;
 
-  GenUiCommand({required this.uiGenerator, required this.workspaceService}) {
+  GenUiCommand({
+    required this.uiGenerator,
+    required this.logger,
+    required this.workspaceService,
+  }) {
     argParser
       ..addOption('feature', abbr: 'f', help: 'Target feature name.')
       ..addOption('module', abbr: 'm', help: 'Target module name.')
@@ -35,7 +41,7 @@ class GenUiCommand extends Command<void> {
 
   @override
   final String description =
-      'Generate a UI template in target feature and inject its ARB/export manifest.';
+      'Legacy command: generate UI template in target feature and inject its ARB/export manifest.';
 
   @override
   String get invocation =>
@@ -124,11 +130,17 @@ class GenUiCommand extends Command<void> {
       throw UsageException(e.toString(), usage);
     }
 
+    logger.info(
+      'Command "gen-ui" is legacy. Use command-specific UI surface (ui-main/ui-dialog/ui-form/ui-form-dialog/ui-lsh/ui-lsv/ui-pag/ui-pmi/ui-action/ui-sec).',
+    );
+
     await uiGenerator.generate((
       slice: slice,
       feature: feature,
       module: module,
       ui: uiCode,
+      operationLabel: 'fsda gen-ui (legacy)',
+      formFields: const <String>[],
       strict: strict,
     ));
   }

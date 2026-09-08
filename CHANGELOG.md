@@ -1,5 +1,34 @@
 ## 1.1.0
 
+- add:
+    - gen-enum command to scaffold enum/domain converter/localize extension artifacts and inject ARB/export entries
+    - dedicated UI command surface:
+        - ui-main
+        - ui-dialog
+        - ui-form
+        - ui-form-dialog
+        - ui-lsh
+        - ui-lsv
+        - ui-pag
+        - ui-pmi
+        - ui-action
+        - ui-sec
+    - compose-action command for logic/listener-only action composition (manual button placement)
+    - compose-form-dialog command for dialog-based form composition (uses *_dialog widget as primary surface)
+    - ui-form --fields support for dynamic shared field widget generation and ARB field keys
+    - ui-form-dialog --fields support for form-in-dialog widget generation
+- refactor:
+    - di command now targets module scope by default (`fsda di <module> -a <app>`) and scans all module features (optional `-f` filter)
+    - gen-ui moved to legacy wrapper with migration hint to ui-* commands
+    - gen-slice no longer triggers UI generation; UI flow is separated via dedicated ui-* commands
+    - ui generator operation label is now caller-driven for clearer affected-path summaries
+    - template pipeline now prints transparent dependency/dev-dependency/post-hook execution plan
+- fix:
+    - ui_dialog template localization import now uses module placeholder instead of hardcoded finance reference
+    - compose-main/compose-form/compose-pag/compose-pmi route sync now preserves existing base route builder
+    - ui-form generation no longer fails when Param constructor shape/count differs; generator falls back safely
+    - ui-form/ui-form-dialog shared field widgets are kept private (removed from feature barrel exports)
+
 ## 1.0.16
 
 - refactor:

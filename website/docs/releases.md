@@ -11,11 +11,57 @@ This page summarizes documentation channels and behavior changes that matter for
 | Channel | Meaning |
 | --- | --- |
 | `latest` | Current documentation for ongoing development on main branch. |
-| `1.0.16` | Stable snapshot for CLI v1.0.16. |
+| `1.0.16` | Historical snapshot for CLI v1.0.16. |
 
 Use the version dropdown in the top-right navbar to switch channels.
+Until a dedicated docs version is cut, v1.1.0 behavior is documented under `latest`.
 
 ## Migration Notes
+
+### Upgrading from v1.0.x to v1.1.0
+
+UI generation now has command-specific entry points:
+
+- `ui-main`
+- `ui-dialog`
+- `ui-form`
+- `ui-form-dialog`
+- `ui-lsh`
+- `ui-lsv`
+- `ui-pag`
+- `ui-pmi`
+- `ui-action`
+- `ui-sec`
+
+Form generation update:
+
+- `ui-form` now requires `--fields` to build dynamic shared field widgets and ARB field labels/hints/invalid messages.
+- `ui-form-dialog` provides the same dynamic field generation flow for dialog-based form UX.
+- Shared field widgets remain private helpers and are not exported in feature barrel files.
+- Param constructor mismatch no longer blocks generation; unresolved fields fall back safely.
+
+Slice/UI generation separation:
+
+- UI generation is now intentionally separated from `gen-slice` and should run via dedicated `ui-*` commands.
+
+Action composition mode:
+
+- `compose-action` injects provider/listener/logic execution methods only.
+- Button/widget placement remains manual so layout stays fully custom.
+
+Route sync behavior update:
+
+- compose route updates preserve existing base route builder if already customized.
+
+Compatibility behavior:
+
+- `gen-ui` is still available as legacy wrapper in v1.1.0.
+- Legacy command prints migration hint but keeps prior behavior.
+
+Execution transparency improvements:
+
+- Template pipelines now print explicit dependency/dev-dependency/post-hook plans before execution.
+- Affected-path summaries continue to show created/injected/removed/skipped changes for auditability.
 
 ### Upgrading from legacy compose surface to v1.0.16+
 
@@ -23,6 +69,7 @@ If your old scripts still call a generic compose command, migrate to explicit co
 
 - `compose-main`
 - `compose-form`
+- `compose-form-dialog`
 - `compose-pag`
 - `compose-pmi`
 - `compose-sec`

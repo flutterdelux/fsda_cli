@@ -12,9 +12,17 @@ class ComposePmiService {
 
   const ComposePmiService({required this.logger});
 
-  Future<void> generate(ComposeArgs args, {bool sectionMode = false}) async {
+  Future<void> generate(
+    ComposeArgs args, {
+    bool sectionMode = false,
+    bool actionMode = false,
+  }) async {
     final report = OperationReportService();
     final strict = args.strict;
+    final modeLabel = sectionMode
+        ? 'compose-sec'
+        : (actionMode ? 'compose-action' : 'compose-pmi');
+    final isPopupMode = !sectionMode && !actionMode;
     final root = Directory.current.path;
     final moduleFeaturePath = p.join(
       root,
@@ -47,10 +55,10 @@ class ComposePmiService {
         ? await _resolveSectionWidgets(uiSlicePath)
         : const _SectionWidgetInfo();
 
-    final widgetInfo = sectionMode
+    final widgetInfo = (sectionMode || actionMode)
         ? const _PmiWidgetInfo()
         : await _resolvePmiWidgets(uiSlicePath);
-    if (!sectionMode && widgetInfo.popupMenuItemClass == null) {
+    if (isPopupMode && widgetInfo.popupMenuItemClass == null) {
       logger.error(
         'Popup menu item widget was not found in modules/${args.module}/lib/src/features/${args.feature}/ui/${args.slice}/widgets.',
       );
@@ -71,10 +79,7 @@ class ComposePmiService {
           'Strict mode: generation aborted because target page does not exist and would require scaffold creation.',
         );
         report.addSkipped(pagePath);
-        report.logSummary(
-          logger,
-          operationLabel: sectionMode ? 'fsda compose-sec' : 'fsda compose-pmi',
-        );
+        report.logSummary(logger, operationLabel: 'fsda $modeLabel');
         exitCode = 1;
         return;
       }
@@ -84,6 +89,7 @@ class ComposePmiService {
         pageClass: pageClass,
         pageDir: pageDir,
         sectionMode: sectionMode,
+        actionMode: actionMode,
       );
 
       await pageFile.create(recursive: true);
@@ -124,16 +130,14 @@ class ComposePmiService {
         : _selectExecutionMethod(primaryLogic.methods);
     if (executionMethod == null) {
       logger.error(
-        'Unable to infer execution method for ${primaryLogic.logicClass}. ${sectionMode ? 'compose-sec' : 'compose-pmi'} requires at least one invokable public method.',
+        'Unable to infer execution method for ${primaryLogic.logicClass}. $modeLabel requires at least one invokable public method.',
       );
       exitCode = 1;
       return;
     }
 
     final pageFieldTypes = _parsePageFieldTypes(source);
-    final executionMethodName = sectionMode
-        ? '_${executionMethod.name.camelCase}'
-        : '_execute${primaryLogic.logicClass.pascalCase}';
+    final executionMethodName = '_${executionMethod.name.camelCase}';
     final executionBody = await _buildExecutionCall(
       moduleFeaturePath: moduleFeaturePath,
       logicClass: primaryLogic.logicClass,
@@ -157,7 +161,7 @@ class ComposePmiService {
             if (primaryLogic.stateInfo.hasVariant('success') ||
                 primaryLogic.stateInfo.hasVariant('failure'))
               'BlocListener<${primaryLogic.logicClass}, ${primaryLogic.stateClass}>':
-                  'BlocListener<${primaryLogic.logicClass}, ${primaryLogic.stateClass}>(listener: _${primaryLogic.logicClass.camelCase}Listener),',
+                  'BlocListener<${primaryLogic.logicClass}, ${primaryLogic.stateClass}>(listener: ${_listenerMethodName(primaryLogic.logicClass)}),',
           };
 
     final updatedProviders = _upsertBuildPageListEntries(
@@ -208,7 +212,8 @@ class ComposePmiService {
           );
 
     final dialogClass = widgetInfo.dialogClass;
-    final showDialogMethodName = sectionMode || dialogClass == null
+    final showDialogMethodName =
+        sectionMode || actionMode || dialogClass == null
         ? null
         : '_show${dialogClass.pascalCase}';
 
@@ -234,7 +239,7 @@ class ComposePmiService {
 
       source = _upsertMethod(
         source,
-        'void _${primaryLogic.logicClass.camelCase}Listener(',
+        'void ${_listenerMethodName(primaryLogic.logicClass)}(',
         listenerMethod,
       );
     }
@@ -259,24 +264,26 @@ class ComposePmiService {
     }
 
     if (!sectionMode) {
-      final popupActionCall = showDialogMethodName == null
-          ? '$executionMethodName(context);'
-          : '$showDialogMethodName(context);';
+      if (isPopupMode) {
+        final popupActionCall = showDialogMethodName == null
+            ? '$executionMethodName(context);'
+            : '$showDialogMethodName(context);';
 
-      final popupClassName = widgetInfo.popupMenuItemClass!;
-      final withAction = _upsertPopupMenuAction(
-        source: source,
-        popupClassName: popupClassName,
-        actionBody: popupActionCall,
-      );
-      if (withAction == null) {
-        logger.error(
-          'Unable to inject popup action into target page. compose-pmi requires an AppBar actions list or an existing PopupMenuButton.',
+        final popupClassName = widgetInfo.popupMenuItemClass!;
+        final withAction = _upsertPopupMenuAction(
+          source: source,
+          popupClassName: popupClassName,
+          actionBody: popupActionCall,
         );
-        exitCode = 1;
-        return;
+        if (withAction == null) {
+          logger.error(
+            'Unable to inject popup action into target page. compose-pmi requires an AppBar actions list or an existing PopupMenuButton.',
+          );
+          exitCode = 1;
+          return;
+        }
+        source = withAction;
       }
-      source = withAction;
     }
 
     if (sectionMode && createdScaffold && sectionMethodName != null) {
@@ -286,6 +293,8 @@ class ComposePmiService {
         sectionMethodName: sectionMethodName,
       );
     }
+
+    source = _normalizeLegacyListenerNames(source);
 
     final nextPageSource = '${_normalizeBlankLines(source).trimRight()}\n';
     final previousPageSource =
@@ -312,7 +321,6 @@ class ComposePmiService {
       pagePath: pagePath,
       pageClass: pageClass,
       targetPage: args.targetPage,
-      updateBaseBuilder: false,
     );
 
     if (routeUpdated) {
@@ -322,7 +330,7 @@ class ComposePmiService {
     }
 
     logger.success(
-      '${sectionMode ? 'compose-sec' : 'compose-pmi'} generated for slice "${args.slice}" in feature "${args.feature}" (module: "${args.module}", app: "${args.app}").',
+      '$modeLabel generated for slice "${args.slice}" in feature "${args.feature}" (module: "${args.module}", app: "${args.app}").',
     );
     logger.info(
       '${createdScaffold ? 'Generated page scaffold' : 'Updated page'}: apps/${args.app}/lib/modules/${args.module}/features/${args.feature}/pages/$pageFileName',
@@ -332,6 +340,10 @@ class ComposePmiService {
         'Section method generated: $sectionMethodName(). Place it manually in Scaffold/body as needed.',
       );
       logger.info('Execution trigger method: $executionMethodName(context)');
+    } else if (actionMode) {
+      logger.info(
+        'Execution trigger method generated: $executionMethodName(context). Wire this method from your custom button/widget manually.',
+      );
     }
 
     if (routeUpdated) {
@@ -344,10 +356,7 @@ class ComposePmiService {
       );
     }
 
-    report.logSummary(
-      logger,
-      operationLabel: sectionMode ? 'fsda compose-sec' : 'fsda compose-pmi',
-    );
+    report.logSummary(logger, operationLabel: 'fsda $modeLabel');
   }
 
   Future<List<_LogicTarget>> _collectLogicTargets(String logicDirPath) async {
@@ -936,7 +945,7 @@ class ComposePmiService {
       },''');
     }
 
-    return '''  void _${logic.logicClass.camelCase}Listener(
+    return '''  void ${_listenerMethodName(logic.logicClass)}(
     BuildContext context,
     ${logic.stateClass} state,
   ) {
@@ -945,6 +954,24 @@ class ComposePmiService {
       ${branches.join('\n      ')}
     );
   }''';
+  }
+
+  String _listenerMethodName(String logicClass) {
+    final normalized = logicClass.replaceFirst(RegExp(r'(Cubit|Bloc)$'), '');
+    final listenerStem = normalized.isEmpty ? logicClass : normalized;
+    return '_${listenerStem.camelCase}Listener';
+  }
+
+  String _normalizeLegacyListenerNames(String source) {
+    return source.replaceAllMapped(RegExp(r'_(\w+?)(Cubit|Bloc)Listener\b'), (
+      match,
+    ) {
+      final stem = match.group(1);
+      if (stem == null || stem.isEmpty) {
+        return match.group(0)!;
+      }
+      return '_${stem}Listener';
+    });
   }
 
   String _upsertMethod(String source, String signature, String methodBlock) {
@@ -1144,6 +1171,7 @@ class ComposePmiService {
     required String pageClass,
     required String pageDir,
     bool sectionMode = false,
+    bool actionMode = false,
   }) {
     final mixinImport = p
         .relative(
@@ -1167,6 +1195,11 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
       builder: (_) {
         return ${sectionMode ? '''Scaffold(
           body: const SizedBox.shrink(),
+        )''' : (actionMode ? '''Scaffold(
+          appBar: AppBar(
+            title: const Text('$pageClass'),
+          ),
+          body: const SizedBox.shrink(),
         )''' : '''Scaffold(
           appBar: AppBar(
             title: const Text('$pageClass'),
@@ -1179,7 +1212,7 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
             ],
           ),
           body: const SizedBox.shrink(),
-        )'''};
+        )''')};
       },
     );
   }
@@ -1192,7 +1225,6 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
     required String pagePath,
     required String pageClass,
     required String targetPage,
-    required bool updateBaseBuilder,
   }) async {
     var source = await routeFile.readAsString();
     final before = source;
@@ -1218,10 +1250,6 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
     );
     source = constUpsert.source;
     final routeNameConst = constUpsert.routeNameConst;
-
-    if (updateBaseBuilder) {
-      source = _syncBaseBuilder(source: source);
-    }
 
     source = _upsertChildRoute(
       source: source,
@@ -1252,27 +1280,6 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
 
     await routeFile.writeAsString(normalized);
     return true;
-  }
-
-  String _syncBaseBuilder({required String source}) {
-    final builderRegex = RegExp(
-      r'builder:\s*\(context,\s*state\)\s*=>\s*const\s+[A-Za-z_]\w*\s*\(\s*\)\s*,',
-    );
-
-    final constUpdated = source.replaceFirst(
-      builderRegex,
-      'builder: (context, state) => const NotFoundPage(),',
-    );
-    if (constUpdated != source) return constUpdated;
-
-    final nonConstBuilderRegex = RegExp(
-      r'builder:\s*\(context,\s*state\)\s*=>\s*[A-Za-z_]\w*\s*\(\s*\)\s*,',
-    );
-
-    return source.replaceFirst(
-      nonConstBuilderRegex,
-      'builder: (context, state) => const NotFoundPage(),',
-    );
   }
 
   ({String source, String routeNameConst}) _upsertPrivateRouteNameConst({

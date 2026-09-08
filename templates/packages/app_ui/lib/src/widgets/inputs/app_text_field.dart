@@ -52,14 +52,14 @@ class AppTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
-    return TextField(
+    return TextFormField(
       controller: controller,
       textInputAction: textInputAction,
       onTapOutside: (event) {
         FocusScope.of(context).unfocus();
       },
       onTap: onTap,
-      onSubmitted: onSubmitted,
+      onFieldSubmitted: onSubmitted,
       onChanged: onChanged,
       style: textTheme.bodyLarge,
       expands: expands,

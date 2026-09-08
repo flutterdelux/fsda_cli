@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../../generated/{{module.snakeCase()}}_localizations.dart';
 
-class {{feature.pascalCase()}}ListView extends StatelessWidget {
+class {{feature.pascalCase()}}{{slice.pascalCase()}}View extends StatelessWidget {
   final Widget content;
-  const {{feature.pascalCase()}}ListView({super.key, required this.content});
+  const {{feature.pascalCase()}}{{slice.pascalCase()}}View({super.key, required this.content});
 
   @override
   Widget build(BuildContext context) {

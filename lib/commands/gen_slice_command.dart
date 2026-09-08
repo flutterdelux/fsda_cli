@@ -1,4 +1,3 @@
-import 'dart:collection';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
@@ -7,19 +6,15 @@ import 'package:path/path.dart' as p;
 
 import '../constants/cli_rules.dart';
 import '../enums/sequence_code.dart';
-import '../enums/ui_code.dart';
 import '../generators/slice_generator.dart';
-import '../generators/ui_generator.dart';
 import '../services/workspace_service.dart';
 
 class GenSliceCommand extends Command<void> {
   final SliceGenerator sliceGenerator;
-  final UiGenerator uiGenerator;
   final WorkspaceService workspaceService;
 
   GenSliceCommand({
     required this.sliceGenerator,
-    required this.uiGenerator,
     required this.workspaceService,
   }) {
     argParser
@@ -30,12 +25,6 @@ class GenSliceCommand extends Command<void> {
         abbr: 's',
         help:
             'Sequence code. Current supported code: ${SequenceCode.values.map((e) => e.code).join(', ')}',
-      )
-      ..addMultiOption(
-        'ui',
-        abbr: 'u',
-        help:
-            'Optional UI code(s). Repeat -u or pass comma-separated values. Supported: ${UiCode.values.map((e) => e.code).join(', ')}',
       )
       ..addOption('method', abbr: 'd', help: 'Optional custom method name.')
       ..addFlag(
@@ -55,7 +44,7 @@ class GenSliceCommand extends Command<void> {
 
   @override
   String get invocation =>
-      'fsda gen-slice <slice> -f <feature> -m <module> -s <sequence_code> [-d <method>] [-u <ui_code>]... [--strict]';
+      'fsda gen-slice <slice> -f <feature> -m <module> -s <sequence_code> [-d <method>] [--strict]';
 
   @override
   Future<void> run() async {
@@ -69,23 +58,10 @@ class GenSliceCommand extends Command<void> {
     final feature = argResults?['feature'] as String?;
     final module = argResults?['module'] as String?;
     final sequence = argResults?['sequence'] as String?;
-    final uiValues = (argResults?['ui'] as List<String>? ?? const <String>[])
-        .map((code) => code.trim())
-        .where((code) => code.isNotEmpty)
-        .toList(growable: true);
 
-    final extraArgs = args.skip(1).map((value) => value.trim()).toList();
-    if (extraArgs.isNotEmpty) {
-      final isUiArgsOnly = extraArgs.every(
-        (value) => UiCode.values.any((ui) => ui.code == value),
-      );
-
-      if (isUiArgsOnly) {
-        uiValues.addAll(extraArgs);
-      } else {
-        final strayArgs = extraArgs.join(' ');
-        throw UsageException('Unexpected argument(s): "$strayArgs".', usage);
-      }
+    if (args.length > 1) {
+      final strayArgs = args.skip(1).join(' ');
+      throw UsageException('Unexpected argument(s): "$strayArgs".', usage);
     }
 
     final method = argResults?['method'] as String?;
@@ -157,16 +133,6 @@ class GenSliceCommand extends Command<void> {
       throw UsageException(e.toString(), usage);
     }
 
-    final uiCodes = <UiCode>[];
-    final uniqueUiValues = LinkedHashSet<String>.from(uiValues);
-    for (final uiValue in uniqueUiValues) {
-      try {
-        uiCodes.add(UiCode.fromValue(uiValue));
-      } catch (e) {
-        throw UsageException(e.toString(), usage);
-      }
-    }
-
     final String resolvedMethod;
     if (method != null && method.isNotEmpty) {
       final methodNameRegExp = RegExp(CliRules.methodNamePattern);
@@ -194,22 +160,5 @@ class GenSliceCommand extends Command<void> {
       method: resolvedMethod,
       strict: strict,
     ));
-    if (exitCode != 0) {
-      return;
-    }
-
-    for (final uiCode in uiCodes) {
-      await uiGenerator.generate((
-        slice: slice,
-        feature: feature,
-        module: module,
-        ui: uiCode,
-        strict: strict,
-      ));
-
-      if (exitCode != 0) {
-        return;
-      }
-    }
   }
 }

@@ -1,1 +1,1 @@
-enum ComposePageMode { main, form, injectOnly }
+enum ComposePageMode { main, form, formDialog, injectOnly }

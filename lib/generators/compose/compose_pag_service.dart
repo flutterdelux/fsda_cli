@@ -131,7 +131,6 @@ class ComposePagService {
       pagePath: pagePath,
       pageClass: pageClass,
       targetPage: args.targetPage,
-      updateBaseBuilder: true,
     );
 
     if (routeUpdated) {
@@ -603,8 +602,10 @@ class ComposePagService {
         ? isLoadingField
         : stateShape.isLoadingMoreField;
 
-    final refreshMethodName = '_refresh${feature.pascalCase}s';
-    final loadMoreMethodName = '_loadMore${feature.pascalCase}s';
+    final refreshMethodName = '_${(refreshMethod ?? 'init').camelCase}';
+    final loadMoreMethodName = loadMoreMethod == null
+        ? '_loadMore'
+        : '_${loadMoreMethod.camelCase}';
     final onItemTapMethodName = '_on${feature.pascalCase}ItemTap';
 
     final refreshMethodCode = _buildRefreshMethod(
@@ -878,7 +879,6 @@ $classBody''';
     required String pagePath,
     required String pageClass,
     required String targetPage,
-    required bool updateBaseBuilder,
   }) async {
     var source = await routeFile.readAsString();
     final before = source;
@@ -904,10 +904,6 @@ $classBody''';
     );
     source = constUpsert.source;
     final routeNameConst = constUpsert.routeNameConst;
-
-    if (updateBaseBuilder) {
-      source = _syncBaseBuilder(source: source);
-    }
 
     source = _upsertChildRoute(
       source: source,
@@ -938,27 +934,6 @@ $classBody''';
 
     await routeFile.writeAsString(normalized);
     return true;
-  }
-
-  String _syncBaseBuilder({required String source}) {
-    final builderRegex = RegExp(
-      r'builder:\s*\(context,\s*state\)\s*=>\s*const\s+[A-Za-z_]\w*\s*\(\s*\)\s*,',
-    );
-
-    final constUpdated = source.replaceFirst(
-      builderRegex,
-      'builder: (context, state) => const NotFoundPage(),',
-    );
-    if (constUpdated != source) return constUpdated;
-
-    final nonConstBuilderRegex = RegExp(
-      r'builder:\s*\(context,\s*state\)\s*=>\s*[A-Za-z_]\w*\s*\(\s*\)\s*,',
-    );
-
-    return source.replaceFirst(
-      nonConstBuilderRegex,
-      'builder: (context, state) => const NotFoundPage(),',
-    );
   }
 
   ({String source, String routeNameConst}) _upsertPrivateRouteNameConst({

@@ -1,7 +1,7 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 
-import '../../../../../generated/finance_localizations.dart';
+import '../../../../../generated/{{module.snakeCase()}}_localizations.dart';
 
 class {{feature.pascalCase()}}{{slice.pascalCase()}}Dialog extends StatelessWidget {
   final VoidCallback onConfirm;

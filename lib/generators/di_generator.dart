@@ -16,20 +16,20 @@ class DiGenerator
     extends
         BaseGenerator<
           void,
-          ({String feature, String module, String app, bool strict})
+          ({String module, String app, String? feature, bool strict})
         > {
   const DiGenerator({required super.logger});
 
   @override
   Future<void> generate(
-    ({String feature, String module, String app, bool strict}) args,
+    ({String module, String app, String? feature, bool strict}) args,
   ) async {
-    final feature = args.feature;
     final module = args.module;
     final app = args.app;
+    final featureFilter = args.feature;
     final strict = args.strict;
 
-    final featureRoot = Directory(
+    final moduleFeaturesRoot = Directory(
       p.join(
         Directory.current.path,
         'modules',
@@ -37,14 +37,23 @@ class DiGenerator
         'lib',
         'src',
         'features',
-        feature,
       ),
     );
 
-    if (!await featureRoot.exists()) {
+    if (!await moduleFeaturesRoot.exists()) {
       logger.error(
-        'Feature path not found: modules/$module/lib/src/features/$feature',
+        'Module features path not found: modules/$module/lib/src/features',
       );
+      return;
+    }
+
+    final targetFeatures = await _collectTargetFeatures(
+      moduleFeaturesRoot: moduleFeaturesRoot,
+      module: module,
+      featureFilter: featureFilter,
+    );
+    if (targetFeatures.isEmpty) {
+      logger.info('No feature target found for module [$module].');
       return;
     }
 
@@ -64,8 +73,168 @@ class DiGenerator
       return;
     }
 
-    logger.info('Scanning feature [$feature] from module [$module]...');
+    final isSingleFeature = featureFilter != null && featureFilter.isNotEmpty;
+    logger.info(
+      isSingleFeature
+          ? 'Scanning feature [$featureFilter] from module [$module]...'
+          : 'Scanning all features from module [$module]...',
+    );
 
+    final featureTargets = <({String feature, List<DiClassInfo> classes})>[];
+    for (final feature in targetFeatures) {
+      final featureRoot = p.join(moduleFeaturesRoot.path, feature);
+      final classes = await _collectFeatureDiClasses(featureRoot);
+      if (classes.isEmpty) {
+        logger.info('No DI classes detected for feature [$feature].');
+        continue;
+      }
+      featureTargets.add((feature: feature, classes: classes));
+    }
+
+    if (featureTargets.isEmpty) {
+      logger.info(
+        isSingleFeature
+            ? 'No DI classes detected for feature [$featureFilter].'
+            : 'No DI classes detected for all features in module [$module].',
+      );
+      final report = OperationReportService();
+      report.addSkipped(diFilePath);
+      report.logSummary(logger, operationLabel: 'fsda di');
+      return;
+    }
+
+    final report = OperationReportService();
+    final originalDiSource = await diFile.readAsString();
+    var diSource = originalDiSource;
+    var createdMethodCount = 0;
+    var addedRegistrationCount = 0;
+    var insertedRegisterCallCount = 0;
+
+    for (final featureTarget in featureTargets) {
+      final feature = featureTarget.feature;
+      final diClasses = featureTarget.classes;
+      final featureDiMethod = '_${feature.camelCase}Di';
+
+      if (_containsFeatureMethod(diSource, featureDiMethod)) {
+        final upsertResult = _appendMissingRegistrationsToFeatureMethod(
+          source: diSource,
+          methodName: featureDiMethod,
+          classes: diClasses,
+          strict: strict,
+        );
+
+        if (upsertResult.conflictMessage != null) {
+          logger.error(upsertResult.conflictMessage!);
+          report.addSkipped(diFilePath);
+          report.logSummary(logger, operationLabel: 'fsda di');
+          exitCode = 1;
+          return;
+        }
+
+        diSource = upsertResult.source;
+        addedRegistrationCount += upsertResult.addedCount;
+      } else {
+        final nextSource = _insertFeatureMethod(
+          source: diSource,
+          module: module,
+          methodName: featureDiMethod,
+          classes: diClasses,
+          featureName: feature,
+        );
+
+        if (nextSource != diSource) {
+          createdMethodCount += 1;
+          addedRegistrationCount += _buildRegistrationLines(diClasses).length;
+        }
+
+        diSource = nextSource;
+      }
+
+      final registerResult = _insertRegisterCall(diSource, featureDiMethod);
+      if (strict && registerResult.conflictMessage != null) {
+        logger.error(registerResult.conflictMessage!);
+        report.addSkipped(diFilePath);
+        report.logSummary(logger, operationLabel: 'fsda di');
+        exitCode = 1;
+        return;
+      }
+
+      if (registerResult.inserted) {
+        insertedRegisterCallCount += 1;
+      }
+
+      diSource = registerResult.source;
+    }
+
+    if (diSource == originalDiSource) {
+      report.addSkipped(diFilePath);
+      logger.info(
+        isSingleFeature
+            ? 'DI registration for feature [$featureFilter] is already up to date. No injection applied.'
+            : 'DI registration for module [$module] is already up to date. No injection applied.',
+      );
+      report.logSummary(logger, operationLabel: 'fsda di');
+      return;
+    }
+
+    await diFile.writeAsString(diSource);
+    report.addInjected(diFilePath);
+
+    if (createdMethodCount > 0) {
+      logger.info('Created $createdMethodCount new feature DI method(s).');
+    }
+
+    if (addedRegistrationCount > 0) {
+      logger.info('Injected $addedRegistrationCount new registration line(s).');
+    }
+
+    if (insertedRegisterCallCount > 0) {
+      logger.info(
+        'Injected $insertedRegisterCallCount missing register call(s).',
+      );
+    }
+
+    logger.success(
+      isSingleFeature
+          ? 'Successfully synchronized feature [$featureFilter] into DI.'
+          : 'Successfully synchronized module [$module] features into DI.',
+    );
+    report.logSummary(logger, operationLabel: 'fsda di');
+  }
+
+  Future<List<String>> _collectTargetFeatures({
+    required Directory moduleFeaturesRoot,
+    required String module,
+    required String? featureFilter,
+  }) async {
+    if (featureFilter != null && featureFilter.isNotEmpty) {
+      final targetDir = Directory(
+        p.join(moduleFeaturesRoot.path, featureFilter),
+      );
+      if (!await targetDir.exists()) {
+        logger.error(
+          'Feature path not found: modules/$module/lib/src/features/$featureFilter',
+        );
+        return const <String>[];
+      }
+      return <String>[featureFilter];
+    }
+
+    final features = <String>[];
+    await for (final entity in moduleFeaturesRoot.list(followLinks: false)) {
+      if (entity is! Directory) continue;
+      final name = p.basename(entity.path);
+      if (name.startsWith('.')) continue;
+      features.add(name);
+    }
+
+    features.sort();
+    return features;
+  }
+
+  Future<List<DiClassInfo>> _collectFeatureDiClasses(
+    String featureRootPath,
+  ) async {
     final targetSubPaths = [
       p.join('data', 'datasources'),
       p.join('data', 'repositories'),
@@ -76,7 +245,7 @@ class DiGenerator
 
     final diClasses = <DiClassInfo>[];
     for (final subPath in targetSubPaths) {
-      final files = await _collectDartFiles(p.join(featureRoot.path, subPath));
+      final files = await _collectDartFiles(p.join(featureRootPath, subPath));
       for (final file in files) {
         final content = await file.readAsString();
         final parsed = parseString(content: content);
@@ -92,11 +261,6 @@ class DiGenerator
       }
     }
 
-    if (diClasses.isEmpty) {
-      logger.info('No DI classes detected for feature [$feature].');
-      return;
-    }
-
     final orderedTypes = [
       DiClassType.datasource,
       DiClassType.repository,
@@ -110,83 +274,7 @@ class DiGenerator
           .compareTo(orderedTypes.indexOf(b.type!)),
     );
 
-    final report = OperationReportService();
-    final originalDiSource = await diFile.readAsString();
-    var diSource = originalDiSource;
-    final featureDiMethod = '_${feature.camelCase}Di';
-    var methodCreated = false;
-    var addedRegistrationCount = 0;
-
-    if (_containsFeatureMethod(diSource, featureDiMethod)) {
-      final upsertResult = _appendMissingRegistrationsToFeatureMethod(
-        source: diSource,
-        methodName: featureDiMethod,
-        classes: diClasses,
-        strict: strict,
-      );
-
-      if (upsertResult.conflictMessage != null) {
-        logger.error(upsertResult.conflictMessage!);
-        report.addSkipped(diFilePath);
-        report.logSummary(logger, operationLabel: 'fsda di');
-        exitCode = 1;
-        return;
-      }
-
-      diSource = upsertResult.source;
-      addedRegistrationCount = upsertResult.addedCount;
-    } else {
-      diSource = _insertFeatureMethod(
-        source: diSource,
-        module: module,
-        methodName: featureDiMethod,
-        classes: diClasses,
-        featureName: feature,
-      );
-      methodCreated = diSource != originalDiSource;
-      addedRegistrationCount = _buildRegistrationLines(diClasses).length;
-    }
-
-    final registerResult = _insertRegisterCall(diSource, featureDiMethod);
-
-    if (strict && registerResult.conflictMessage != null) {
-      logger.error(registerResult.conflictMessage!);
-      report.addSkipped(diFilePath);
-      report.logSummary(logger, operationLabel: 'fsda di');
-      exitCode = 1;
-      return;
-    }
-
-    diSource = registerResult.source;
-
-    if (diSource == originalDiSource) {
-      report.addSkipped(diFilePath);
-      logger.info(
-        'DI registration for feature [$feature] is already up to date. No injection applied.',
-      );
-      report.logSummary(logger, operationLabel: 'fsda di');
-      return;
-    }
-
-    await diFile.writeAsString(diSource);
-    report.addInjected(diFilePath);
-
-    if (methodCreated) {
-      logger.info(
-        'Created new DI method [$featureDiMethod] with $addedRegistrationCount registration line(s).',
-      );
-    } else if (addedRegistrationCount > 0) {
-      logger.info(
-        'Injected $addedRegistrationCount new registration line(s) into [$featureDiMethod].',
-      );
-    }
-
-    if (registerResult.inserted) {
-      logger.info('Injected missing register call: $featureDiMethod().');
-    }
-
-    logger.success('Successfully synchronized feature [$feature] into DI.');
-    report.logSummary(logger, operationLabel: 'fsda di');
+    return diClasses;
   }
 
   Future<List<File>> _collectDartFiles(String dirPath) async {

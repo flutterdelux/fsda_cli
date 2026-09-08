@@ -81,6 +81,7 @@ class ComposeMainService
     );
 
     final viewInfo = await _resolveViewInfo(uiSlicePath);
+    final dialogInfo = await _resolveDialogInfo(uiSlicePath);
     final uiComponents = await _resolveUiComponents(uiSlicePath);
 
     final requiresView =
@@ -91,6 +92,15 @@ class ComposeMainService
           : 'compose-main';
       logger.error(
         'Slice "$slice" in feature "$feature" does not have a view. $composeModeLabel requires a view as page scaffold.',
+      );
+      exitCode = 1;
+      return;
+    }
+
+    final requiresDialog = pageMode == ComposePageMode.formDialog;
+    if (requiresDialog && dialogInfo == null) {
+      logger.error(
+        'Slice "$slice" in feature "$feature" does not have a dialog widget. compose-form-dialog requires a dialog as page scaffold.',
       );
       exitCode = 1;
       return;
@@ -159,7 +169,9 @@ class ComposeMainService
         '${createdInjectScaffold ? 'Generated page scaffold' : 'Updated page'}: apps/$app/lib/modules/$module/features/$feature/pages/$pageFileName',
       );
     } else {
-      final pageCode = pageMode == ComposePageMode.form
+      final pageCode =
+          pageMode == ComposePageMode.form ||
+              pageMode == ComposePageMode.formDialog
           ? await _buildFormPageCode(
               appLibPath: appLibPath,
               module: module,
@@ -168,7 +180,10 @@ class ComposeMainService
               pageClass: pageClass,
               pageDir: pageDir,
               logicTargets: logicTargets,
-              viewInfo: viewInfo!,
+              formContainerInfo: pageMode == ComposePageMode.formDialog
+                  ? dialogInfo!
+                  : viewInfo!,
+              dialogMode: pageMode == ComposePageMode.formDialog,
             )
           : _buildPageCode(
               appLibPath: appLibPath,
@@ -200,12 +215,7 @@ class ComposeMainService
           logger.error(
             'Strict mode: generation aborted because target page already exists.',
           );
-          report.logSummary(
-            logger,
-            operationLabel: pageMode == ComposePageMode.form
-                ? 'fsda compose-form'
-                : 'fsda compose-main',
-          );
+          report.logSummary(logger, operationLabel: _operationLabel(pageMode));
           exitCode = 1;
           return;
         }
@@ -226,49 +236,60 @@ class ComposeMainService
       );
     }
 
-    final routeFile = File(routeFilePath);
-    if (!await routeFile.exists()) {
-      logger.error('Module route file not found at: $routeFilePath');
-      exitCode = 1;
-      return;
-    }
+    if (pageMode != ComposePageMode.formDialog) {
+      final routeFile = File(routeFilePath);
+      if (!await routeFile.exists()) {
+        logger.error('Module route file not found at: $routeFilePath');
+        exitCode = 1;
+        return;
+      }
 
-    final routeUpdated = await _syncRouteFile(
-      routeFile: routeFile,
-      pagePath: pagePath,
-      pageClass: pageClass,
-      targetPage: targetPage,
-      pageMode: pageMode,
-    );
+      final routeUpdated = await _syncRouteFile(
+        routeFile: routeFile,
+        pagePath: pagePath,
+        pageClass: pageClass,
+        targetPage: targetPage,
+        pageMode: pageMode,
+      );
 
-    if (routeUpdated) {
-      report.addUpdated(routeFilePath);
+      if (routeUpdated) {
+        report.addUpdated(routeFilePath);
+      } else {
+        report.addSkipped(routeFilePath);
+      }
+
+      if (routeUpdated &&
+          (pageMode == ComposePageMode.main ||
+              pageMode == ComposePageMode.form)) {
+        logger.info(
+          'Updated base route + child route: apps/$app/lib/modules/$module/${module}_route.dart',
+        );
+      } else if (routeUpdated) {
+        logger.info(
+          'Updated child route + navigation helper: apps/$app/lib/modules/$module/${module}_route.dart',
+        );
+      } else {
+        logger.info(
+          'Route file already up to date: apps/$app/lib/modules/$module/${module}_route.dart',
+        );
+      }
     } else {
-      report.addSkipped(routeFilePath);
-    }
-
-    if (routeUpdated &&
-        (pageMode == ComposePageMode.main ||
-            pageMode == ComposePageMode.form)) {
       logger.info(
-        'Updated base route + child route: apps/$app/lib/modules/$module/${module}_route.dart',
-      );
-    } else if (routeUpdated) {
-      logger.info(
-        'Updated child route + navigation helper: apps/$app/lib/modules/$module/${module}_route.dart',
-      );
-    } else {
-      logger.info(
-        'Route file already up to date: apps/$app/lib/modules/$module/${module}_route.dart',
+        'compose-form-dialog skips route injection because the generated page is intended for showDialog() usage.',
       );
     }
 
-    final operationLabel = switch (pageMode) {
+    final operationLabel = _operationLabel(pageMode);
+    report.logSummary(logger, operationLabel: operationLabel);
+  }
+
+  String _operationLabel(ComposePageMode pageMode) {
+    return switch (pageMode) {
       ComposePageMode.main => 'fsda compose-main',
       ComposePageMode.form => 'fsda compose-form',
+      ComposePageMode.formDialog => 'fsda compose-form-dialog',
       ComposePageMode.injectOnly => 'fsda compose',
     };
-    report.logSummary(logger, operationLabel: operationLabel);
   }
 
   Future<List<_LogicTarget>> _collectLogicTargets(String logicDirPath) async {
@@ -548,6 +569,23 @@ class ComposeMainService
     return _parseClassInfo(await viewFiles.first.readAsString());
   }
 
+  Future<_ClassInfo?> _resolveDialogInfo(String uiSlicePath) async {
+    final widgetsDir = Directory(p.join(uiSlicePath, 'widgets'));
+    if (!await widgetsDir.exists()) return null;
+
+    final dialogFiles = <File>[];
+    await for (final entity in widgetsDir.list(recursive: true)) {
+      if (entity is! File) continue;
+      if (!entity.path.endsWith('_dialog.dart')) continue;
+      dialogFiles.add(entity);
+    }
+
+    if (dialogFiles.isEmpty) return null;
+
+    dialogFiles.sort((a, b) => a.path.compareTo(b.path));
+    return _parseClassInfo(await dialogFiles.first.readAsString());
+  }
+
   Future<_UiComponents> _resolveUiComponents(String uiSlicePath) async {
     final widgetsDir = Directory(p.join(uiSlicePath, 'widgets'));
     if (!await widgetsDir.exists()) {
@@ -695,8 +733,14 @@ class ComposeMainService
     required String pageClass,
     required String pageDir,
     required List<_LogicTarget> logicTargets,
-    required _ViewInfo viewInfo,
+    required _ClassInfo formContainerInfo,
+    required bool dialogMode,
   }) async {
+    final composeModeLabel = dialogMode
+        ? 'compose-form-dialog'
+        : 'compose-form';
+    final uiBundleLabel = dialogMode ? 'ui_form_dialog' : 'ui_form';
+
     final mutationLogic = logicTargets.firstWhere(
       (logic) => _isMutationLogic(logic),
       orElse: () => logicTargets.first,
@@ -705,7 +749,7 @@ class ComposeMainService
     final submitMethod = _selectMutationSubmitMethod(mutationLogic);
     if (submitMethod == null) {
       logger.error(
-        'compose-form requires mutation logic with one public method that accepts a param object.',
+        '$composeModeLabel requires mutation logic with one public method that accepts a param object.',
       );
       return null;
     }
@@ -725,14 +769,24 @@ class ComposeMainService
 
     if (formArtifacts == null) {
       logger.error(
-        'compose-form could not locate form artifacts. Ensure ui_form bundle is present (form widget + form cubit).',
+        '$composeModeLabel could not locate form artifacts. Ensure $uiBundleLabel bundle is present (form widget + form cubit).',
       );
       return null;
     }
 
     final mutationMethodName = '_${submitMethod.name}';
-    final listenerMethodName = '_${mutationLogic.logicClass.camelCase}Listener';
+    final listenerMethodName = _listenerMethodName(mutationLogic.logicClass);
     final successKey = '${feature.camelCase}${slice.pascalCase}Success';
+    final successVariant = mutationLogic.stateInfo.variant('success');
+    final successBranch = successVariant == null
+        ? ''
+        : (successVariant.firstParamName == null
+              ? '''success: () {
+        context.showSuccessSnackbar(l10n.$successKey);
+      },'''
+              : '''success: (${successVariant.firstParamName}) {
+        context.showSuccessSnackbar(l10n.$successKey);
+      },''');
     final formInvalidKey = 'failure${feature.pascalCase}FormInvalid';
     final l10nClass = '${module.pascalCase}Localizations';
 
@@ -752,28 +806,20 @@ class ComposeMainService
         )
         .replaceAll('\\', '/');
 
-    final viewClass = viewInfo.className;
-    final viewSupportsForm = viewInfo.requiredFields.contains('form');
-    final viewSupportsSubmitButton = viewInfo.requiredFields.contains(
-      'submitButton',
-    );
-    final viewSupportsContent = viewInfo.requiredFields.contains('content');
-
     final formParamVar = 'formStateParam';
 
-    late String buildView;
-    if (viewSupportsForm && viewSupportsSubmitButton) {
-      buildView =
-          '''$viewClass(
-              form: ${formArtifacts.formWidgetClass}(
+    final formWidgetExpression =
+        '''${formArtifacts.formWidgetClass}(
                 onListen: (context, param, invalidMessage) {
                   context.read<${formArtifacts.formCubitClass}>().${formArtifacts.formCubitMethod}(
                     param,
                     invalidMessage,
                   );
                 },
-              ),
-              submitButton: BlocBuilder<${mutationLogic.logicClass}, ${mutationLogic.stateClass}>(
+              )''';
+
+    final submitButtonExpression =
+        '''BlocBuilder<${mutationLogic.logicClass}, ${mutationLogic.stateClass}>(
                 builder: (_, state) {
                   final isLoading = state.maybeWhen(
                     orElse: () => false,
@@ -784,35 +830,17 @@ class ComposeMainService
                     onPressed: () => $mutationMethodName(context),
                   );
                 },
-              ),
-            )''';
-    } else if (viewSupportsForm && !viewSupportsSubmitButton) {
-      buildView =
-          '''$viewClass(
-              form: ${formArtifacts.formWidgetClass}(
-                onListen: (context, param, invalidMessage) {
-                  context.read<${formArtifacts.formCubitClass}>().${formArtifacts.formCubitMethod}(
-                    param,
-                    invalidMessage,
-                  );
-                },
-              ),
-            )''';
-    } else if (viewSupportsContent) {
-      buildView =
-          '''$viewClass(
-              content: ${formArtifacts.formWidgetClass}(
-                onListen: (context, param, invalidMessage) {
-                  context.read<${formArtifacts.formCubitClass}>().${formArtifacts.formCubitMethod}(
-                    param,
-                    invalidMessage,
-                  );
-                },
-              ),
-            )''';
-    } else {
-      buildView = '$viewClass()';
-    }
+              )''';
+
+    final containerExpression = _buildFormContainerExpression(
+      containerInfo: formContainerInfo,
+      formWidgetExpression: formWidgetExpression,
+      submitButtonExpression: submitButtonExpression,
+    );
+
+    final primarySurfaceExpression = dialogMode
+        ? 'Center(child: $containerExpression)'
+        : containerExpression;
 
     final pageCode =
         '''import 'package:app_ui/app_ui.dart';
@@ -851,9 +879,7 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
       orElse: () => null,
       failure: (failure) =>
           context.showErrorSnackbar(failure.localizeAny(context)),
-      success: (_) {
-        context.showSuccessSnackbar(l10n.$successKey);
-      },
+      $successBranch
     );
   }
 
@@ -872,7 +898,7 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
       builder: (context) {
         return Stack(
           children: [
-            $buildView,
+            $primarySurfaceExpression,
             BlocBuilder<${mutationLogic.logicClass}, ${mutationLogic.stateClass}>(
               builder: (_, state) => state.maybeWhen(
                 orElse: () => const SizedBox.shrink(),
@@ -888,6 +914,44 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
 ''';
 
     return pageCode;
+  }
+
+  String _buildFormContainerExpression({
+    required _ClassInfo containerInfo,
+    required String formWidgetExpression,
+    required String submitButtonExpression,
+  }) {
+    if (containerInfo.requiredFields.isEmpty) {
+      return '${containerInfo.className}()';
+    }
+
+    final args = containerInfo.requiredFields
+        .map((field) {
+          final type = containerInfo.fieldTypes[field];
+
+          if (field == 'form' || field == 'content') {
+            return '$field: $formWidgetExpression,';
+          }
+
+          final normalizedField = field.toLowerCase();
+          if (field == 'submitButton' ||
+              (normalizedField.contains('button') &&
+                  (type ?? '').contains('Widget'))) {
+            return '$field: $submitButtonExpression,';
+          }
+
+          if (_isCallbackField(type: type, field: field)) {
+            final returnsFuture = _returnsFutureCallback(type);
+            return returnsFuture ? '$field: () async {},' : '$field: () {},';
+          }
+
+          return '$field: ${_defaultValueForType(type)},';
+        })
+        .join('\n          ');
+
+    return '''${containerInfo.className}(
+          $args
+        )''';
   }
 
   bool _isMutationLogic(_LogicTarget logic) {
@@ -986,7 +1050,9 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
   }) {
     final hasView = viewInfo != null;
     final hasPrimaryAction = primaryLogic.bootstrapMethod != null;
-    const primaryActionMethodName = '_runPrimaryAction';
+    final primaryActionMethodName = hasPrimaryAction
+        ? '_${primaryLogic.bootstrapMethod!.camelCase}'
+        : '_primaryAction';
 
     final includeOnItemTapMethod =
         hasView &&
@@ -1033,7 +1099,7 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
     final listenersLiteral = listenerTargets.isEmpty
         ? ''
         : '\n        ${listenerTargets.map((logic) {
-            final listenerName = '_${logic.logicClass.camelCase}Listener';
+            final listenerName = _listenerMethodName(logic.logicClass);
             return 'BlocListener<${logic.logicClass}, ${logic.stateClass}>(listener: $listenerName),';
           }).join('\n        ')}\n      ';
 
@@ -1261,7 +1327,7 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
     final listenersMap = <String, String>{
       for (final logic in listenerTargets)
         'BlocListener<${logic.logicClass}, ${logic.stateClass}>':
-            'BlocListener<${logic.logicClass}, ${logic.stateClass}>(listener: _${logic.logicClass.camelCase}Listener),',
+            'BlocListener<${logic.logicClass}, ${logic.stateClass}>(listener: ${_listenerMethodName(logic.logicClass)}),',
     };
 
     final updatedProviders = _upsertBuildPageListEntries(
@@ -1282,7 +1348,7 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
 
     final methodsToInsert = <String>[];
     for (final logic in listenerTargets) {
-      final signature = 'void _${logic.logicClass.camelCase}Listener(';
+      final signature = 'void ${_listenerMethodName(logic.logicClass)}(';
       if (next.contains(signature)) continue;
 
       methodsToInsert.add(
@@ -1307,7 +1373,7 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
       );
     }
 
-    return next;
+    return _normalizeLegacyListenerNames(next);
   }
 
   String? _upsertBuildPageListEntries({
@@ -1361,6 +1427,24 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
     return contentClass.requiredFields.contains('onItemTap');
   }
 
+  String _listenerMethodName(String logicClass) {
+    final normalized = logicClass.replaceFirst(RegExp(r'(Cubit|Bloc)$'), '');
+    final listenerStem = normalized.isEmpty ? logicClass : normalized;
+    return '_${listenerStem.camelCase}Listener';
+  }
+
+  String _normalizeLegacyListenerNames(String source) {
+    return source.replaceAllMapped(RegExp(r'_(\w+?)(Cubit|Bloc)Listener\b'), (
+      match,
+    ) {
+      final stem = match.group(1);
+      if (stem == null || stem.isEmpty) {
+        return match.group(0)!;
+      }
+      return '_${stem}Listener';
+    });
+  }
+
   String _buildListenerMethod({
     required String module,
     required String feature,
@@ -1396,7 +1480,7 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
       },''');
     }
 
-    return '''  void _${logic.logicClass.camelCase}Listener(
+    return '''  void ${_listenerMethodName(logic.logicClass)}(
     BuildContext context,
     ${logic.stateClass} state,
   ) {
@@ -1902,10 +1986,6 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
     source = constUpsert.source;
     final routeNameConst = constUpsert.routeNameConst;
 
-    if (pageMode == ComposePageMode.main || pageMode == ComposePageMode.form) {
-      source = _syncBaseBuilder(source: source);
-    }
-
     source = _upsertChildRoute(
       source: source,
       routePath: routePath,
@@ -1935,27 +2015,6 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
 
     await routeFile.writeAsString(normalized);
     return true;
-  }
-
-  String _syncBaseBuilder({required String source}) {
-    final builderRegex = RegExp(
-      r'builder:\s*\(context,\s*state\)\s*=>\s*const\s+[A-Za-z_]\w*\s*\(\s*\)\s*,',
-    );
-
-    final constUpdated = source.replaceFirst(
-      builderRegex,
-      'builder: (context, state) => const NotFoundPage(),',
-    );
-    if (constUpdated != source) return constUpdated;
-
-    final nonConstBuilderRegex = RegExp(
-      r'builder:\s*\(context,\s*state\)\s*=>\s*[A-Za-z_]\w*\s*\(\s*\)\s*,',
-    );
-
-    return source.replaceFirst(
-      nonConstBuilderRegex,
-      'builder: (context, state) => const NotFoundPage(),',
-    );
   }
 
   ({String source, String routeNameConst}) _upsertPrivateRouteNameConst({

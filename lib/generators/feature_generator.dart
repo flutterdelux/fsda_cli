@@ -933,8 +933,10 @@ class FeatureGenerator
     final featurePascal = featureName.pascalCase;
     final featureTitle = featureName.titleCase;
 
-    final metaKey = '@${featureCamel}Alt';
-    final textKey = '${featureCamel}Alt';
+    final legacyMetaKey = '@${featureCamel}Alt';
+    final legacyTextKey = '${featureCamel}Alt';
+    final metaKey = '@${featureCamel}Label';
+    final textKey = '${featureCamel}Label';
     final failureMetaKey = '@failure${featurePascal}NotFound';
     final failureTextKey = 'failure${featurePascal}NotFound';
 
@@ -946,6 +948,22 @@ class FeatureGenerator
 
         var arbMap = Map<String, dynamic>.from(jsonDecode(rawJson) as Map);
         var didInject = false;
+
+        if (arbMap.containsKey(legacyMetaKey)) {
+          final legacyValue = arbMap.remove(legacyMetaKey);
+          if (!arbMap.containsKey(metaKey)) {
+            arbMap[metaKey] = legacyValue;
+          }
+          didInject = true;
+        }
+
+        if (arbMap.containsKey(legacyTextKey)) {
+          final legacyValue = arbMap.remove(legacyTextKey);
+          if (!arbMap.containsKey(textKey)) {
+            arbMap[textKey] = legacyValue;
+          }
+          didInject = true;
+        }
 
         if (!arbMap.containsKey(metaKey)) {
           arbMap[metaKey] = {

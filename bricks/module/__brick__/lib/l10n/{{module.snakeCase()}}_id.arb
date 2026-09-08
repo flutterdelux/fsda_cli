@@ -1,5 +1,6 @@
 {
   "@@locale": "id",
+  "{{module.camelCase()}}Label": "{{module.titleCase()}}",
   "@failure{{module.pascalCase()}}NotFound": {
     "description": "========================= Failure ========================="
   },

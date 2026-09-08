@@ -35,18 +35,18 @@ Strict mode behavior:
 ## di
 
 ```bash
-fsda di <feature> -m <module> -a <app> [--strict]
+fsda di <module> -a <app> [-f <feature>] [--strict]
 ```
 
-Synchronizes feature DI registration into module DI wrapper.
+Synchronizes module feature DI registrations into module DI wrapper.
 
 What happens:
 
-- Scans feature classes under datasource/repository/usecase/logic layers.
+- Scans all feature classes in module (or one feature if `-f` is provided) under datasource/repository/usecase/logic layers.
 - Targets app module DI file: `apps/<app>/lib/modules/<module>/<module>_di.dart`.
-- Creates feature method if missing (for example `_walletDi`).
-- Appends only missing registration lines.
-- Injects missing call to feature DI method in register pipeline.
+- Creates per-feature DI method if missing (for example `_walletDi`).
+- Appends only missing registration lines for each scanned feature.
+- Injects missing call(s) to feature DI methods in register pipeline.
 - Prints affected paths summary.
 
 This flow is incremental and idempotent:
@@ -83,10 +83,11 @@ Rerun behavior:
 fsda fix-import [-m <module>] [-a <app>]
 ```
 
-Runs automatic import ordering and unused import cleanup.
+Runs automatic import ordering, unused import cleanup, and feature barrel export normalization.
 
 What happens:
 
 - Runs `dart fix --apply --code=directives_ordering --code=unused_import`.
+- Reorders `*_feature.dart` exports into marker layers (`// data`, `// domain`, `// logic`, `// ui`) when possible.
 - Supports app and module target scopes.
 - Writes formatter/fix changes directly in selected target project(s).

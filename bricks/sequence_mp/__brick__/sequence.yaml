@@ -10,7 +10,7 @@ remote_data_source_impl:
   code: |
     @override
     Future<void> {{method.camelCase()}}({{feature.pascalCase()}}{{slice.pascalCase()}}Request request) async {
-      final response = await _apiClient.delete<Map>('/{{#paramCase}}{{feature}}{{/paramCase}}/{{#paramCase}}{{slice}}{{/paramCase}}');
+      final response = await _apiClient.post<Map<String, dynamic>>('/{{#paramCase}}{{feature}}{{/paramCase}}/{{#paramCase}}{{slice}}{{/paramCase}}');
       if (response.statusCode == 200) return;
       throw {{module.pascalCase()}}Exception.fromApiResponse(response);
     }

@@ -1,10 +1,13 @@
+import 'dart:io';
+
 import 'package:args/command_runner.dart';
+import 'package:path/path.dart' as p;
 
 import '../constants/cli_rules.dart';
 import '../generators/di_generator.dart';
 import '../services/workspace_service.dart';
 
-class DiCommand extends Command {
+class DiCommand extends Command<void> {
   final DiGenerator diGenerator;
   final WorkspaceService workspaceService;
 
@@ -13,7 +16,7 @@ class DiCommand extends Command {
 
   @override
   final String description =
-      'Register DI for a specific feature in a target app/module wrapper.';
+      'Register DI for a module in target app wrapper (scans all features by default).';
 
   DiCommand({required this.diGenerator, required this.workspaceService}) {
     argParser
@@ -23,9 +26,10 @@ class DiCommand extends Command {
         help: 'Target application name (e.g., fsda_demo)',
       )
       ..addOption(
-        'module',
-        abbr: 'm',
-        help: 'Target module name (e.g., finance).',
+        'feature',
+        abbr: 'f',
+        help:
+            'Optional feature filter. When omitted, all features in module are scanned.',
       )
       ..addFlag(
         'strict',
@@ -35,7 +39,8 @@ class DiCommand extends Command {
   }
 
   @override
-  String get invocation => 'fsda di <feature> -m <module> -a <app> [--strict]';
+  String get invocation =>
+      'fsda di <module> -a <app> [-f <feature>] [--strict]';
 
   @override
   Future<void> run() async {
@@ -43,32 +48,20 @@ class DiCommand extends Command {
 
     final args = argResults!.rest;
     if (args.isEmpty) {
-      throw UsageException('Missing feature name.', usage);
+      throw UsageException('Missing module name.', usage);
     }
     if (args.length > 1) {
       final strayArgs = args.skip(1).join(' ');
       throw UsageException('Unexpected argument(s): "$strayArgs".', usage);
     }
 
-    final feature = args.first;
+    final module = args.first;
     final app = argResults?['app'] as String?;
-    final module = argResults?['module'] as String?;
+    final featureFilter = (argResults?['feature'] as String?)?.trim();
     final strict = argResults?['strict'] as bool? ?? false;
 
-    if (app == null || module == null) {
-      throw UsageException(
-        'Both --app (-a) and --module (-m) options are required.',
-        usage,
-      );
-    }
-
-    final featureNameRegExp = RegExp(CliRules.featureNamePattern);
-    if (!featureNameRegExp.hasMatch(feature)) {
-      throw UsageException(
-        'Invalid feature name "$feature".\n'
-        '${CliRules.featureNameRule}',
-        usage,
-      );
+    if (app == null || app.isEmpty) {
+      throw UsageException('Missing required option: --app (-a).', usage);
     }
 
     final moduleNameRegExp = RegExp(CliRules.moduleNamePattern);
@@ -89,10 +82,34 @@ class DiCommand extends Command {
       );
     }
 
+    final moduleDir = p.join(Directory.current.path, 'modules', module);
+    if (!Directory(moduleDir).existsSync()) {
+      throw UsageException('Module "$module" does not exist.', usage);
+    }
+
+    final feature = featureFilter?.isEmpty == true ? null : featureFilter;
+    if (feature != null) {
+      final featureNameRegExp = RegExp(CliRules.featureNamePattern);
+      if (!featureNameRegExp.hasMatch(feature)) {
+        throw UsageException(
+          'Invalid feature name "$feature".\n${CliRules.featureNameRule}',
+          usage,
+        );
+      }
+
+      final featureDir = p.join(moduleDir, 'lib', 'src', 'features', feature);
+      if (!Directory(featureDir).existsSync()) {
+        throw UsageException(
+          'Feature "$feature" does not exist in module "$module".',
+          usage,
+        );
+      }
+    }
+
     await diGenerator.generate((
-      feature: feature,
       module: module,
       app: app,
+      feature: feature,
       strict: strict,
     ));
   }

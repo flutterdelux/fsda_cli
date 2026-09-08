@@ -2,10 +2,12 @@ enum UiCode {
   main('main', ' Main Content'),
   dialog('dialog', 'Alert Dialog'),
   form('form', 'Form'),
+  formDialog('form_dialog', 'Form Dialog'),
   lsh('lsh', 'List Horizontal'),
   lsv('lsv', 'List Vertical'),
   pag('pag', 'Pagination'),
   pmi('pmi', 'Popup Menu Item'),
+  action('action', 'Action Button'),
   sec('sec', 'Section');
 
   final String code;

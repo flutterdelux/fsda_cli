@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:fsda_cli/commands/add_pckg_command.dart';
+import 'package:fsda_cli/commands/compose_action_command.dart';
 import 'package:fsda_cli/commands/compose_form_command.dart';
+import 'package:fsda_cli/commands/compose_form_dialog_command.dart';
 import 'package:fsda_cli/commands/compose_main_command.dart';
 import 'package:fsda_cli/commands/compose_pag_command.dart';
 import 'package:fsda_cli/commands/compose_pmi_command.dart';
@@ -13,6 +15,7 @@ import 'package:fsda_cli/commands/create_command.dart';
 import 'package:fsda_cli/commands/di_command.dart';
 import 'package:fsda_cli/commands/fix_import_command.dart';
 import 'package:fsda_cli/commands/gen_app_command.dart';
+import 'package:fsda_cli/commands/gen_enum_command.dart';
 import 'package:fsda_cli/commands/gen_feature_command.dart';
 import 'package:fsda_cli/commands/gen_module_command.dart';
 import 'package:fsda_cli/commands/gen_slice_command.dart';
@@ -21,12 +24,23 @@ import 'package:fsda_cli/commands/list_pckg_command.dart';
 import 'package:fsda_cli/commands/reg_command.dart';
 import 'package:fsda_cli/commands/regen_feature_command.dart';
 import 'package:fsda_cli/commands/rm_reg_command.dart';
+import 'package:fsda_cli/commands/ui_action_command.dart';
+import 'package:fsda_cli/commands/ui_dialog_command.dart';
+import 'package:fsda_cli/commands/ui_form_command.dart';
+import 'package:fsda_cli/commands/ui_form_dialog_command.dart';
+import 'package:fsda_cli/commands/ui_lsh_command.dart';
+import 'package:fsda_cli/commands/ui_lsv_command.dart';
+import 'package:fsda_cli/commands/ui_main_command.dart';
+import 'package:fsda_cli/commands/ui_pag_command.dart';
+import 'package:fsda_cli/commands/ui_pmi_command.dart';
+import 'package:fsda_cli/commands/ui_sec_command.dart';
 import 'package:fsda_cli/constants/cli_info.dart';
 import 'package:fsda_cli/generators/app_generator.dart';
 import 'package:fsda_cli/generators/compose_generator.dart';
 import 'package:fsda_cli/generators/configure_app_generator.dart';
 import 'package:fsda_cli/generators/configure_generator.dart';
 import 'package:fsda_cli/generators/di_generator.dart';
+import 'package:fsda_cli/generators/enum_generator.dart';
 import 'package:fsda_cli/generators/feature_generator.dart';
 import 'package:fsda_cli/generators/module_generator.dart';
 import 'package:fsda_cli/generators/package_generator.dart';
@@ -86,6 +100,11 @@ void main(List<String> arguments) async {
     hookService: hookService,
   );
   final featureGenerator = FeatureGenerator(
+    logger: logger,
+    fileService: fileService,
+    hookService: hookService,
+  );
+  final enumGenerator = EnumGenerator(
     logger: logger,
     fileService: fileService,
     hookService: hookService,
@@ -160,6 +179,12 @@ void main(List<String> arguments) async {
       ),
     )
     ..addCommand(
+      GenEnumCommand(
+        enumGenerator: enumGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
       RegenFeatureCommand(
         featureGenerator: featureGenerator,
         workspaceService: workspaceService,
@@ -168,12 +193,72 @@ void main(List<String> arguments) async {
     ..addCommand(
       GenSliceCommand(
         sliceGenerator: sliceGenerator,
-        uiGenerator: uiGenerator,
         workspaceService: workspaceService,
       ),
     )
     ..addCommand(
       GenUiCommand(
+        uiGenerator: uiGenerator,
+        logger: logger,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      UiMainCommand(
+        uiGenerator: uiGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      UiDialogCommand(
+        uiGenerator: uiGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      UiFormCommand(
+        uiGenerator: uiGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      UiFormDialogCommand(
+        uiGenerator: uiGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      UiLshCommand(
+        uiGenerator: uiGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      UiLsvCommand(
+        uiGenerator: uiGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      UiPagCommand(
+        uiGenerator: uiGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      UiPmiCommand(
+        uiGenerator: uiGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      UiActionCommand(
+        uiGenerator: uiGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      UiSecCommand(
         uiGenerator: uiGenerator,
         workspaceService: workspaceService,
       ),
@@ -203,6 +288,12 @@ void main(List<String> arguments) async {
       ),
     )
     ..addCommand(
+      ComposeFormDialogCommand(
+        composeGenerator: composeGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
       ComposePagCommand(
         composeGenerator: composeGenerator,
         workspaceService: workspaceService,
@@ -210,6 +301,12 @@ void main(List<String> arguments) async {
     )
     ..addCommand(
       ComposePmiCommand(
+        composeGenerator: composeGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      ComposeActionCommand(
         composeGenerator: composeGenerator,
         workspaceService: workspaceService,
       ),

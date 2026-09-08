@@ -1,0 +1,33 @@
+name: enum
+description: FSDA enum blueprint (domain enum + converter + localization extension).
+version: 1.0.0+1
+environment:
+  mason: ">=0.1.0-dev.54 <0.1.0"
+vars:
+  module:
+    type: string
+    description: The snake_case module name.
+  feature:
+    type: string
+    description: The snake_case feature name.
+  enum_name:
+    type: string
+    description: The snake_case enum file/name.
+  enum_class:
+    type: string
+    description: The enum class name in PascalCase.
+  enum_values_block:
+    type: string
+    description: Render-ready enum value lines.
+  from_json_cases:
+    type: string
+    description: Render-ready fromJson switch cases.
+  to_json_cases:
+    type: string
+    description: Render-ready toJson switch cases.
+  localize_cases:
+    type: string
+    description: Render-ready localize switch cases.
+  invalid_enum_label:
+    type: string
+    description: Human-readable enum label used in error text.

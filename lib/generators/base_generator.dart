@@ -6,6 +6,9 @@ import '../services/logger_service.dart';
 import '../services/pubspec_service.dart';
 
 abstract class BaseGenerator<R, Targs> {
+  static const _divider =
+      '------------------------------------------------------------';
+
   final LoggerService logger;
   final FileService? fileService;
   final PubspecService? pubspecService;
@@ -31,6 +34,13 @@ abstract class BaseGenerator<R, Targs> {
       logger.error('FileService, PubspecService, and HookService are required');
       return false;
     }
+
+    _logTemplatePipelinePlan(
+      name: name,
+      dependencies: dependencies,
+      devDependencies: devDependencies,
+      postHooks: postHooks,
+    );
 
     if (dependencies.isNotEmpty) {
       final installDepsProgress = logger.progress(
@@ -81,5 +91,40 @@ abstract class BaseGenerator<R, Targs> {
     }
 
     return true;
+  }
+
+  void _logTemplatePipelinePlan({
+    required String name,
+    required List<String> dependencies,
+    required List<String> devDependencies,
+    required List<String> postHooks,
+  }) {
+    logger.log(_divider);
+    logger.info('Dependency and hook plan for "$name":');
+    _logTemplatePipelinePlanSection(
+      label: 'dependencies',
+      values: dependencies,
+    );
+    _logTemplatePipelinePlanSection(
+      label: 'dev_dependencies',
+      values: devDependencies,
+    );
+    _logTemplatePipelinePlanSection(label: 'post_hooks', values: postHooks);
+    logger.log(_divider);
+  }
+
+  void _logTemplatePipelinePlanSection({
+    required String label,
+    required List<String> values,
+  }) {
+    logger.log('- $label (${values.length})');
+    if (values.isEmpty) {
+      logger.log('  (none)');
+      return;
+    }
+
+    for (final value in values) {
+      logger.log('  $value');
+    }
   }
 }

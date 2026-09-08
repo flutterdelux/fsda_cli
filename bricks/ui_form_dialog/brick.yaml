@@ -1,0 +1,15 @@
+name: ui_form_dialog
+description: FSDA UI Form Dialog blueprint.
+version: 1.0.0+1
+environment:
+  mason: ">=0.1.0-dev.54 <0.1.0"
+vars:
+  module:
+    type: string
+    description: The snake_case name of the module (e.g. catalog)
+  feature:
+    type: string
+    description: The snake_case name of the feature (e.g. category)
+  slice:
+    type: string
+    description: The snake_case name of the slice (e.g. update)

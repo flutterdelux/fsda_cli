@@ -47,14 +47,24 @@ fsda configure-app demo_app
 
 fsda gen-module finance
 fsda gen-feature wallet -m finance --ds remote
-fsda gen-slice detail -f wallet -m finance -s Rp -u main
-fsda gen-slice delete -f wallet -m finance -s Mp -u pmi,dialog
+fsda gen-slice detail -f wallet -m finance -s Rp
+fsda gen-slice delete -f wallet -m finance -s Mp
+fsda gen-enum modifier_selection_type -f wallet -m finance --values single,multiple
+
+fsda ui-main detail -f wallet -m finance
+fsda ui-pmi delete -f wallet -m finance
+fsda ui-dialog delete -f wallet -m finance
+fsda ui-action delete -f wallet -m finance
+fsda ui-form create -f wallet -m finance --fields title,description
+fsda ui-form-dialog update -f wallet -m finance --fields name,type
 
 fsda reg finance -a demo_app
-fsda di wallet -m finance -a demo_app
+fsda di finance -a demo_app
 
 fsda compose-main detail -f wallet -m finance -a demo_app -p wallet_detail_page
+fsda compose-form-dialog update -f wallet -m finance -a demo_app -p wallet_update_page
 fsda compose-pmi delete -f wallet -m finance -a demo_app -p wallet_detail_page
+fsda compose-action delete -f wallet -m finance -a demo_app -p wallet_edit_page
 
 fsda fix-import -a demo_app
 ```

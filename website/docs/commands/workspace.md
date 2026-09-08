@@ -37,6 +37,7 @@ What happens:
 - Ignores unknown package names that are not available in bundled templates.
 - Removes managed template package folders that are no longer listed.
 - Generates missing managed template package folders that are listed.
+- Prints dependency/dev-dependency/post-hook execution plan for each package template that is generated.
 - Prints `added/removed/kept` summary and concise shared-package affected summary (package names only, not every file inside package templates).
 
 Rerun behavior:
@@ -104,6 +105,7 @@ What happens:
 	- appends if missing
 - Generates `packages/<name>` only when the folder does not already exist.
 - Runs template dependency/dev-dependency/post-hook pipeline for new package generation.
+- Prints dependency/dev-dependency/post-hook execution plan before pipeline execution.
 - Does not print per-file affected-path list for package template internals.
 
 Rerun behavior:

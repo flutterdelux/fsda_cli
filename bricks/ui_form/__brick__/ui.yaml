@@ -18,8 +18,6 @@ export:
     export 'ui/{{slice.snakeCase()}}/views/{{feature.snakeCase()}}_{{slice.snakeCase()}}_view.dart';
     export 'ui/{{slice.snakeCase()}}/widgets/{{feature.snakeCase()}}_{{slice.snakeCase()}}_button.dart';
     export 'ui/{{slice.snakeCase()}}/widgets/{{feature.snakeCase()}}_{{slice.snakeCase()}}_form.dart';
-    export 'ui/shared/widgets/{{feature.snakeCase()}}_description_field.dart';
-    export 'ui/shared/widgets/{{feature.snakeCase()}}_title_field.dart';
 
 post_hooks:
   - flutter gen-l10n

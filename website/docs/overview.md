@@ -25,7 +25,7 @@ FSDA CLI is a command-line tool for building and maintaining Flutter workspaces 
 - Visibility-first execution:
   key commands print created, injected, removed, and skipped paths.
 - Structured composition:
-  compose commands are explicit by mode (main, form, pag, pmi, sec).
+  compose commands are explicit by mode (main, form, pag, pmi, action, sec).
 
 ## Command Surface
 
@@ -33,9 +33,9 @@ High-level command groups:
 
 - Workspace setup: create, configure, configure-app
 - Package operations: list-pckg, add-pckg
-- Generation: gen-app, gen-module, gen-feature, regen-feature, gen-slice, gen-ui
+- Generation: gen-app, gen-module, gen-feature, regen-feature, gen-slice, gen-enum, ui-main, ui-dialog, ui-form, ui-form-dialog, ui-lsh, ui-lsv, ui-pag, ui-pmi, ui-action, ui-sec (gen-ui available as legacy wrapper)
 - Registration: reg, di, rm-reg
-- Composition: compose-main, compose-form, compose-pag, compose-pmi, compose-sec
+- Composition: compose-main, compose-form, compose-form-dialog, compose-pag, compose-pmi, compose-action, compose-sec
 - Maintenance: fix-import
 
 Continue to Installation for prerequisites and setup steps.
