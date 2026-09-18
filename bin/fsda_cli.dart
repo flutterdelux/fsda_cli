@@ -1,50 +1,87 @@
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
-import 'package:fsda_cli/commands/add_pckg_command.dart';
-import 'package:fsda_cli/commands/compose_action_command.dart';
-import 'package:fsda_cli/commands/compose_form_command.dart';
-import 'package:fsda_cli/commands/compose_form_dialog_command.dart';
-import 'package:fsda_cli/commands/compose_main_command.dart';
-import 'package:fsda_cli/commands/compose_pag_command.dart';
-import 'package:fsda_cli/commands/compose_pmi_command.dart';
-import 'package:fsda_cli/commands/compose_sec_command.dart';
-import 'package:fsda_cli/commands/configure_app_command.dart';
-import 'package:fsda_cli/commands/configure_command.dart';
-import 'package:fsda_cli/commands/create_command.dart';
-import 'package:fsda_cli/commands/di_command.dart';
-import 'package:fsda_cli/commands/fix_import_command.dart';
-import 'package:fsda_cli/commands/gen_app_command.dart';
-import 'package:fsda_cli/commands/gen_enum_command.dart';
-import 'package:fsda_cli/commands/gen_feature_command.dart';
-import 'package:fsda_cli/commands/gen_module_command.dart';
-import 'package:fsda_cli/commands/gen_slice_command.dart';
-import 'package:fsda_cli/commands/gen_ui_command.dart';
-import 'package:fsda_cli/commands/list_pckg_command.dart';
-import 'package:fsda_cli/commands/reg_command.dart';
-import 'package:fsda_cli/commands/regen_feature_command.dart';
-import 'package:fsda_cli/commands/rm_reg_command.dart';
-import 'package:fsda_cli/commands/ui_action_command.dart';
-import 'package:fsda_cli/commands/ui_dialog_command.dart';
-import 'package:fsda_cli/commands/ui_form_command.dart';
-import 'package:fsda_cli/commands/ui_form_dialog_command.dart';
-import 'package:fsda_cli/commands/ui_lsh_command.dart';
-import 'package:fsda_cli/commands/ui_lsv_command.dart';
-import 'package:fsda_cli/commands/ui_main_command.dart';
-import 'package:fsda_cli/commands/ui_pag_command.dart';
-import 'package:fsda_cli/commands/ui_pmi_command.dart';
-import 'package:fsda_cli/commands/ui_sec_command.dart';
+import 'package:fsda_cli/commands/composition/compose_action_command.dart';
+import 'package:fsda_cli/commands/composition/compose_dialog_command.dart';
+import 'package:fsda_cli/commands/composition/compose_form_command.dart';
+import 'package:fsda_cli/commands/composition/compose_form_dialog_command.dart';
+import 'package:fsda_cli/commands/composition/compose_main_command.dart';
+import 'package:fsda_cli/commands/composition/compose_pag_command.dart';
+import 'package:fsda_cli/commands/composition/compose_pmi_command.dart';
+import 'package:fsda_cli/commands/composition/compose_sec_command.dart';
+import 'package:fsda_cli/commands/generation/dto_command.dart';
+import 'package:fsda_cli/commands/generation/entity_command.dart';
+import 'package:fsda_cli/commands/generation/enum_command.dart';
+import 'package:fsda_cli/commands/generation/gen_app_command.dart';
+import 'package:fsda_cli/commands/generation/gen_feature_command.dart';
+import 'package:fsda_cli/commands/generation/gen_module_command.dart';
+import 'package:fsda_cli/commands/generation/param_command.dart';
+import 'package:fsda_cli/commands/generation/regen_feature_command.dart';
+import 'package:fsda_cli/commands/generation/request_command.dart';
+import 'package:fsda_cli/commands/generation/slice_m_command.dart';
+import 'package:fsda_cli/commands/generation/slice_mp_command.dart';
+import 'package:fsda_cli/commands/generation/slice_mr_command.dart';
+import 'package:fsda_cli/commands/generation/slice_mrp_command.dart';
+import 'package:fsda_cli/commands/generation/slice_r_command.dart';
+import 'package:fsda_cli/commands/generation/slice_rof_command.dart';
+import 'package:fsda_cli/commands/generation/slice_rp_command.dart';
+import 'package:fsda_cli/commands/generation/slice_rpag_command.dart';
+import 'package:fsda_cli/commands/generation/slice_rs_command.dart';
+import 'package:fsda_cli/commands/generation/slice_rsp_command.dart';
+import 'package:fsda_cli/commands/input/input_dropdown_command.dart';
+import 'package:fsda_cli/commands/input/input_dropdown_enum_command.dart';
+import 'package:fsda_cli/commands/input/input_image_command.dart';
+import 'package:fsda_cli/commands/input/input_number_command.dart';
+import 'package:fsda_cli/commands/input/input_password_command.dart';
+import 'package:fsda_cli/commands/input/input_qty_command.dart';
+import 'package:fsda_cli/commands/input/input_selector_command.dart';
+import 'package:fsda_cli/commands/input/input_selector_list_command.dart';
+import 'package:fsda_cli/commands/input/input_switch_command.dart';
+import 'package:fsda_cli/commands/input/input_text_area_command.dart';
+import 'package:fsda_cli/commands/input/input_text_command.dart';
+import 'package:fsda_cli/commands/maintenance/cp_ui_command.dart';
+import 'package:fsda_cli/commands/maintenance/di_command.dart';
+import 'package:fsda_cli/commands/maintenance/fix_import_command.dart';
+import 'package:fsda_cli/commands/maintenance/rebuild_command.dart';
+import 'package:fsda_cli/commands/maintenance/refresh_command.dart';
+import 'package:fsda_cli/commands/maintenance/reg_command.dart';
+import 'package:fsda_cli/commands/maintenance/rm_feature_command.dart';
+import 'package:fsda_cli/commands/maintenance/rm_reg_command.dart';
+import 'package:fsda_cli/commands/ui/ui_action_command.dart';
+import 'package:fsda_cli/commands/ui/ui_dialog_command.dart';
+import 'package:fsda_cli/commands/ui/ui_form_command.dart';
+import 'package:fsda_cli/commands/ui/ui_form_dialog_command.dart';
+import 'package:fsda_cli/commands/ui/ui_lsh_command.dart';
+import 'package:fsda_cli/commands/ui/ui_lsv_command.dart';
+import 'package:fsda_cli/commands/ui/ui_main_command.dart';
+import 'package:fsda_cli/commands/ui/ui_pag_command.dart';
+import 'package:fsda_cli/commands/ui/ui_pmi_command.dart';
+import 'package:fsda_cli/commands/ui/ui_sec_command.dart';
+import 'package:fsda_cli/commands/workspace/add_pckg_command.dart';
+import 'package:fsda_cli/commands/workspace/configure_app_command.dart';
+import 'package:fsda_cli/commands/workspace/configure_command.dart';
+import 'package:fsda_cli/commands/workspace/create_command.dart';
+import 'package:fsda_cli/commands/workspace/list_pckg_command.dart';
 import 'package:fsda_cli/constants/cli_info.dart';
 import 'package:fsda_cli/generators/app_generator.dart';
-import 'package:fsda_cli/generators/compose_generator.dart';
+import 'package:fsda_cli/generators/composition/compose_generator.dart';
 import 'package:fsda_cli/generators/configure_app_generator.dart';
 import 'package:fsda_cli/generators/configure_generator.dart';
+import 'package:fsda_cli/generators/cp_ui_generator.dart';
 import 'package:fsda_cli/generators/di_generator.dart';
+import 'package:fsda_cli/generators/domain/dto_generator.dart';
+import 'package:fsda_cli/generators/domain/entity_generator.dart';
+import 'package:fsda_cli/generators/domain/param_generator.dart';
+import 'package:fsda_cli/generators/domain/request_generator.dart';
 import 'package:fsda_cli/generators/enum_generator.dart';
 import 'package:fsda_cli/generators/feature_generator.dart';
+import 'package:fsda_cli/generators/input/input_generator.dart';
 import 'package:fsda_cli/generators/module_generator.dart';
 import 'package:fsda_cli/generators/package_generator.dart';
+import 'package:fsda_cli/generators/rebuild_generator.dart';
+import 'package:fsda_cli/generators/refresh_generator.dart';
 import 'package:fsda_cli/generators/reg_module_generator.dart';
+import 'package:fsda_cli/generators/rm_feature_generator.dart';
 import 'package:fsda_cli/generators/rm_reg_module_generator.dart';
 import 'package:fsda_cli/generators/slice_generator.dart';
 import 'package:fsda_cli/generators/ui_generator.dart';
@@ -109,7 +146,32 @@ void main(List<String> arguments) async {
     fileService: fileService,
     hookService: hookService,
   );
+  final dtoGenerator = DtoGenerator(
+    logger: logger,
+    fileService: fileService,
+    hookService: hookService,
+  );
+  final entityGenerator = EntityGenerator(
+    logger: logger,
+    fileService: fileService,
+    hookService: hookService,
+  );
+  final paramGenerator = ParamGenerator(
+    logger: logger,
+    fileService: fileService,
+    hookService: hookService,
+  );
+  final requestGenerator = RequestGenerator(
+    logger: logger,
+    fileService: fileService,
+    hookService: hookService,
+  );
   final sliceGenerator = SliceGenerator(
+    logger: logger,
+    fileService: fileService,
+    hookService: hookService,
+  );
+  final inputGenerator = InputGenerator(
     logger: logger,
     fileService: fileService,
     hookService: hookService,
@@ -126,6 +188,19 @@ void main(List<String> arguments) async {
   final rmRegModuleGenerator = RmRegModuleGenerator(
     logger: logger,
     fileService: fileService,
+  );
+  final rmFeatureGenerator = RmFeatureGenerator(
+    logger: logger,
+    hookService: hookService,
+  );
+  final cpUiGenerator = CpUiGenerator(logger: logger);
+  final rebuildGenerator = RebuildGenerator(
+    logger: logger,
+    hookService: hookService,
+  );
+  final refreshGenerator = RefreshGenerator(
+    logger: logger,
+    hookService: hookService,
   );
   final diGenerator = DiGenerator(logger: logger);
   final configureAppGenerator = ConfigureAppGenerator(
@@ -179,8 +254,32 @@ void main(List<String> arguments) async {
       ),
     )
     ..addCommand(
-      GenEnumCommand(
+      EnumCommand(
         enumGenerator: enumGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      DtoCommand(
+        dtoGenerator: dtoGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      EntityCommand(
+        entityGenerator: entityGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      ParamCommand(
+        paramGenerator: paramGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      RequestCommand(
+        requestGenerator: requestGenerator,
         workspaceService: workspaceService,
       ),
     )
@@ -191,15 +290,128 @@ void main(List<String> arguments) async {
       ),
     )
     ..addCommand(
-      GenSliceCommand(
+      SliceRCommand(
         sliceGenerator: sliceGenerator,
         workspaceService: workspaceService,
       ),
     )
     ..addCommand(
-      GenUiCommand(
-        uiGenerator: uiGenerator,
-        logger: logger,
+      SliceMCommand(
+        sliceGenerator: sliceGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      SliceMpCommand(
+        sliceGenerator: sliceGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      SliceMrCommand(
+        sliceGenerator: sliceGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      SliceMrpCommand(
+        sliceGenerator: sliceGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      SliceRofCommand(
+        sliceGenerator: sliceGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      SliceRpCommand(
+        sliceGenerator: sliceGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      SliceRpagCommand(
+        sliceGenerator: sliceGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      SliceRsCommand(
+        sliceGenerator: sliceGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      SliceRspCommand(
+        sliceGenerator: sliceGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      InputTextCommand(
+        inputGenerator: inputGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      InputTextAreaCommand(
+        inputGenerator: inputGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      InputNumberCommand(
+        inputGenerator: inputGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      InputQtyCommand(
+        inputGenerator: inputGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      InputDropdownCommand(
+        inputGenerator: inputGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      InputDropdownEnumCommand(
+        inputGenerator: inputGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      InputPasswordCommand(
+        inputGenerator: inputGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      InputSelectorCommand(
+        inputGenerator: inputGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      InputSelectorListCommand(
+        inputGenerator: inputGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      InputImageCommand(
+        inputGenerator: inputGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      InputSwitchCommand(
+        inputGenerator: inputGenerator,
         workspaceService: workspaceService,
       ),
     )
@@ -273,7 +485,25 @@ void main(List<String> arguments) async {
       DiCommand(diGenerator: diGenerator, workspaceService: workspaceService),
     )
     ..addCommand(
+      CpUiCommand(
+        cpUiGenerator: cpUiGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
       FixImportCommand(workspaceService: workspaceService, logger: logger),
+    )
+    ..addCommand(
+      RebuildCommand(
+        rebuildGenerator: rebuildGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      RefreshCommand(
+        refreshGenerator: refreshGenerator,
+        workspaceService: workspaceService,
+      ),
     )
     ..addCommand(
       ComposeMainCommand(
@@ -289,6 +519,12 @@ void main(List<String> arguments) async {
     )
     ..addCommand(
       ComposeFormDialogCommand(
+        composeGenerator: composeGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      ComposeDialogCommand(
         composeGenerator: composeGenerator,
         workspaceService: workspaceService,
       ),
@@ -320,6 +556,12 @@ void main(List<String> arguments) async {
     ..addCommand(
       RmRegCommand(
         rmRegModuleGenerator: rmRegModuleGenerator,
+        workspaceService: workspaceService,
+      ),
+    )
+    ..addCommand(
+      RmFeatureCommand(
+        rmFeatureGenerator: rmFeatureGenerator,
         workspaceService: workspaceService,
       ),
     );

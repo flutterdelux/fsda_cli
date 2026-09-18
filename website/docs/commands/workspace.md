@@ -26,7 +26,7 @@ Rerun behavior:
 ## configure
 
 ```bash
-fsda configure
+fsda configure [--hook-disabled]
 ```
 
 Synchronizes `workspace/packages` to match active package list in `fsda.yaml`.
@@ -39,6 +39,11 @@ What happens:
 - Generates missing managed template package folders that are listed.
 - Prints dependency/dev-dependency/post-hook execution plan for each package template that is generated.
 - Prints `added/removed/kept` summary and concise shared-package affected summary (package names only, not every file inside package templates).
+
+When `--hook-disabled` is set:
+
+- template post-hooks are skipped
+- command prints manual next-step commands for later execution
 
 Rerun behavior:
 
@@ -91,7 +96,7 @@ Rerun behavior:
 ## add-pckg
 
 ```bash
-fsda add-pckg <name>
+fsda add-pckg <name> [--hook-disabled]
 ```
 
 Adds one package template to workspace and ensures it is active in `fsda.yaml`.
@@ -107,6 +112,11 @@ What happens:
 - Runs template dependency/dev-dependency/post-hook pipeline for new package generation.
 - Prints dependency/dev-dependency/post-hook execution plan before pipeline execution.
 - Does not print per-file affected-path list for package template internals.
+
+When `--hook-disabled` is set:
+
+- post-hooks are skipped for the package template pipeline
+- command prints manual next-step commands to run later
 
 Rerun behavior:
 

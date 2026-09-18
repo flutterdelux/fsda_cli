@@ -29,6 +29,8 @@ abstract class BaseGenerator<R, Targs> {
     required List<String> dependencies,
     required List<String> devDependencies,
     required List<String> postHooks,
+    bool hookDisabled = false,
+    String? operationLabel,
   }) async {
     if (fileService == null || pubspecService == null || hookService == null) {
       logger.error('FileService, PubspecService, and HookService are required');
@@ -82,8 +84,15 @@ abstract class BaseGenerator<R, Targs> {
         await hookService!.runHook(
           hooks: postHooks,
           workingDirectory: targetDir.path,
+          logger: logger,
+          disabled: hookDisabled,
+          operationLabel: operationLabel,
         );
-        postHooksProgress.complete('Post hooks executed successfully');
+        if (hookDisabled) {
+          postHooksProgress.complete('Post hooks skipped by --hook-disabled');
+        } else {
+          postHooksProgress.complete('Post hooks executed successfully');
+        }
       } catch (e) {
         postHooksProgress.fail('Failed running post hooks: $e');
         return false;

@@ -20,10 +20,11 @@ const _devDependencies = [
 
 const _postHooks = [
   'flutter gen-l10n',
-  'dart run build_runner build --force-jit --delete-conflicting-outputs',
+  'dart run build_runner build --force-jit',
 ];
 
-class ModuleGenerator extends BaseGenerator<void, ({String module})> {
+class ModuleGenerator
+    extends BaseGenerator<void, ({String module, bool hookDisabled})> {
   final SdkService sdkService;
 
   ModuleGenerator({
@@ -35,8 +36,9 @@ class ModuleGenerator extends BaseGenerator<void, ({String module})> {
   });
 
   @override
-  Future<void> generate(({String module}) args) async {
+  Future<void> generate(({String module, bool hookDisabled}) args) async {
     final module = args.module;
+    final hookDisabled = args.hookDisabled;
     final report = OperationReportService();
 
     final nameRegExp = RegExp(CliRules.moduleNamePattern);
@@ -79,6 +81,8 @@ class ModuleGenerator extends BaseGenerator<void, ({String module})> {
         dependencies: _dependencies,
         devDependencies: _devDependencies,
         postHooks: _postHooks,
+        hookDisabled: hookDisabled,
+        operationLabel: 'fsda gen-module',
       );
       if (!templateSuccess) return;
 

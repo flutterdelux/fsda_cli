@@ -14,6 +14,10 @@ const sidebars: SidebarsConfig = {
       items: [
         'commands/commands-workspace',
         'commands/commands-generation',
+        'commands/commands-slice',
+        'commands/commands-modelling',
+        'commands/commands-input',
+        'commands/commands-ui',
         'commands/commands-composition',
         'commands/commands-maintenance',
       ],

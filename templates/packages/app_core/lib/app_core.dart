@@ -10,6 +10,7 @@ export 'src/domain/use_case.dart';
 export 'src/logging/app_logger.dart';
 export 'src/network/api_client.dart';
 export 'src/network/api_response.dart';
+export 'src/network/network_file.dart';
 export 'src/network/network_helper.dart';
 export 'src/network/network_info.dart';
 export 'src/storage/local_storage.dart';

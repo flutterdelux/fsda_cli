@@ -29,33 +29,61 @@ Commands requiring workspace root:
 - fsda configure-app <app>
 - fsda list-pckg
 - fsda add-pckg <name>
+- fsda add-pckg <name> [--hook-disabled]
 - fsda gen-app <app>
-- fsda gen-module <module>
-- fsda gen-feature <feature> -m <module> [--ds <datasource_mode>]
+- fsda gen-module <module> [--hook-disabled]
+- fsda gen-feature <feature> -m <module> [--ds <datasource_mode>] [--hook-disabled]
 - fsda regen-feature <feature> -m <module> [--ds <datasource_mode>]
-- fsda gen-slice <slice> -f <feature> -m <module> -s <sequence_code> [-d <method>]
-- fsda gen-enum <enum_name> -f <feature> -m <module> --values <value_1,value_2,...>
-- fsda ui-main <slice> -f <feature> -m <module>
-- fsda ui-dialog <slice> -f <feature> -m <module>
-- fsda ui-form <slice> -f <feature> -m <module> --fields <field_1,field_2,...>
-- fsda ui-form-dialog <slice> -f <feature> -m <module> --fields <field_1,field_2,...>
-- fsda ui-lsh <slice> -f <feature> -m <module>
-- fsda ui-lsv <slice> -f <feature> -m <module>
-- fsda ui-pag <slice> -f <feature> -m <module>
-- fsda ui-pmi <slice> -f <feature> -m <module>
-- fsda ui-action <slice> -f <feature> -m <module>
-- fsda ui-sec <slice> -f <feature> -m <module>
-- fsda gen-ui <slice> -f <feature> -m <module> -u <ui_code> (legacy)
+- fsda slice-m <slice> -f <feature> -m <module> -d <method> [--hook-disabled]
+- fsda slice-mp <slice> -f <feature> -m <module> -d <method> --props "<type:prop_1,type:prop_2,...>" [--hook-disabled]
+- fsda slice-mr <slice> -f <feature> -m <module> -d <method> [--list] --model <model> [--hook-disabled]
+- fsda slice-mrp <slice> -f <feature> -m <module> -d <method> [--list] --model <model> --props "<type:prop_1,type:prop_2,...>" [--hook-disabled]
+- fsda slice-r <slice> -f <feature> -m <module> -d <method> [--list] --model <model> [--hook-disabled]
+- fsda slice-rof <slice> -f <feature> -m <module> -d <method> [--list] --model <model> [--hook-disabled]
+- fsda slice-rp <slice> -f <feature> -m <module> -d <method> [--list] --model <model> --props "<type:prop_1,type:prop_2,...>" [--hook-disabled]
+- fsda slice-rpag <slice> -f <feature> -m <module> -d <method> --model <model> --props "<type:prop_1,type:prop_2,...>" [--hook-disabled]
+- fsda slice-rs <slice> -f <feature> -m <module> -d <method> [--list] --model <model> [--hook-disabled]
+- fsda slice-rsp <slice> -f <feature> -m <module> -d <method> [--list] --model <model> --props "<type:prop_1,type:prop_2,...>" [--hook-disabled]
+- fsda enum <enum_name> -f <feature> -m <module> --values <value_1,value_2,...> [--hook-disabled]
+- fsda dto <prefix> -f <feature> -m <module> --props "<type:prop_1,type:prop_2,...>" [--hook-disabled]
+- fsda param <prefix> -f <feature> -m <module> --props "<type:prop_1,type:prop_2,...>" [--hook-disabled]
+- fsda request <prefix> -f <feature> -m <module> --props "<type:prop_1,type:prop_2,...>" [--hook-disabled]
+- fsda entity <prefix> -f <feature> -m <module> --props "<type:prop_1,type:prop_2,...>" [--hook-disabled]
+- fsda input-text <field> -f <feature> -m <module> [--hook-disabled]
+- fsda input-text-area <field> -f <feature> -m <module> [--min <min_lines>] [--max <max_lines>] [--hook-disabled]
+- fsda input-number <field> -f <feature> -m <module> [--type <numeric_type>] [--hook-disabled]
+- fsda input-qty <field> -f <feature> -m <module> [--hook-disabled]
+- fsda input-dropdown <field> -f <feature> -m <module> --type <entity_type> [--hook-disabled]
+- fsda input-dropdown-enum <field> -f <feature> -m <module> --type <enum_type> [--hook-disabled]
+- fsda input-selector <field> -f <feature> -m <module> --type <entity_type> [--hook-disabled]
+- fsda input-selector-list <field> -f <feature> -m <module> --type <entity_type> [--hook-disabled]
+- fsda input-image <field> -f <feature> -m <module> [--type <value_type>] [--hook-disabled]
+- fsda input-switch <field> -f <feature> -m <module> [--hook-disabled]
+- fsda input-password <field> -f <feature> -m <module> [--hook-disabled]
+- fsda ui-main <slice> -f <feature> -m <module> [--hook-disabled]
+- fsda ui-dialog <slice> -f <feature> -m <module> [--hook-disabled]
+- fsda ui-form <slice> -f <feature> -m <module> --fields "<input_type:value_type:field_name,...>" [--initial <entity_type>] [--hook-disabled]
+- fsda ui-form-dialog <slice> -f <feature> -m <module> --fields "<input_type:value_type:field_name,...>" [--initial <entity_type>] [--hook-disabled]
+- fsda ui-lsh <slice> -f <feature> -m <module> [--hook-disabled]
+- fsda ui-lsv <slice> -f <feature> -m <module> [--hook-disabled]
+- fsda ui-pag <slice> -f <feature> -m <module> [--hook-disabled]
+- fsda ui-pmi <slice> -f <feature> -m <module> [--hook-disabled]
+- fsda ui-action <slice> -f <feature> -m <module> [--hook-disabled]
+- fsda ui-sec <slice> -f <feature> -m <module> [--hook-disabled]
 - fsda reg <module> -a <app>
-- fsda di <module> -a <app> [-f <feature>]
+- fsda di <module> -a <app>
 - fsda rm-reg <module> -a <app>
-- fsda compose-main <slice> -f <feature> -m <module> -a <app> -p <target_page>
-- fsda compose-form <slice> -f <feature> -m <module> -a <app> -p <target_page>
-- fsda compose-form-dialog <slice> -f <feature> -m <module> -a <app> -p <target_page>
-- fsda compose-pag <slice> -f <feature> -m <module> -a <app> -p <target_page>
-- fsda compose-pmi <slice> -f <feature> -m <module> -a <app> -p <target_page>
-- fsda compose-action <slice> -f <feature> -m <module> -a <app> -p <target_page>
-- fsda compose-sec <slice> -f <feature> -m <module> -a <app> -p <target_page>
+- fsda rm-feature <feature> -m <module> [--hook-disabled]
+- fsda cp-ui <new_slice> -f <feature> -m <module> --from <from_slice>
+- fsda refresh <module>
+- fsda rebuild <module>
+- fsda compose-main <slice> -f <feature> -m <module> -a <app> -p <target_page> [--route]
+- fsda compose-form <slice> -f <feature> -m <module> -a <app> -p <target_page> [--route]
+- fsda compose-form-dialog <slice> -f <feature> -m <module> -a <app> -p <target_page> [--route]
+- fsda compose-pag <slice> -f <feature> -m <module> -a <app> -p <target_page> [--route]
+- fsda compose-pmi <slice> -f <feature> -m <module> -a <app> -p <target_page> [--route]
+- fsda compose-action <slice> -f <feature> -m <module> -a <app> -p <target_page> [--route]
+- fsda compose-sec <slice> -f <feature> -m <module> -a <app> -p <target_page> [--route]
 - fsda fix-import [-m <module>] [-a <app>]
 
 Command allowed outside workspace root:
@@ -101,32 +129,56 @@ Recommended UI command mapping:
 - action -> fsda ui-action
 - sec -> fsda ui-sec
 
-Legacy compatibility:
+Generation workflow note:
 
-- fsda gen-ui is still available in v1.1.0 and prints a migration hint.
+- Use input-* commands first to generate shared field widgets and ARB keys.
+- Then use ui-form or ui-form-dialog with --fields for form wiring and composition.
+- ui-form and ui-form-dialog auto-import value types (Entity/Dto/Enum/NetworkFile) based on --fields declarations.
+- If you use --hook-disabled, FSDA skips post-hook execution and prints manual next-step commands.
+
+Shell note for zsh:
+
+- Always wrap --props values in quotes when nullable type (?) exists, for example "String:id,DateTime?:createdAt".
+
+Exit code note:
+
+- 0: success
+- 1: runtime or operation failure
+- 64: usage error (invalid/missing arguments)
+
+`64` is process status, so it may not appear as a literal output line. Check the last status with:
+
+```bash
+echo $?
+```
 
 ## Compose Notes
 
 - compose-main/form/pag
 
-  build page scaffolds and sync route wiring.
-  Existing base route builder is preserved if already customized.
+  build page scaffolds.
+  route wiring is optional and only injected when `--route` is provided.
+  existing base route builder is preserved if already customized.
 
 - compose-form-dialog
 
-  build form page scaffold using dialog widget as primary UI surface (for showDialog usage, no route injection).
+  build form page scaffold using dialog widget as primary UI surface (for showDialog usage).
+  route injection is optional via `--route`.
 
 - compose-pmi
 
   injects popup action/provider/listener/method into existing page.
+  route injection is optional via `--route`.
 
 - compose-action
 
   injects provider/listener/method only for manual custom button placement.
+  route injection is optional via `--route`.
 
 - compose-sec
 
   composes retrieval section style into existing page (provider auto-bootstrap, execution trigger method, section method generation).
+  route injection is optional via `--route`.
 
 ## Quick Start
 
@@ -144,16 +196,33 @@ fsda configure-app demo_app
 
 fsda gen-module finance
 fsda gen-feature wallet -m finance --ds remote
-fsda gen-slice detail -f wallet -m finance -s Rp
-fsda gen-slice delete -f wallet -m finance -s Mp
-fsda gen-enum modifier_selection_type -f wallet -m finance --values single,multiple
+fsda slice-rp detail -f wallet -m finance -d getWalletDetail --model Wallet --props "String:id"
+fsda slice-mp delete -f wallet -m finance -d deleteWallet --props "String:id,String:name"
+fsda enum modifier_selection_type -f wallet -m finance --values single,multiple
+fsda dto Wallet -f wallet -m finance --props "String:id,String:name,ModifierSelectionType:selectionType,int:minSelect=0,int:maxSelect,DateTime?:createdAt"
+fsda param WalletCreate -f wallet -m finance --props "String:id,String:name,ModifierSelectionType:selectionType,int:minSelect=0,int:maxSelect"
+fsda request WalletCreate -f wallet -m finance --props "String:id,String:name,ModifierSelectionType:selectionType,int:minSelect=0,int:maxSelect"
+fsda entity wallet_summary -f wallet -m finance --props "String:id,String:name"
+
+fsda input-text name -f wallet -m finance
+fsda input-text-area notes -f wallet -m finance --min 3 --max 6
+fsda input-number price -f wallet -m finance --type double
+fsda input-qty min_select -f wallet -m finance
+fsda input-qty max_select -f wallet -m finance
+fsda input-dropdown-enum selection_type -f wallet -m finance --type ModifierSelectionType
+fsda input-dropdown category -f wallet -m finance --type WalletCategoryEntity
+fsda input-selector parent_wallet -f wallet -m finance --type WalletEntity
+fsda input-selector-list related_wallets -f wallet -m finance --type WalletEntity
+fsda input-image wallet_image -f wallet -m finance
+fsda input-switch is_active -f wallet -m finance
+fsda input-password password -f wallet -m finance
 
 fsda ui-main detail -f wallet -m finance
 fsda ui-pmi delete -f wallet -m finance
 fsda ui-dialog delete -f wallet -m finance
 fsda ui-action delete -f wallet -m finance
-fsda ui-form create -f wallet -m finance --fields title,description
-fsda ui-form-dialog update -f wallet -m finance --fields name,type
+fsda ui-form create -f wallet -m finance --fields "text:String:name,dropdown_enum:ModifierSelectionType:selection_type,dropdown:WalletCategoryEntity:category,qty:int:min_select,qty:int:max_select"
+fsda ui-form-dialog update -f wallet -m finance --fields "text:String:name,dropdown_enum:ModifierSelectionType:selection_type,dropdown:WalletCategoryEntity:category,qty:int:min_select,qty:int:max_select" --initial WalletEntity
 
 fsda reg finance -a demo_app
 fsda di finance -a demo_app
@@ -162,6 +231,11 @@ fsda compose-main detail -f wallet -m finance -a demo_app -p wallet_detail_page
 fsda compose-form-dialog update -f wallet -m finance -a demo_app -p wallet_update_page
 fsda compose-pmi delete -f wallet -m finance -a demo_app -p wallet_detail_page
 fsda compose-action delete -f wallet -m finance -a demo_app -p wallet_edit_page
+
+# Quick hook sync after --hook-disabled:
+fsda refresh finance
+# Full module reset when needed:
+fsda rebuild finance
 
 fsda fix-import -a demo_app
 ```

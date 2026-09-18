@@ -19,7 +19,7 @@ class ConfigureGenerator {
     required this.logger,
   });
 
-  Future<void> generate() async {
+  Future<void> generate({bool hookDisabled = false}) async {
     try {
       final configFile = File('fsda.yaml');
       if (!await configFile.exists()) {
@@ -95,7 +95,11 @@ class ConfigureGenerator {
 
       final failedToAdd = <String>[];
       for (final package in packagesToAdd) {
-        final created = await packageGenerator.generate(package);
+        final created = await packageGenerator.generate(
+          package,
+          hookDisabled: hookDisabled,
+          operationLabel: 'fsda configure',
+        );
         if (!created) {
           failedToAdd.add(package);
         }

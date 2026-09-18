@@ -1,0 +1,24 @@
+name: slice_rsp
+description: FSDA Retrieval + Stream + Param blueprint.
+version: 1.0.0+1
+environment:
+  mason: ">=0.1.0-dev.54 <0.1.0"
+vars:
+  module:
+    type: string
+    description: The snake_case name of the module (e.g. finance)
+  feature:
+    type: string
+    description: The snake_case name of the feature (e.g. wallet)
+  slice:
+    type: string
+    description: The snake_case name of the slice (e.g. delete)
+  method:
+    type: string
+    description: The camelCase name of the method (e.g. deleteWallet)
+  model:
+    type: string
+    description: The PascalCase name of the model (e.g. wallet)
+  is_list:
+    type: boolean
+    description: Whether the method returns a list of models (true) or a single model (false)

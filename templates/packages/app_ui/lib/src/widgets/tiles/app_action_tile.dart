@@ -8,6 +8,7 @@ class AppActionTile extends StatelessWidget {
   final VoidCallback? onTap;
   final Widget? leadingIcon;
   final bool includeChevron;
+  final bool isDestructive;
 
   const AppActionTile({
     super.key,
@@ -15,6 +16,7 @@ class AppActionTile extends StatelessWidget {
     this.leadingIcon,
     this.onTap,
     this.includeChevron = true,
+    this.isDestructive = false,
   });
 
   @override
@@ -25,15 +27,25 @@ class AppActionTile extends StatelessWidget {
     return ListTile(
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      tileColor: isDestructive
+          ? colorScheme.error.withValues(alpha: 0.1)
+          : null,
       leading: leadingIcon,
       title: Text(
         title,
-        style: textTheme.bodyLarge,
+        style: isDestructive
+            ? textTheme.bodyLarge?.copyWith(color: colorScheme.error)
+            : textTheme.bodyLarge,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       trailing: includeChevron
-          ? Icon(Icons.chevron_right, color: colorScheme.onSurfaceLight)
+          ? Icon(
+              Icons.chevron_right,
+              color: isDestructive
+                  ? colorScheme.error
+                  : colorScheme.onSurfaceLight,
+            )
           : null,
     );
   }

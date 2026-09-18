@@ -1,10 +1,10 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:mason/mason.dart';
 import 'package:path/path.dart' as p;
 
 import '../generated/bricks/enum_bundle.dart';
+import '../services/l10n/arb_injector_service.dart';
 import '../services/memory_generator_target.dart';
 import '../services/operation_report_service.dart';
 import 'base_generator.dart';
@@ -21,13 +21,18 @@ class EnumGenerator
             String module,
             List<String> values,
             bool strict,
+            bool hookDisabled,
           })
         > {
+  final ArbInjectorService arbInjectorService;
+
   EnumGenerator({
     required super.logger,
     required super.fileService,
     required super.hookService,
-  });
+    ArbInjectorService? arbInjectorService,
+  }) : arbInjectorService =
+           arbInjectorService ?? ArbInjectorService(logger: logger);
 
   @override
   Future<void> generate(
@@ -37,6 +42,7 @@ class EnumGenerator
       String module,
       List<String> values,
       bool strict,
+      bool hookDisabled,
     })
     args,
   ) async {
@@ -45,6 +51,7 @@ class EnumGenerator
     final module = args.module;
     final values = args.values;
     final strict = args.strict;
+    final hookDisabled = args.hookDisabled;
 
     if (fileService == null) {
       logger.error('FileService is required for enum generation.');
@@ -145,7 +152,7 @@ class EnumGenerator
           logger.error(
             'Strict mode: generation aborted because some enum files already exist.',
           );
-          report.logSummary(logger, operationLabel: 'fsda gen-enum');
+          report.logSummary(logger, operationLabel: 'fsda enum');
           exitCode = 1;
           return;
         }
@@ -165,9 +172,10 @@ class EnumGenerator
         featureName: feature,
         values: values,
       );
-      final touchedArbFiles = await _injectArbEntries(
+      final touchedArbFiles = await arbInjectorService.injectEntries(
         moduleName: module,
         entries: arbEntries,
+        contextLabel: 'fsda enum',
       );
       for (final filePath in touchedArbFiles) {
         report.addInjected(filePath);
@@ -178,13 +186,16 @@ class EnumGenerator
         await hookService!.runHook(
           hooks: _postHooks,
           workingDirectory: p.join(Directory.current.path, 'modules', module),
+          logger: logger,
+          disabled: hookDisabled,
+          operationLabel: 'fsda enum',
         );
       }
 
       progress.complete(
         'Enum "$enumName" successfully generated for "$feature" feature.',
       );
-      report.logSummary(logger, operationLabel: 'fsda gen-enum');
+      report.logSummary(logger, operationLabel: 'fsda enum');
     } catch (e) {
       progress.fail('Failed to generate enum "$enumName": $e');
       exitCode = 1;
@@ -334,77 +345,6 @@ class EnumGenerator
     lines.insert(insertIndex, statement);
     existingStatements.add(statement);
     return true;
-  }
-
-  Future<Set<String>> _injectArbEntries({
-    required String moduleName,
-    required Map<String, dynamic> entries,
-  }) async {
-    final touchedPaths = <String>{};
-    final l10nDir = Directory(
-      p.join(Directory.current.path, 'modules', moduleName, 'lib', 'l10n'),
-    );
-
-    if (!await l10nDir.exists()) {
-      logger.info(
-        'L10n directory not found in module "$moduleName", skipping ARB injection.',
-      );
-      return touchedPaths;
-    }
-
-    final arbFiles = l10nDir
-        .listSync()
-        .whereType<File>()
-        .where((file) => file.path.endsWith('.arb'))
-        .toList();
-
-    if (arbFiles.isEmpty) {
-      logger.info(
-        'No .arb files found in module "$moduleName", skipping ARB injection.',
-      );
-      return touchedPaths;
-    }
-
-    const encoder = JsonEncoder.withIndent('  ');
-    for (final arbFile in arbFiles) {
-      final rawJson = await arbFile.readAsString();
-      final decoded = jsonDecode(rawJson);
-      if (decoded is! Map) {
-        throw FormatException(
-          'Invalid ARB format at ${arbFile.path}: expected JSON object root.',
-        );
-      }
-
-      final arbMap = Map<String, dynamic>.from(decoded);
-      var added = 0;
-
-      for (final entry in entries.entries) {
-        if (arbMap.containsKey(entry.key)) {
-          continue;
-        }
-
-        arbMap[entry.key] = entry.value;
-        added += 1;
-      }
-
-      if (added == 0) {
-        continue;
-      }
-
-      await arbFile.writeAsString('${encoder.convert(arbMap)}\n');
-      touchedPaths.add(arbFile.path);
-      logger.success(
-        'Injected $added ARB entr${added == 1 ? 'y' : 'ies'} into ${p.basename(arbFile.path)}',
-      );
-    }
-
-    if (touchedPaths.isEmpty) {
-      logger.info(
-        'ARB entries already exist in all module .arb files for "$moduleName".',
-      );
-    }
-
-    return touchedPaths;
   }
 
   String _resolveEnumLabel({

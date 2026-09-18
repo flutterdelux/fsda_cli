@@ -14,13 +14,4 @@ enum UiCode {
   final String description;
 
   const UiCode(this.code, this.description);
-
-  factory UiCode.fromValue(String? code) {
-    return values.firstWhere(
-      (e) => e.code == code,
-      orElse: () => throw ArgumentError(
-        'Unsupported UI code: $code. Supported code(s): ${values.map((e) => '- ${e.code}\n').join('\n')}',
-      ),
-    );
-  }
 }

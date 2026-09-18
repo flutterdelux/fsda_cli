@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 class ProcessService {
@@ -31,14 +32,27 @@ class ProcessService {
     required String label,
     required String commandString,
     required String workingDirectory,
+    Duration timeout = const Duration(seconds: 30),
   }) async {
-    final process = await Process.run(
-      Platform.isWindows ? 'cmd' : 'sh',
-      Platform.isWindows ? ['/c', commandString] : ['-c', commandString],
-      workingDirectory: workingDirectory,
-    );
+    final process =
+        await Process.run(
+          Platform.isWindows ? 'cmd' : 'sh',
+          Platform.isWindows ? ['/c', commandString] : ['-c', commandString],
+          workingDirectory: workingDirectory,
+        ).timeout(
+          timeout,
+          onTimeout: () {
+            throw TimeoutException(
+              '"$label" timed out after ${timeout.inSeconds}s.',
+            );
+          },
+        );
+
     if (process.exitCode != 0) {
-      throw Exception('"$label" failed: ${process.stderr}');
+      final stderr = process.stderr.toString().trim();
+      final stdout = process.stdout.toString().trim();
+      final details = stderr.isNotEmpty ? stderr : stdout;
+      throw Exception('"$label" failed: $details');
     }
   }
 }

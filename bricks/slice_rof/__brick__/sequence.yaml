@@ -1,0 +1,165 @@
+local_data_source_contract:
+  import: |
+    import '../dtos/{{model.snakeCase()}}_dto.dart';
+  code: |
+    {{#is_list}}Future<List<{{model.pascalCase()}}Dto>> {{method.camelCase()}}();{{/is_list}}
+    {{^is_list}}{{model.pascalCase()}}Dto {{method.camelCase()}}();{{/is_list}}
+    {{#is_list}}Future<void> cache{{feature.pascalCase()}}{{slice.pascalCase()}}(List<{{model.pascalCase()}}Dto> data);{{/is_list}}
+    {{^is_list}}Future<void> cache{{feature.pascalCase()}}{{slice.pascalCase()}}({{model.pascalCase()}}Dto data);{{/is_list}}
+
+local_data_source_impl:
+  import: |
+    import '../dtos/{{model.snakeCase()}}_dto.dart';
+    import '{{feature.snakeCase()}}_local_data_source.dart';
+  code: |
+    {{#is_list}}@override
+    Future<List<{{model.pascalCase()}}Dto>> {{method.camelCase()}}() async {
+      try {
+        final rows = await _client.findAll('{{feature.snakeCase()}}s');
+        return rows.map((row) => {{model.pascalCase()}}Dto.fromJson(row)).toList();
+      } catch (e, st) {
+        throw CoreException.cacheError(
+          msg: 'Failed to load {{feature.snakeCase()}}s from local cache: $e',
+          st: st,
+        );
+      }
+    }
+
+    @override
+    Future<void> cache{{feature.pascalCase()}}{{slice.pascalCase()}}(List<{{model.pascalCase()}}Dto> data) async {
+      try {
+        await _client.insertMany(
+          '{{feature.snakeCase()}}s',
+          data.map((item) => item.toJson()).toList(),
+        );
+      } catch (e, st) {
+        throw CoreException.cacheError(
+          msg: 'Failed to cache {{feature.snakeCase()}}s to local storage: $e',
+          st: st,
+        );
+      }
+    }{{/is_list}}
+    {{^is_list}}@override
+    {{model.pascalCase()}}Dto {{method.camelCase()}}() {
+      final json = _localStorage.read('{{feature.snakeCase()}}_{{slice.snakeCase()}}');
+      if (json is String) {
+        final {{model.camelCase()}}Map = jsonDecode(json) as Map<String, dynamic>;
+        return {{model.pascalCase()}}Dto.fromJson({{model.camelCase()}}Map);
+      }
+      throw const CoreException.cacheError();
+    }
+
+    @override
+    Future<void> cache{{feature.pascalCase()}}{{slice.pascalCase()}}({{model.pascalCase()}}Dto data) async {
+      try {
+        final json = jsonEncode(data.toJson());
+        await _localStorage.write('{{feature.snakeCase()}}_{{slice.snakeCase()}}', json);
+      } catch (e, st) {
+        throw CoreException.cacheError(
+          msg: 'Failed to cache {{feature.snakeCase()}}_{{slice.snakeCase()}} to local storage: $e',
+          st: st,
+        );
+      }
+    }{{/is_list}}
+
+remote_data_source_contract:
+  import: |
+    import '../dtos/{{model.snakeCase()}}_dto.dart';
+  code: |
+    {{#is_list}}Future<List<{{model.pascalCase()}}Dto>> {{method.camelCase()}}();{{/is_list}}
+    {{^is_list}}Future<{{model.pascalCase()}}Dto> {{method.camelCase()}}();{{/is_list}}
+
+remote_data_source_impl:
+  import: |
+    import '../dtos/{{model.snakeCase()}}_dto.dart';
+    import '../responses/{{feature.snakeCase()}}_{{slice.snakeCase()}}_response.dart';
+  code: |
+    @override
+    {{#is_list}}Future<List<{{model.pascalCase()}}Dto>> {{method.camelCase()}}() async {{/is_list}}
+    {{^is_list}}Future<{{model.pascalCase()}}Dto> {{method.camelCase()}}() async {{/is_list}}
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        '/{{feature.paramCase()}}s/{{slice.paramCase()}}',
+      );
+      if (response.statusCode == 200) {
+        final {{feature.camelCase()}}{{slice.pascalCase()}}Response = {{feature.pascalCase()}}{{slice.pascalCase()}}Response.fromJson(
+          response.body,
+        );
+        if ({{feature.camelCase()}}{{slice.pascalCase()}}Response.data != null) {
+          return {{feature.camelCase()}}{{slice.pascalCase()}}Response.data!;
+        }
+
+        throw const CoreException.serverError();
+      }
+
+      throw {{module.pascalCase()}}Exception.fromApiResponse(response, st: StackTrace.current);
+    }
+
+repository_contract:
+  import: |
+    import '../entities/{{model.snakeCase()}}_entity.dart';
+  code: |
+    {{#is_list}}AsyncResult<List<{{model.pascalCase()}}Entity>> {{method.camelCase()}}();{{/is_list}}
+    {{^is_list}}AsyncResult<{{model.pascalCase()}}Entity> {{method.camelCase()}}();{{/is_list}}
+
+repository_impl:
+  import: |
+    import '../../domain/entities/{{model.snakeCase()}}_entity.dart';
+  code: |
+    {{#is_list}}@override
+    AsyncResult<List<{{model.pascalCase()}}Entity>> {{method.camelCase()}}() async {
+      final isOnline = await _networkInfo.hasInternetAccess;
+
+      if (isOnline) {
+        try {
+          final {{model.camelCase()}}Dtos = await _remoteDataSource.{{method.camelCase()}}();
+          await _localDataSource.cache{{feature.pascalCase()}}{{slice.pascalCase()}}({{model.camelCase()}}Dtos);
+        } catch (e, st) {
+          log.warning(
+            '{{method.camelCase()}} refresh cache failed',
+            error: e,
+            stackTrace: st,
+          );
+        }
+      }
+
+      try {
+        final cachedData = await _localDataSource.{{method.camelCase()}}();
+        return Result.success(cachedData.map((dto) => dto.toEntity()).toList());
+      } catch (e, st) {
+        return handleException('{{method.camelCase()}}', e, st);
+      }
+    }{{/is_list}}
+    {{^is_list}}@override
+    AsyncResult<{{model.pascalCase()}}Entity> {{method.camelCase()}}() async {
+      final isOnline = await _networkInfo.hasInternetAccess;
+
+      if (isOnline) {
+        try {
+          final {{model.camelCase()}}Dto = await _remoteDataSource.{{method.camelCase()}}();
+          await _localDataSource.cache{{feature.pascalCase()}}{{slice.pascalCase()}}({{model.camelCase()}}Dto);
+        } catch (e, st) {
+          log.warning(
+            '{{method.camelCase()}} refresh cache failed',
+            error: e,
+            stackTrace: st,
+          );
+        }
+      }
+
+      try {
+        final cachedData = _localDataSource.{{method.camelCase()}}();
+        return Result.success(cachedData.toEntity());
+      } catch (e, st) {
+        return handleException('{{method.camelCase()}}', e, st);
+      }
+    }{{/is_list}}
+
+export:
+  domain: |
+    export 'domain/usecases/{{feature.snakeCase()}}_{{slice.snakeCase()}}_use_case.dart';
+  logic: |
+    export 'logic/{{slice.snakeCase()}}/{{feature.snakeCase()}}_{{slice.snakeCase()}}_cubit.dart';
+    export 'logic/{{slice.snakeCase()}}/{{feature.snakeCase()}}_{{slice.snakeCase()}}_state.dart';
+
+post_hooks:
+  - dart run build_runner build --force-jit

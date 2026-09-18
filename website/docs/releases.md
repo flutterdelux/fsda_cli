@@ -11,12 +11,46 @@ This page summarizes documentation channels and behavior changes that matter for
 | Channel | Meaning |
 | --- | --- |
 | `latest` | Current documentation for ongoing development on main branch. |
+| `1.1.0` | Historical snapshot for CLI v1.1.0. |
 | `1.0.16` | Historical snapshot for CLI v1.0.16. |
 
 Use the version dropdown in the top-right navbar to switch channels.
-Until a dedicated docs version is cut, v1.1.0 behavior is documented under `latest`.
+Until a dedicated docs version is cut, v2.0.0 behavior is documented under `latest`.
 
 ## Migration Notes
+
+### Upgrading from v1.1.x to v2.0.0
+
+Source of truth for this section is `CHANGELOG.md` entry `2.0.0`.
+
+Breaking changes:
+
+- remove legacy `gen-ui` command from active command surface (use dedicated `ui-*` commands)
+- remove legacy `gen-slice` command from active command surface (use dedicated `slice-*` commands)
+- `di` command is fixed to module scope: `fsda di <module> -a <app> [--strict]`
+- `ui-form` and `ui-form-dialog` with `--fields` no longer generate shared field widgets or field ARB keys
+
+Added:
+
+- dedicated `slice-*` command surface (`slice-m`, `slice-mp`, `slice-mr`, `slice-mrp`, `slice-r`, `slice-rof`, `slice-rp`, `slice-rpag`, `slice-rs`, `slice-rsp`)
+- `dto` for typed DTO generation
+- `entity` for typed Entity-only generation
+- `param` for typed Param-only generation
+- `request` for typed Request-only generation
+- `input-text`, `input-dropdown`, `input-password` for shared field generation + ARB sync
+- `rm-feature` rollback improvements for shared exception/failure/failure-x and ARB keys
+- `rm-feature --hook-disabled` parity and improved post-hook diagnostics
+
+Fixes:
+
+- `sequence.yaml` is rendered with generated variables before checkpoint weaving
+- generated standalone Dart file normalization to avoid trailing comma/blank-line artifacts
+- removal of stale `SequenceCode` fallback path that could trigger unresolved bundle resolver errors
+
+Refactors:
+
+- `build_runner` post-hooks standardized to `dart run build_runner build --delete-conflicting-outputs --force-jit` for Flutter 3/4 compatibility
+- v2 docs aligned around explicit `slice-*` and `ui-*` flow with module-scoped `di`
 
 ### Upgrading from v1.0.x to v1.1.0
 
@@ -42,7 +76,7 @@ Form generation update:
 
 Slice/UI generation separation:
 
-- UI generation is now intentionally separated from `gen-slice` and should run via dedicated `ui-*` commands.
+- UI generation is intentionally separated from slice generation and should run via dedicated `ui-*` commands.
 
 Action composition mode:
 
@@ -52,11 +86,6 @@ Action composition mode:
 Route sync behavior update:
 
 - compose route updates preserve existing base route builder if already customized.
-
-Compatibility behavior:
-
-- `gen-ui` is still available as legacy wrapper in v1.1.0.
-- Legacy command prints migration hint but keeps prior behavior.
 
 Execution transparency improvements:
 
@@ -70,8 +99,10 @@ If your old scripts still call a generic compose command, migrate to explicit co
 - `compose-main`
 - `compose-form`
 - `compose-form-dialog`
+- `compose-dialog`
 - `compose-pag`
 - `compose-pmi`
+- `compose-action`
 - `compose-sec`
 
 ### Safer reruns and strict mode

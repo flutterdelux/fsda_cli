@@ -35,14 +35,35 @@ Example: fsda gen-feature wallet -m finance
 
   static const sliceNamePattern = _snakeCasePattern;
   static String get sliceNameRule => '''$_snakeCaseRule
-Tips: If you want to use underscore, type directly: fsda gen-slice wallet -f transfer -m finance -s M
-Example: fsda gen-slice wallet -f transfer -m finance -s M
+Tips: If you want to use underscore, type directly: fsda slice-m wallet -f transfer -m finance -d updateWallet
+Example: fsda slice-m wallet -f transfer -m finance -d updateWallet
 ''';
 
   static const methodNamePattern = _camelCasePattern;
   static String get methodNameRule => '''$_camelCaseRule
-Tips: Use camelCase for multiple words, type directly: fsda gen-slice wallet -f transfer -m finance -s M -d markAll
-Example: fsda gen-slice wallet -f transfer -m finance -s M -d post
+Tips: Use camelCase for multiple words, type directly: fsda slice-m wallet -f transfer -m finance -d markAll
+Example: fsda slice-m wallet -f transfer -m finance -d post
+''';
+
+  static const artifactPrefixPattern = _artifactPrefixPattern;
+  static String get artifactPrefixRule => '''
+Naming rules:
+1. Must start with a letter (a-z or A-Z)
+2. Can contain letters, numbers, underscores (_)
+
+Tips: Common examples are `wallet` or `wallet_create`.
+Example: fsda dto Wallet -m finance -f wallet --props "String:id"
+''';
+
+  static const modelPrefixPattern = _modelPrefixPattern;
+  static String get modelPrefixRule => '''
+Naming rules:
+1. Must start with an uppercase letter (A-Z)
+2. Use PascalCase
+3. Do not include Dto/Entity suffix
+
+Tips: Use base model prefix only (e.g., `Category`, not `CategoryDto`).
+Example: fsda slice-r detail -f category -m catalog -d getCategoryDetail --model Category
 ''';
 
   static const pageNamePattern = _snakeCasePattern;
@@ -67,3 +88,6 @@ Naming rules:
 2. Use camelCase for multiple words (e.g., myFeature)
 3. Can only contain letters and numbers (a-z, 0-9)
 ''';
+
+const _artifactPrefixPattern = r'^[A-Za-z][A-Za-z0-9_]*$';
+const _modelPrefixPattern = r'^[A-Z][A-Za-z0-9]*$';

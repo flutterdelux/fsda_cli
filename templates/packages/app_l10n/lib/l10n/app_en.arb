@@ -1,8 +1,20 @@
 {
+  "required": "Required",
   "create": "Create",
   "add": "Add",
   "edit": "Edit",
   "update": "Update",
+  "save": "Save",
+  "saveAs": "Save As",
+  "saveWithCount": "Save ({count})",
+  "@saveWithCount": {
+    "description": "Save with a count of items",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "remove": "Remove",
   "delete": "Delete",
   "refresh": "Refresh",
@@ -11,11 +23,16 @@
   "backToHome": "Back to Home",
   "seeAll": "See All",
   "more": "More",
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "close": "Close",
+  "homeLabel": "Home",
   "invalidArgumentPageTitle": "Invalid Argument",
   "invalidArgumentPageMessage": "The requested operation could not be performed due to an invalid argument.",
   "notFoundPageTitle": "Not Found",
   "notFoundPageMessage": "The page you are looking for does not exist.",
   "unknownError": "Unknown error",
+  "unavailableFeature": "This feature is currently unavailable.",
   
   "@coreFailureUnauthenticated": {
     "description": "========================= Core =================="

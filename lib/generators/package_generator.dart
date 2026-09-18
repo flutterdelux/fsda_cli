@@ -21,7 +21,11 @@ class PackageGenerator extends BaseGenerator<bool, String> {
   });
 
   @override
-  Future<bool> generate(String packageName) async {
+  Future<bool> generate(
+    String packageName, {
+    bool hookDisabled = false,
+    String operationLabel = 'fsda package',
+  }) async {
     if (packageName.isEmpty) {
       logger.error('Package name is required');
       return false;
@@ -53,6 +57,8 @@ class PackageGenerator extends BaseGenerator<bool, String> {
         dependencies: template.spec.dependencies,
         devDependencies: template.spec.devDependencies,
         postHooks: template.spec.postHooks,
+        hookDisabled: hookDisabled,
+        operationLabel: operationLabel,
       );
       if (!templateSuccess) return false;
 

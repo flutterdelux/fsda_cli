@@ -5,6 +5,8 @@ import 'dart:typed_data';
 import 'package:app_core/app_core.dart';
 import 'package:dio/dio.dart';
 
+import 'auth_interceptor.dart';
+
 class DioApiClient implements ApiClient {
   static const instanceName = 'DioApiClient';
 
@@ -21,7 +23,12 @@ class DioApiClient implements ApiClient {
     Duration sendTimeout = const Duration(seconds: 15),
     Duration receiveTimeout = const Duration(seconds: 30),
     Duration streamConnectionTimeout = const Duration(seconds: 15),
-  }) : _dio = dio..options.baseUrl = baseUrl,
+    final Future<String?> Function(String path)? getValidToken,
+  }) : _dio = dio
+         ..options.baseUrl = baseUrl
+         ..interceptors.add(AuthInterceptor(getValidToken: getValidToken))
+         ..options.validateStatus = ((status) =>
+             status != null && status < 500),
        _connectTimeout = connectTimeout,
        _sendTimeout = sendTimeout,
        _receiveTimeout = receiveTimeout,
@@ -189,6 +196,53 @@ class DioApiClient implements ApiClient {
           }
         }
       }
+    } catch (e, st) {
+      throw _fromException(e, st);
+    }
+  }
+
+  @override
+  Future<ApiResponse<T>> upload<T>(
+    String path, {
+    Map<String, String>? fields,
+    Map<String, NetworkFile>? files,
+    Map<String, dynamic>? queryParameters,
+    Map<String, String>? headers,
+  }) async {
+    try {
+      final dioFormData = FormData();
+
+      if (fields != null) {
+        dioFormData.fields.addAll(fields.entries);
+      }
+
+      if (files != null) {
+        for (final entry in files.entries) {
+          dioFormData.files.add(
+            MapEntry(
+              entry.key,
+              MultipartFile.fromBytes(
+                entry.value.bytes,
+                filename: entry.value.name,
+              ),
+            ),
+          );
+        }
+      }
+
+      final response = await _dio.post<T>(
+        path,
+        data: dioFormData,
+        queryParameters: queryParameters,
+        options: Options(
+          headers: headers,
+          connectTimeout: _connectTimeout,
+          receiveTimeout: _receiveTimeout,
+          sendTimeout: _sendTimeout,
+        ),
+      );
+
+      return _mapResponse<T>(response);
     } catch (e, st) {
       throw _fromException(e, st);
     }

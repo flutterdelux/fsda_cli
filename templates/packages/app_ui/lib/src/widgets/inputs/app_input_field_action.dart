@@ -4,12 +4,14 @@ class AppInputFieldAction extends StatelessWidget {
   final bool hasValue;
   final VoidCallback? onClear;
   final VoidCallback? onPressed;
+  final IconData? icon;
 
   const AppInputFieldAction({
     super.key,
     required this.hasValue,
     this.onClear,
     this.onPressed,
+    this.icon,
   });
 
   @override
@@ -17,6 +19,6 @@ class AppInputFieldAction extends StatelessWidget {
     if (hasValue) {
       return IconButton(onPressed: onClear, icon: const Icon(Icons.clear));
     }
-    return IconButton(onPressed: onPressed, icon: const Icon(Icons.add));
+    return IconButton(onPressed: onPressed, icon: Icon(icon ?? Icons.add));
   }
 }

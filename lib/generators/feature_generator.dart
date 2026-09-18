@@ -16,7 +16,12 @@ class FeatureGenerator
     extends
         BaseGenerator<
           void,
-          ({String feature, String module, DataSourceMode dataSourceMode})
+          ({
+            String feature,
+            String module,
+            DataSourceMode dataSourceMode,
+            bool hookDisabled,
+          })
         > {
   FeatureGenerator({
     required super.logger,
@@ -26,11 +31,18 @@ class FeatureGenerator
 
   @override
   Future<void> generate(
-    ({String feature, String module, DataSourceMode dataSourceMode}) args,
+    ({
+      String feature,
+      String module,
+      DataSourceMode dataSourceMode,
+      bool hookDisabled,
+    })
+    args,
   ) async {
     final feature = args.feature;
     final module = args.module;
     final dataSourceMode = args.dataSourceMode;
+    final hookDisabled = args.hookDisabled;
     final report = OperationReportService();
 
     final barrelFilePath = p.join(
@@ -119,8 +131,15 @@ class FeatureGenerator
         await hookService!.runHook(
           hooks: _postHooks,
           workingDirectory: p.join(Directory.current.path, 'modules', module),
+          logger: logger,
+          disabled: hookDisabled,
+          operationLabel: 'fsda gen-feature',
         );
-        progress.complete('Completed post-hooks for "$feature"');
+        if (hookDisabled) {
+          progress.complete('Post-hooks skipped by --hook-disabled');
+        } else {
+          progress.complete('Completed post-hooks for "$feature"');
+        }
       }
 
       final moduleBarrelChanged = await _updateModuleBarrel(

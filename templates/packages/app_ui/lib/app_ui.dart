@@ -20,6 +20,7 @@ export 'src/widgets/images/app_network_image.dart';
 export 'src/widgets/inputs/app_color_field.dart';
 export 'src/widgets/inputs/app_date_time_field.dart';
 export 'src/widgets/inputs/app_dropdown_field.dart';
+export 'src/widgets/inputs/app_input_field_action.dart';
 export 'src/widgets/inputs/app_text_field.dart';
 export 'src/widgets/layouts/app_bottom_container.dart';
 export 'src/widgets/layouts/app_gap.dart';

@@ -10,16 +10,19 @@ class HttpApiClient implements ApiClient {
   final String _baseUrl;
   final Duration _requestTimeout;
   final Duration _streamConnectionTimeout;
+  final Future<String?> Function(String path)? _getValidToken;
 
   const HttpApiClient({
     required Client client,
     required String baseUrl,
     Duration requestTimeout = const Duration(seconds: 30),
     Duration streamConnectionTimeout = const Duration(seconds: 15),
+    final Future<String?> Function(String path)? getValidToken,
   }) : _client = client,
        _baseUrl = baseUrl,
        _requestTimeout = requestTimeout,
-       _streamConnectionTimeout = streamConnectionTimeout;
+       _streamConnectionTimeout = streamConnectionTimeout,
+       _getValidToken = getValidToken;
 
   @override
   Future<ApiResponse<T>> get<T>(
@@ -28,12 +31,14 @@ class HttpApiClient implements ApiClient {
     Map<String, String>? headers,
   }) async {
     try {
-      final response = await _client
-          .get(
-            NetworkHelper.buildUri(_baseUrl, path, queryParameters),
-            headers: NetworkHelper.jsonHeaders(headers),
-          )
-          .timeout(_requestTimeout);
+      final response = await _performRequest(path, (authHeaders) {
+        return _client
+            .get(
+              NetworkHelper.buildUri(_baseUrl, path, queryParameters),
+              headers: NetworkHelper.jsonHeaders(authHeaders),
+            )
+            .timeout(_requestTimeout);
+      }, headers);
 
       return _mapResponse<T>(response);
     } catch (e, st) {
@@ -49,13 +54,15 @@ class HttpApiClient implements ApiClient {
     Map<String, String>? headers,
   }) async {
     try {
-      final response = await _client
-          .post(
-            NetworkHelper.buildUri(_baseUrl, path, queryParameters),
-            headers: NetworkHelper.jsonHeaders(headers),
-            body: NetworkHelper.encodeRequestBody(body),
-          )
-          .timeout(_requestTimeout);
+      final response = await _performRequest(path, (authHeaders) {
+        return _client
+            .post(
+              NetworkHelper.buildUri(_baseUrl, path, queryParameters),
+              headers: NetworkHelper.jsonHeaders(authHeaders),
+              body: NetworkHelper.encodeRequestBody(body),
+            )
+            .timeout(_requestTimeout);
+      }, headers);
 
       return _mapResponse<T>(response);
     } catch (e, st) {
@@ -71,13 +78,15 @@ class HttpApiClient implements ApiClient {
     Map<String, String>? headers,
   }) async {
     try {
-      final response = await _client
-          .put(
-            NetworkHelper.buildUri(_baseUrl, path, queryParameters),
-            headers: NetworkHelper.jsonHeaders(headers),
-            body: NetworkHelper.encodeRequestBody(body),
-          )
-          .timeout(_requestTimeout);
+      final response = await _performRequest(path, (authHeaders) {
+        return _client
+            .put(
+              NetworkHelper.buildUri(_baseUrl, path, queryParameters),
+              headers: NetworkHelper.jsonHeaders(authHeaders),
+              body: NetworkHelper.encodeRequestBody(body),
+            )
+            .timeout(_requestTimeout);
+      }, headers);
 
       return _mapResponse<T>(response);
     } catch (e, st) {
@@ -93,13 +102,15 @@ class HttpApiClient implements ApiClient {
     Map<String, String>? headers,
   }) async {
     try {
-      final response = await _client
-          .patch(
-            NetworkHelper.buildUri(_baseUrl, path, queryParameters),
-            headers: NetworkHelper.jsonHeaders(headers),
-            body: NetworkHelper.encodeRequestBody(body),
-          )
-          .timeout(_requestTimeout);
+      final response = await _performRequest(path, (authHeaders) {
+        return _client
+            .patch(
+              NetworkHelper.buildUri(_baseUrl, path, queryParameters),
+              headers: NetworkHelper.jsonHeaders(authHeaders),
+              body: NetworkHelper.encodeRequestBody(body),
+            )
+            .timeout(_requestTimeout);
+      }, headers);
       return _mapResponse<T>(response);
     } catch (e, st) {
       throw CoreException.fromException(e, st: st);
@@ -114,13 +125,15 @@ class HttpApiClient implements ApiClient {
     Map<String, String>? headers,
   }) async {
     try {
-      final response = await _client
-          .delete(
-            NetworkHelper.buildUri(_baseUrl, path, queryParameters),
-            headers: NetworkHelper.jsonHeaders(headers),
-            body: NetworkHelper.encodeRequestBody(body),
-          )
-          .timeout(_requestTimeout);
+      final response = await _performRequest(path, (authHeaders) {
+        return _client
+            .delete(
+              NetworkHelper.buildUri(_baseUrl, path, queryParameters),
+              headers: NetworkHelper.jsonHeaders(authHeaders),
+              body: NetworkHelper.encodeRequestBody(body),
+            )
+            .timeout(_requestTimeout);
+      }, headers);
 
       return _mapResponse<T>(response);
     } catch (e, st) {
@@ -169,6 +182,66 @@ class HttpApiClient implements ApiClient {
     } catch (e, st) {
       throw CoreException.fromException(e, st: st);
     }
+  }
+
+  @override
+  Future<ApiResponse<T>> upload<T>(
+    String path, {
+    Map<String, String>? fields,
+    Map<String, NetworkFile>? files,
+    Map<String, dynamic>? queryParameters,
+    Map<String, String>? headers,
+  }) async {
+    try {
+      final uri = NetworkHelper.buildUri(_baseUrl, path, queryParameters);
+
+      final responseStream = await _performRequest(path, (authHeaders) async {
+        final request = MultipartRequest('POST', uri);
+
+        request.headers.addAll(NetworkHelper.jsonHeaders(authHeaders));
+        if (headers != null) request.headers.addAll(headers);
+
+        if (fields != null) request.fields.addAll(fields);
+
+        if (files != null) {
+          for (final entry in files.entries) {
+            request.files.add(
+              MultipartFile.fromBytes(
+                entry.key,
+                entry.value.bytes,
+                filename: entry.value.name,
+              ),
+            );
+          }
+        }
+
+        final streamedResponse = await _client
+            .send(request)
+            .timeout(_requestTimeout);
+        return await Response.fromStream(streamedResponse);
+      }, headers);
+
+      return _mapResponse<T>(responseStream);
+    } catch (e, st) {
+      throw CoreException.fromException(e, st: st);
+    }
+  }
+
+  Future<Response> _performRequest(
+    String path,
+    Future<Response> Function(Map<String, String> headers) requestCall,
+    Map<String, String>? headers,
+  ) async {
+    final reqHeaders = Map<String, String>.from(headers ?? {});
+
+    if (_getValidToken != null) {
+      final token = await _getValidToken(path);
+      if (token != null && token.isNotEmpty) {
+        reqHeaders['Authorization'] = 'Bearer $token';
+      }
+    }
+
+    return await requestCall(reqHeaders);
   }
 }
 

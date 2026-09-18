@@ -1,7 +1,50 @@
+## 2.0.0
+
+- breaking:
+    - remove legacy `gen-ui` command from active command surface. Use dedicated `ui-*` commands.
+    - remove legacy `gen-slice` command from active command surface. Use dedicated `slice-*` commands.
+    - `di` command is now fixed to module scope only: `fsda di <module> -a <app> [--strict]`.
+    - `ui-form` and `ui-form-dialog` with `--fields` no longer generate shared field widgets or field ARB keys.
+    - all `input-*` commands now use single-field mode (`<field>` or `--field`) per command run.
+    - `ui-form` / `ui-form-dialog` input_type values are fixed to snake_case tokens: `text`, `selector`, `selector_list`, `text_area`, `qty`, `dropdown`, `dropdown_enum`, `image`, `switch`, `password`.
+- add:
+    - dedicated slice command surface:
+        - slice-m
+        - slice-mp
+        - slice-mr
+        - slice-mrp
+        - slice-r
+        - slice-rof
+        - slice-rp
+        - slice-rpag
+        - slice-rs
+        - slice-rsp
+    - `dto` command to generate feature-scoped `Dto` artifacts from typed props.
+    - `entity` command to generate feature-scoped `Entity` artifacts from typed props.
+    - `param` command to generate feature-scoped `Param` artifacts from typed props.
+    - `request` command to generate feature-scoped `Request` artifacts from typed props.
+    - `input-text` command to generate shared text field widgets and ARB keys.
+    - `input-number` command to generate shared numeric text field widgets.
+    - `input-dropdown` command to generate shared dropdown field widgets and ARB keys.
+    - `input-password` command to generate shared password field widgets with visibility toggle and ARB keys.
+    - `input-selector-list` command for list selector field generation.
+    - `rm-feature` now performs feature-prefix rollback for shared exception/failure/failure_x artifacts and ARB keys.
+    - `rm-feature` now supports post-hook execution and `--hook-disabled` behavior parity with other generators.
+    - `cp-ui` command to duplicate UI slice flow into a new slice name, excluding generated files and applying class/file rename in copied artifacts.
+    - post-hook execution now supports timeout control and clearer failure diagnostics.
+- fix:
+    - sequence manifest (`sequence.yaml`) is now rendered with generated variables before checkpoint weaving.
+    - standalone generated Dart files are normalized to prevent leftover comma/blank-line artifacts from template weaving.
+    - remove stale legacy `SequenceCode` fallback path in slice generator that could trigger unresolved bundle resolver errors.
+- refactor:
+    - standardize build_runner post-hook commands to `dart run build_runner build --delete-conflicting-outputs --force-jit` for Flutter 3/4 compatibility.
+    - align v2 documentation tracks around explicit `slice-*` and `ui-*` generation flow plus module-scoped `di` usage.
+    - remove generated `resolveEntries` contract from `ui-form` and `ui-form-dialog` for dropdown widgets; dropdown entries are now built inside field widgets.
+
 ## 1.1.0
 
 - add:
-    - gen-enum command to scaffold enum/domain converter/localize extension artifacts and inject ARB/export entries
+    - enum command to scaffold enum/domain converter/localize extension artifacts and inject ARB/export entries
     - dedicated UI command surface:
         - ui-main
         - ui-dialog

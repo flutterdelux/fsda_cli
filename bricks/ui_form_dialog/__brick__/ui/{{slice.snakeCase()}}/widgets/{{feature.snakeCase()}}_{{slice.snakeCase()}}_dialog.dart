@@ -1,3 +1,4 @@
+import 'package:app_l10n/app_l10n.dart';
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 
@@ -21,6 +22,7 @@ class {{feature.pascalCase()}}{{slice.pascalCase()}}Dialog extends StatelessWidg
 
   @override
   Widget build(BuildContext context) {
+    final appL10n = AppLocalizations.of(context)!;
     final l10n = {{module.pascalCase()}}Localizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
 

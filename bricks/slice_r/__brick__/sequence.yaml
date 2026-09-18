@@ -1,0 +1,65 @@
+remote_data_source_contract:
+  import: |
+    import '../dtos/{{model.snakeCase()}}_dto.dart';
+  code: |
+    {{#is_list}}Future<List<{{model.pascalCase()}}Dto>> {{method.camelCase()}}();{{/is_list}}
+    {{^is_list}}Future<{{model.pascalCase()}}Dto> {{method.camelCase()}}();{{/is_list}}
+
+remote_data_source_impl:
+  import: |
+    import '../dtos/{{model.snakeCase()}}_dto.dart';
+    import '../responses/{{feature.snakeCase()}}_{{slice.snakeCase()}}_response.dart';
+  code: |
+    @override
+    {{#is_list}}Future<List<{{model.pascalCase()}}Dto>> {{method.camelCase()}}() async { {{/is_list}}
+    {{^is_list}}Future<{{model.pascalCase()}}Dto> {{method.camelCase()}}() async { {{/is_list}}
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        '/{{feature.paramCase()}}s/{{slice.paramCase()}}',
+      );
+      if (response.statusCode == 200) {
+        final {{feature.camelCase()}}{{slice.pascalCase()}}Response = {{feature.pascalCase()}}{{slice.pascalCase()}}Response.fromJson(
+          response.body,
+        );
+        if ({{feature.camelCase()}}{{slice.pascalCase()}}Response.data != null) {
+          return {{feature.camelCase()}}{{slice.pascalCase()}}Response.data!;
+        }
+
+        throw const CoreException.serverError();
+      }
+
+      throw {{module.pascalCase()}}Exception.fromApiResponse(response, st: StackTrace.current);
+    }
+
+repository_contract:
+  import: |
+    import '../entities/{{model.snakeCase()}}_entity.dart';
+  code: |
+    {{#is_list}}AsyncResult<List<{{model.pascalCase()}}Entity>> {{method.camelCase()}}();{{/is_list}}
+    {{^is_list}}AsyncResult<{{model.pascalCase()}}Entity> {{method.camelCase()}}();{{/is_list}}
+
+repository_impl:
+  import: |
+    import '../../domain/entities/{{model.snakeCase()}}_entity.dart';
+  code: |
+    @override
+    {{#is_list}}AsyncResult<List<{{model.pascalCase()}}Entity>> {{method.camelCase()}}() async { {{/is_list}}
+    {{^is_list}}AsyncResult<{{model.pascalCase()}}Entity> {{method.camelCase()}}() async { {{/is_list}}
+      try {
+        {{#is_list}}final dtos = await _remoteDataSource.{{method.camelCase()}}();
+        return Result.success(dtos.map((e) => e.toEntity()).toList());{{/is_list}}
+        {{^is_list}}final dto = await _remoteDataSource.{{method.camelCase()}}();
+        return Result.success(dto.toEntity());{{/is_list}}
+      } catch (e, st) {
+        return handleException('{{method.camelCase()}}', e, st);
+      }
+    }
+
+export:
+  domain: |
+    export 'domain/usecases/{{feature.snakeCase()}}_{{slice.snakeCase()}}_use_case.dart';
+  logic: |
+    export 'logic/{{slice.snakeCase()}}/{{feature.snakeCase()}}_{{slice.snakeCase()}}_cubit.dart';
+    export 'logic/{{slice.snakeCase()}}/{{feature.snakeCase()}}_{{slice.snakeCase()}}_state.dart';
+
+post_hooks:
+  - dart run build_runner build --force-jit

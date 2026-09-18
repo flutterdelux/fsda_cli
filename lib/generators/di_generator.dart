@@ -13,20 +13,13 @@ import '../visitors/di_ast_visitor.dart';
 import 'base_generator.dart';
 
 class DiGenerator
-    extends
-        BaseGenerator<
-          void,
-          ({String module, String app, String? feature, bool strict})
-        > {
+    extends BaseGenerator<void, ({String module, String app, bool strict})> {
   const DiGenerator({required super.logger});
 
   @override
-  Future<void> generate(
-    ({String module, String app, String? feature, bool strict}) args,
-  ) async {
+  Future<void> generate(({String module, String app, bool strict}) args) async {
     final module = args.module;
     final app = args.app;
-    final featureFilter = args.feature;
     final strict = args.strict;
 
     final moduleFeaturesRoot = Directory(
@@ -50,7 +43,6 @@ class DiGenerator
     final targetFeatures = await _collectTargetFeatures(
       moduleFeaturesRoot: moduleFeaturesRoot,
       module: module,
-      featureFilter: featureFilter,
     );
     if (targetFeatures.isEmpty) {
       logger.info('No feature target found for module [$module].');
@@ -73,12 +65,7 @@ class DiGenerator
       return;
     }
 
-    final isSingleFeature = featureFilter != null && featureFilter.isNotEmpty;
-    logger.info(
-      isSingleFeature
-          ? 'Scanning feature [$featureFilter] from module [$module]...'
-          : 'Scanning all features from module [$module]...',
-    );
+    logger.info('Scanning all features from module [$module]...');
 
     final featureTargets = <({String feature, List<DiClassInfo> classes})>[];
     for (final feature in targetFeatures) {
@@ -93,9 +80,7 @@ class DiGenerator
 
     if (featureTargets.isEmpty) {
       logger.info(
-        isSingleFeature
-            ? 'No DI classes detected for feature [$featureFilter].'
-            : 'No DI classes detected for all features in module [$module].',
+        'No DI classes detected for all features in module [$module].',
       );
       final report = OperationReportService();
       report.addSkipped(diFilePath);
@@ -169,9 +154,7 @@ class DiGenerator
     if (diSource == originalDiSource) {
       report.addSkipped(diFilePath);
       logger.info(
-        isSingleFeature
-            ? 'DI registration for feature [$featureFilter] is already up to date. No injection applied.'
-            : 'DI registration for module [$module] is already up to date. No injection applied.',
+        'DI registration for module [$module] is already up to date. No injection applied.',
       );
       report.logSummary(logger, operationLabel: 'fsda di');
       return;
@@ -195,9 +178,7 @@ class DiGenerator
     }
 
     logger.success(
-      isSingleFeature
-          ? 'Successfully synchronized feature [$featureFilter] into DI.'
-          : 'Successfully synchronized module [$module] features into DI.',
+      'Successfully synchronized module [$module] features into DI.',
     );
     report.logSummary(logger, operationLabel: 'fsda di');
   }
@@ -205,21 +186,7 @@ class DiGenerator
   Future<List<String>> _collectTargetFeatures({
     required Directory moduleFeaturesRoot,
     required String module,
-    required String? featureFilter,
   }) async {
-    if (featureFilter != null && featureFilter.isNotEmpty) {
-      final targetDir = Directory(
-        p.join(moduleFeaturesRoot.path, featureFilter),
-      );
-      if (!await targetDir.exists()) {
-        logger.error(
-          'Feature path not found: modules/$module/lib/src/features/$featureFilter',
-        );
-        return const <String>[];
-      }
-      return <String>[featureFilter];
-    }
-
     final features = <String>[];
     await for (final entity in moduleFeaturesRoot.list(followLinks: false)) {
       if (entity is! Directory) continue;

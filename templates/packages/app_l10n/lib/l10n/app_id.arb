@@ -1,8 +1,12 @@
 {
+  "required": "Wajib",
   "create": "Buat",
   "add": "Tambah",
   "edit": "Ubah",
   "update": "Perbarui",
+  "save": "Simpan",
+  "saveAs": "Simpan Sebagai",
+  "saveWithCount": "Simpan ({count})",
   "remove": "Hapus",
   "delete": "Hapus",
   "refresh": "Segarkan",
@@ -11,11 +15,16 @@
   "backToHome": "Kembali ke Beranda",
   "seeAll": "Lihat Semua",
   "more": "Lainnya",
+  "cancel": "Batal",
+  "confirm": "Konfirmasi",
+  "close": "Tutup",
+  "homeLabel": "Beranda",
   "invalidArgumentPageTitle": "Argumen Tidak Valid",
   "invalidArgumentPageMessage": "Operasi yang diminta tidak dapat dilakukan karena argumen tidak valid.",
   "notFoundPageTitle": "Tidak Ditemukan",
   "notFoundPageMessage": "Halaman yang Anda cari tidak ada.",
   "unknownError": "Kesalahan tidak diketahui",
+  "unavailableFeature": "Fitur ini saat ini tidak tersedia.",
 
   "@coreFailureUnauthenticated": {
     "description": "========================= Core =================="
