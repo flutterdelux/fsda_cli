@@ -36,7 +36,7 @@ class $className extends StatelessWidget {
           child: IconButton.filledTonal(
             onPressed: () {
               final currentValue = int.tryParse(controller.text) ?? 0;
-              if (currentValue > 0) {
+              if (currentValue > 1) {
                 controller.text = (currentValue - 1).toString();
               }
             },

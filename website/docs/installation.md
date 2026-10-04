@@ -47,25 +47,29 @@ fsda configure-app demo_app
 
 fsda gen-module finance
 fsda gen-feature wallet -m finance --ds remote
-fsda slice-rp detail -f wallet -m finance -d getWalletDetail --model Wallet --props "String:id"
-fsda slice-mp delete -f wallet -m finance -d deleteWallet --props "String:id,String:name"
 fsda enum modifier_selection_type -f wallet -m finance --values single,multiple
-fsda dto Wallet -f wallet -m finance --props "String:id,String:name,ModifierSelectionType:selectionType,int:minSelect=0,int:maxSelect,DateTime?:createdAt"
-fsda entity Wallet -f wallet -m finance --props "String:id,String:name,ModifierSelectionType:selectionType,int:minSelect=0,int:maxSelect,DateTime?:createdAt"
-fsda param WalletCreate -f wallet -m finance --props "String:id,String:name,ModifierSelectionType:selectionType,int:minSelect=0,int:maxSelect"
-fsda request WalletCreate -f wallet -m finance --props "String:id,String:name,ModifierSelectionType:selectionType,int:minSelect=0,int:maxSelect"
-fsda entity wallet_summary -f wallet -m finance --props "String:id,String:name"
+fsda dto Wallet -f wallet -m finance --props "String:id,String:name,ModifierSelectionType:selection_type,int:min_select=0,int:max_select,DateTime?:created_at"
+fsda entity Wallet -f wallet -m finance --props "String:id,String:name,ModifierSelectionType:selection_type,int:min_select=0,int:max_select,DateTime?:created_at"
+fsda param WalletDetail -f wallet -m finance --props "String:id"
+fsda request WalletDetail -f wallet -m finance --props "String:id"
+fsda param WalletDelete -f wallet -m finance --props "String:id,String:name"
+fsda request WalletDelete -f wallet -m finance --props "String:id,String:name"
+fsda slice-rp detail -f wallet -m finance -d getWalletDetail --dto wallet --entity wallet --param wallet_detail --request wallet_detail
+fsda slice-mp delete -f wallet -m finance -d deleteWallet --param wallet_delete --request wallet_delete
+fsda param WalletCreate -f wallet -m finance --props "String:id,String:name,ModifierSelectionType:selection_type,int:min_select=0,int:max_select"
+fsda request WalletCreate -f wallet -m finance --props "String:id,String:name,ModifierSelectionType:selection_type,int:min_select=0,int:max_select"
+fsda entity WalletSummary -f wallet -m finance --props "String:id,String:name"
 
 fsda input-text name -f wallet -m finance
 fsda input-text-area notes -f wallet -m finance --min 3 --max 6
 fsda input-number price -f wallet -m finance --type double
 fsda input-qty min_select -f wallet -m finance
 fsda input-qty max_select -f wallet -m finance
-fsda input-dropdown-enum selection_type -f wallet -m finance --type ModifierSelectionType
-fsda input-dropdown category -f wallet -m finance --type WalletCategoryEntity
-fsda input-selector parent_wallet -f wallet -m finance --type WalletEntity
-fsda input-selector-list related_wallets -f wallet -m finance --type WalletEntity
-fsda input-image wallet_image -f wallet -m finance
+fsda input-dropdown-enum selection_type -f wallet -m finance --type modifier_selection_type
+fsda input-dropdown category -f wallet -m finance --type wallet_category_entity
+fsda input-selector parent_wallet -f wallet -m finance --type wallet
+fsda input-selector-list related_wallets -f wallet -m finance --type wallet
+fsda input-image wallet_image -f wallet -m finance --type network_file
 fsda input-switch is_active -f wallet -m finance
 fsda input-password password -f wallet -m finance
 
@@ -79,10 +83,10 @@ fsda ui-form-dialog update -f wallet -m finance --fields "text:String:name,dropd
 fsda reg finance -a demo_app
 fsda di finance -a demo_app
 
-fsda compose-main detail -f wallet -m finance -a demo_app -p wallet_detail_page
-fsda compose-form-dialog update -f wallet -m finance -a demo_app -p wallet_update_page
-fsda compose-pmi delete -f wallet -m finance -a demo_app -p wallet_detail_page
-fsda compose-dialog delete -f wallet -m finance -a demo_app -p wallet_delete_page
+fsda compose-main detail -f wallet -m finance -a demo_app -p wallet_detail
+fsda compose-form-dialog update -f wallet -m finance -a demo_app -p wallet_update
+fsda compose-pmi delete -f wallet -m finance -a demo_app -p wallet_detail
+fsda compose-dialog delete -f wallet -m finance -a demo_app -p wallet_delete
 
 # optional helper after hook-disabled workflow:
 fsda refresh finance
@@ -95,6 +99,10 @@ fsda fix-import -a demo_app
 zsh note:
 
 - Quote `--props` values when nullable type (`?`) exists.
+- CLI identifiers use snake_case (`app`, `module`, `feature`, `slice`, `page`, `field`, enum name/value, prop names, and slice artifact prefixes).
+- Compose `--page` must be page prefix without `_page` suffix.
+- Input type prefixes (`input-dropdown-enum`, `input-selector`, `input-selector-list`, `input-image`) use snake_case.
+- Enum special rule: `fsda enum --values` menerima snake_case, tetapi member enum yang dihasilkan di Dart akan menjadi camelCase.
 
 ## Strict Mode
 

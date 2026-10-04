@@ -192,6 +192,7 @@ class UiFormService {
           );
           extraCtorParams.add('    this.onSelect$fieldPascal,');
         case FormInputType.text:
+        case FormInputType.number:
         case FormInputType.textArea:
         case FormInputType.qty:
         case FormInputType.dropdown:
@@ -385,6 +386,7 @@ class UiFormService {
 
       switch (field.inputType) {
         case FormInputType.text:
+        case FormInputType.number:
         case FormInputType.textArea:
         case FormInputType.qty:
         case FormInputType.password:
@@ -497,7 +499,9 @@ class UiFormService {
     final initBlock = <String>[
       if (initControllers.isNotEmpty) initControllers,
       if (initNotifiers.isNotEmpty) initNotifiers,
-      '    _onInputChanged();',
+      '    WidgetsBinding.instance.addPostFrameCallback((_) {',
+      '      if (mounted) _onInputChanged();',
+      '    });',
     ].join('\n');
 
     final disposeBlock = <String>[
@@ -580,6 +584,7 @@ ${fieldWidgets.join('\n')}
   bool _usesTextControllerForFormField(InputTypedField field) {
     switch (field.inputType) {
       case FormInputType.text:
+      case FormInputType.number:
       case FormInputType.textArea:
       case FormInputType.qty:
       case FormInputType.password:
@@ -638,6 +643,7 @@ ${fieldWidgets.join('\n')}
       case FormInputType.switcher:
         return 'bool';
       case FormInputType.text:
+      case FormInputType.number:
       case FormInputType.textArea:
       case FormInputType.qty:
       case FormInputType.selector:

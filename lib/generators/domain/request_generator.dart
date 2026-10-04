@@ -217,7 +217,10 @@ class RequestGenerator
         .map((prop) => _buildFieldLine(prop: prop, withConverter: true))
         .join('\n');
     final fromParamAssignments = props
-        .map((prop) => '      ${prop.name}: param.${prop.name},')
+        .map(
+          (prop) =>
+              '      ${_resolvePropertyName(prop)}: param.${_resolvePropertyName(prop)},',
+        )
         .join('\n');
 
     return '''$packageImports
@@ -251,6 +254,7 @@ $fromParamAssignments
     required TypedProp prop,
     required bool withConverter,
   }) {
+    final propertyName = _resolvePropertyName(prop);
     final annotations = <String>[];
 
     if (withConverter) {
@@ -270,7 +274,11 @@ $fromParamAssignments
         : '${annotations.join(' ')} ';
     final requiredPrefix = prop.isRequired ? 'required ' : '';
 
-    return '    $annotationPrefix$requiredPrefix${prop.normalizedType} ${prop.name},';
+    return '    $annotationPrefix$requiredPrefix${prop.normalizedType} $propertyName,';
+  }
+
+  String _resolvePropertyName(TypedProp prop) {
+    return prop.name.camelCase;
   }
 
   String? _buildConverterAnnotation(TypedProp prop) {

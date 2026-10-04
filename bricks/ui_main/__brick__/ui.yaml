@@ -1,6 +1,6 @@
 arb: |
-  "{{feature.camelCase()}}DetailTitle": "{{feature.titleCase()}} Detail",
-  "{{feature.camelCase()}}DetailErrorTitle": "Failed to Load {{feature.titleCase()}}"
+  "{{feature.camelCase()}}{{slice.pascalCase()}}Title": "{{feature.titleCase()}} {{slice.titleCase()}}",
+  "{{feature.camelCase()}}{{slice.pascalCase()}}ErrorTitle": "Failed to Load {{feature.titleCase()}} {{slice.titleCase()}}"
 
 export:
   ui: |

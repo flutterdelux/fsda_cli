@@ -3,10 +3,16 @@
 - breaking:
     - remove legacy `gen-ui` command from active command surface. Use dedicated `ui-*` commands.
     - remove legacy `gen-slice` command from active command surface. Use dedicated `slice-*` commands.
+    - slice command contract updated: response/retrieval variants no longer use `--model` (use `--dto` + `--entity`), and param variants no longer use `--props` (use `--param` + `--request`).
     - `di` command is now fixed to module scope only: `fsda di <module> -a <app> [--strict]`.
     - `ui-form` and `ui-form-dialog` with `--fields` no longer generate shared field widgets or field ARB keys.
     - all `input-*` commands now use single-field mode (`<field>` or `--field`) per command run.
-    - `ui-form` / `ui-form-dialog` input_type values are fixed to snake_case tokens: `text`, `selector`, `selector_list`, `text_area`, `qty`, `dropdown`, `dropdown_enum`, `image`, `switch`, `password`.
+    - `ui-form` / `ui-form-dialog` input_type values are fixed to snake_case tokens: `text`, `number`, `selector`, `selector_list`, `text_area`, `qty`, `dropdown`, `dropdown_enum`, `image`, `switch`, `password`.
+    - slice artifact references in `slice-*` commands (`--dto`, `--entity`, `--param`, `--request`) now require snake_case prefixes that match generated artifact file prefixes.
+    - compose commands now treat `--page` as page prefix only (snake_case without `_page` suffix).
+    - input type prefixes for `input-dropdown-enum`, `input-selector`, `input-selector-list`, and `input-image` now use snake_case contract.
+    - `input-image` now requires explicit `--type` (`network_file` or entity prefix).
+    - modelling `--props` names now require snake_case input, while generated Dart properties are emitted as camelCase identifiers.
 - add:
     - dedicated slice command surface:
         - slice-m
@@ -36,6 +42,8 @@
     - sequence manifest (`sequence.yaml`) is now rendered with generated variables before checkpoint weaving.
     - standalone generated Dart files are normalized to prevent leftover comma/blank-line artifacts from template weaving.
     - remove stale legacy `SequenceCode` fallback path in slice generator that could trigger unresolved bundle resolver errors.
+    - datasource option alias handling is now consistent for both `--ds` and `--datasource` in `gen-feature` and `regen-feature`.
+    - `input-dropdown` now supports typed dropdown use cases beyond entity-only mode with configurable label builder fallback.
 - refactor:
     - standardize build_runner post-hook commands to `dart run build_runner build --delete-conflicting-outputs --force-jit` for Flutter 3/4 compatibility.
     - align v2 documentation tracks around explicit `slice-*` and `ui-*` generation flow plus module-scoped `di` usage.

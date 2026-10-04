@@ -6,17 +6,14 @@ import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
 import '../../generators/base_generator.dart';
-import '../../models/generation/typed_prop.dart';
 import '../memory_generator_target.dart';
 import '../operation_report_service.dart';
 import 'slice_checkpoint_weaver_service.dart';
 import 'slice_manifest_render_service.dart';
-import 'slice_param_request_service.dart';
 import 'slice_source_normalizer_service.dart';
 
 class SliceService extends BaseGenerator<void, Never> {
   final SliceManifestRenderService manifestRenderService;
-  final SliceParamRequestService paramRequestService;
   final SliceSourceNormalizerService sourceNormalizerService;
   final SliceCheckpointWeaverService checkpointWeaverService;
 
@@ -25,13 +22,10 @@ class SliceService extends BaseGenerator<void, Never> {
     required super.fileService,
     required super.hookService,
     SliceManifestRenderService? manifestRenderService,
-    SliceParamRequestService? paramRequestService,
     SliceSourceNormalizerService? sourceNormalizerService,
     SliceCheckpointWeaverService? checkpointWeaverService,
   }) : manifestRenderService =
            manifestRenderService ?? const SliceManifestRenderService(),
-       paramRequestService =
-           paramRequestService ?? const SliceParamRequestService(),
        sourceNormalizerService =
            sourceNormalizerService ?? const SliceSourceNormalizerService(),
        checkpointWeaverService =
@@ -59,7 +53,8 @@ class SliceService extends BaseGenerator<void, Never> {
     required MasonBundle bundle,
     required bool strict,
     required bool hookDisabled,
-    List<TypedProp> paramProps = const <TypedProp>[],
+    String? paramPrefix,
+    String? requestPrefix,
   }) async {
     if (fileService == null || hookService == null) {
       logger.error(
@@ -109,17 +104,25 @@ class SliceService extends BaseGenerator<void, Never> {
         throw Exception('sequence.yaml not found in generated slice files.');
       }
 
-      final renderedSequenceYaml = manifestRenderService.renderSequenceManifest(
+      var renderedSequenceYaml = manifestRenderService.renderSequenceManifest(
         template: sequenceYamlRaw,
         vars: vars,
       );
 
-      if (paramProps.isNotEmpty) {
-        paramRequestService.putParamRequestArtifacts(
+      final paramRequestAliases = _resolveParamRequestAliases(
+        featureName: featureName,
+        sliceName: sliceName,
+        paramPrefix: paramPrefix,
+        requestPrefix: requestPrefix,
+      );
+      if (paramRequestAliases != null) {
+        _rewriteStandaloneParamRequestReferences(
           files: standaloneFilesToSave,
-          featureName: featureName,
-          sliceName: sliceName,
-          props: paramProps,
+          aliases: paramRequestAliases,
+        );
+        renderedSequenceYaml = _rewriteManifestParamRequestReferences(
+          source: renderedSequenceYaml,
+          aliases: paramRequestAliases,
         );
       }
 
@@ -310,15 +313,7 @@ class SliceService extends BaseGenerator<void, Never> {
         report.addInjected(repoImplPath);
       }
 
-      final extraBarrelExports = paramRequestService
-          .buildParamRequestBarrelExports(
-            featureName: featureName,
-            sliceName: sliceName,
-            includeParamExports: paramProps.isNotEmpty,
-          );
-
-      if ((exportMap != null && exportMap.isNotEmpty) ||
-          extraBarrelExports.isNotEmpty) {
+      if (exportMap != null && exportMap.isNotEmpty) {
         progress.update('Registering export to feature barrel...');
         final featureBarrelPath = p.join(
           featureRoot,
@@ -328,7 +323,6 @@ class SliceService extends BaseGenerator<void, Never> {
             .updateFeatureBarrelStructured(
               path: featureBarrelPath,
               exportMap: exportMap,
-              extraExports: extraBarrelExports,
             );
         if (barrelChanged) {
           report.addUpdated(featureBarrelPath);
@@ -358,6 +352,141 @@ class SliceService extends BaseGenerator<void, Never> {
       progress.fail('Failed to stitch slice: $e');
       exitCode = 1;
     }
+  }
+
+  ({
+    String oldParamClass,
+    String oldParamFile,
+    String newParamClass,
+    String newParamFile,
+    String oldRequestClass,
+    String oldRequestFile,
+    String newRequestClass,
+    String newRequestFile,
+  })?
+  _resolveParamRequestAliases({
+    required String featureName,
+    required String sliceName,
+    String? paramPrefix,
+    String? requestPrefix,
+  }) {
+    if (paramPrefix == null || requestPrefix == null) {
+      return null;
+    }
+
+    final normalizedParamPrefix = _stripKnownSuffix(paramPrefix, 'param');
+    final normalizedRequestPrefix = _stripKnownSuffix(requestPrefix, 'request');
+
+    if (normalizedParamPrefix.isEmpty || normalizedRequestPrefix.isEmpty) {
+      return null;
+    }
+
+    final legacyPrefixSnake = '${featureName.snakeCase}_${sliceName.snakeCase}';
+
+    return (
+      oldParamClass: '${featureName.pascalCase}${sliceName.pascalCase}Param',
+      oldParamFile: '${legacyPrefixSnake}_param.dart',
+      newParamClass: '${normalizedParamPrefix.pascalCase}Param',
+      newParamFile: '${normalizedParamPrefix.snakeCase}_param.dart',
+      oldRequestClass:
+          '${featureName.pascalCase}${sliceName.pascalCase}Request',
+      oldRequestFile: '${legacyPrefixSnake}_request.dart',
+      newRequestClass: '${normalizedRequestPrefix.pascalCase}Request',
+      newRequestFile: '${normalizedRequestPrefix.snakeCase}_request.dart',
+    );
+  }
+
+  void _rewriteStandaloneParamRequestReferences({
+    required Map<String, List<int>> files,
+    required ({
+      String oldParamClass,
+      String oldParamFile,
+      String newParamClass,
+      String newParamFile,
+      String oldRequestClass,
+      String oldRequestFile,
+      String newRequestClass,
+      String newRequestFile,
+    })
+    aliases,
+  }) {
+    for (final entry in files.entries.toList(growable: false)) {
+      final filePath = entry.key;
+      if (!filePath.endsWith('.dart')) {
+        continue;
+      }
+
+      final source = utf8.decode(entry.value);
+      final rewritten = _replaceLegacyParamRequestReferences(
+        source: source,
+        aliases: aliases,
+      );
+      if (rewritten != source) {
+        files[filePath] = utf8.encode(rewritten);
+      }
+    }
+  }
+
+  String _rewriteManifestParamRequestReferences({
+    required String source,
+    required ({
+      String oldParamClass,
+      String oldParamFile,
+      String newParamClass,
+      String newParamFile,
+      String oldRequestClass,
+      String oldRequestFile,
+      String newRequestClass,
+      String newRequestFile,
+    })
+    aliases,
+  }) {
+    return _replaceLegacyParamRequestReferences(
+      source: source,
+      aliases: aliases,
+    );
+  }
+
+  String _replaceLegacyParamRequestReferences({
+    required String source,
+    required ({
+      String oldParamClass,
+      String oldParamFile,
+      String newParamClass,
+      String newParamFile,
+      String oldRequestClass,
+      String oldRequestFile,
+      String newRequestClass,
+      String newRequestFile,
+    })
+    aliases,
+  }) {
+    return source
+        .replaceAll(aliases.oldParamClass, aliases.newParamClass)
+        .replaceAll(aliases.oldRequestClass, aliases.newRequestClass)
+        .replaceAll(aliases.oldParamFile, aliases.newParamFile)
+        .replaceAll(aliases.oldRequestFile, aliases.newRequestFile);
+  }
+
+  String _stripKnownSuffix(String raw, String suffix) {
+    final value = raw.trim();
+    if (value.isEmpty) {
+      return value;
+    }
+
+    final lowerValue = value.toLowerCase();
+    final lowerSuffix = suffix.toLowerCase();
+    final snakeSuffix = '_$lowerSuffix';
+
+    if (lowerValue.endsWith(snakeSuffix)) {
+      return value.substring(0, value.length - snakeSuffix.length);
+    }
+
+    if (lowerValue.endsWith(lowerSuffix)) {
+      return value.substring(0, value.length - lowerSuffix.length);
+    }
+
+    return value;
   }
 
   Map<String, dynamic> _buildGeneratorVars({

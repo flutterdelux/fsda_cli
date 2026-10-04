@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
+import 'package:mason/mason.dart';
 import 'package:path/path.dart' as p;
 
 import '../../constants/cli_rules.dart';
@@ -27,7 +28,7 @@ class InputDropdownEnumCommand extends Command<void> {
       ..addOption(
         'type',
         help:
-            'Required enum type in PascalCase form, for example ProductStatus.',
+            'Required enum type prefix in snake_case, for example product_status.',
       )
       ..addFlag(
         'strict',
@@ -109,6 +110,16 @@ class InputDropdownEnumCommand extends Command<void> {
 
     final field = _resolveField();
     final enumType = _resolveEnumType();
+    final enumFile = File(
+      p.join(featureDir.path, 'domain', 'enums', '${enumType.snakeCase}.dart'),
+    );
+    if (!await enumFile.exists()) {
+      final requestedType = _resolvedRawEnumType ?? enumType.snakeCase;
+      throw UsageException(
+        'Enum type "$requestedType" is not ready in "$feature" feature. Expected file: domain/enums/${enumType.snakeCase}.dart. Run fsda enum first.',
+        usage,
+      );
+    }
 
     await inputGenerator.generateDropdownEnum((
       feature: feature,
@@ -172,14 +183,24 @@ class InputDropdownEnumCommand extends Command<void> {
     }
 
     final normalized = rawType.replaceAll(' ', '');
-    final typeRegExp = RegExp(CliRules.modelPrefixPattern);
-    if (!typeRegExp.hasMatch(normalized) || normalized.endsWith('Entity')) {
+    final enumPrefixRegExp = RegExp(CliRules.sliceNamePattern);
+    if (!enumPrefixRegExp.hasMatch(normalized)) {
       throw UsageException(
-        'Invalid enum type "$rawType". Use PascalCase enum type, for example ProductStatus.',
+        'Invalid enum type "$rawType". Use snake_case enum type prefix, for example product_status.',
         usage,
       );
     }
 
-    return normalized;
+    if (normalized.endsWith('_entity')) {
+      throw UsageException(
+        'Invalid enum type "$rawType". Entity suffix is not allowed for input-dropdown-enum.',
+        usage,
+      );
+    }
+    _resolvedRawEnumType = rawType;
+
+    return normalized.pascalCase;
   }
+
+  String? _resolvedRawEnumType;
 }

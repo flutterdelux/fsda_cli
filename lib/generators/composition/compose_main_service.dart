@@ -1311,12 +1311,12 @@ $loadingOverlay
     if (successVariant != null) {
       if (successVariant.firstParamName == null) {
         branches.add('''success: () {
-        Navigator.of(context, rootNavigator: true).maybePop();
+        Navigator.of(context, rootNavigator: true).maybePop('refresh');
         context.showSuccessSnackbar(l10n.$successKey);
       },''');
       } else {
         branches.add('''success: (${successVariant.firstParamName}) {
-        Navigator.of(context, rootNavigator: true).maybePop();
+        Navigator.of(context, rootNavigator: true).maybePop('refresh');
         context.showSuccessSnackbar(l10n.$successKey);
       },''');
       }

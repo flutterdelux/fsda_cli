@@ -40,6 +40,9 @@ class AppCard extends StatelessWidget {
 
     final content = Flex(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: isVertical
+          ? CrossAxisAlignment.stretch
+          : CrossAxisAlignment.start,
       direction: direction,
       children: items,
     );

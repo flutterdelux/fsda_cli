@@ -18,6 +18,8 @@ class AppColorTheme {
     onSurface: AppColors.onSurfaceLight,
     error: Color(0xFFDC2626),
     onError: Color(0xFFFFFFFF),
+    outline: AppColors.outlineLight,
+    outlineVariant: AppColors.outlineVariantLight,
   );
 
   static ColorScheme get darkScheme => const ColorScheme.dark(
@@ -33,5 +35,7 @@ class AppColorTheme {
     onSurface: AppColors.onSurfaceDark,
     error: Color(0xFFEF4444),
     onError: Color(0xFFFFFFFF),
+    outline: AppColors.outlineDark,
+    outlineVariant: AppColors.outlineVariantDark,
   );
 }

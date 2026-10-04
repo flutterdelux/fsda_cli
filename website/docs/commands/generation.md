@@ -52,7 +52,7 @@ Rerun behavior:
 ## gen-feature
 
 ```bash
-fsda gen-feature <feature> -m <module> [--ds <datasource_mode>] [--hook-disabled]
+fsda gen-feature <feature> -m <module> [--ds <datasource_mode>|--datasource <datasource_mode>] [--hook-disabled]
 ```
 
 Generates feature baseline in `modules/<module>/lib/src/features/<feature>`.
@@ -71,7 +71,7 @@ Rerun behavior:
 ## regen-feature
 
 ```bash
-fsda regen-feature <feature> -m <module> [--ds <datasource_mode>]
+fsda regen-feature <feature> -m <module> [--ds <datasource_mode>|--datasource <datasource_mode>]
 ```
 
 Regenerates only missing baseline files for an existing feature.

@@ -21,7 +21,7 @@ class UiFormDialogCommand extends UiBaseCommand {
       ..addMultiOption(
         'fields',
         help:
-            'Required typed form fields with syntax input_type:value_type:field_name. Repeat --fields or pass comma-separated values.',
+            'Required typed form fields with syntax input_type:value_type:field_name. Supported input_type: text, number, selector, selector_list, text_area, qty, dropdown, dropdown_enum, image, switch, password. Repeat --fields or pass comma-separated values.',
       )
       ..addOption(
         'initial',
@@ -122,6 +122,7 @@ class UiFormDialogCommand extends UiBaseCommand {
 
   void _validateFieldTypeCompatibility(InputTypedField field) {
     final type = field.typeWithoutNullability;
+    const numericTypes = <String>{'int', 'double', 'num', 'BigInt'};
 
     switch (field.inputType) {
       case FormInputType.switcher:
@@ -136,6 +137,14 @@ class UiFormDialogCommand extends UiBaseCommand {
         if (type != 'int') {
           throw UsageException(
             'Field "${field.name}" with input_type qty must use int type.',
+            usage,
+          );
+        }
+        return;
+      case FormInputType.number:
+        if (!numericTypes.contains(type)) {
+          throw UsageException(
+            'Field "${field.name}" with input_type number must use numeric type: int, double, num, or BigInt.',
             usage,
           );
         }

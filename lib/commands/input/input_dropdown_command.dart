@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
+import 'package:mason/mason.dart';
 import 'package:path/path.dart' as p;
 
 import '../../constants/cli_rules.dart';
@@ -27,7 +28,7 @@ class InputDropdownCommand extends Command<void> {
       ..addOption(
         'type',
         help:
-            'Required dropdown value type in PascalCase Entity form, for example ProductCategoryEntity.',
+            'Required dropdown value type. Accepts Dart type (for example String, ProductCategoryEntity) or snake_case alias (for example product_category_entity).',
       )
       ..addFlag(
         'strict',
@@ -48,11 +49,11 @@ class InputDropdownCommand extends Command<void> {
 
   @override
   final String description =
-      'Generate shared dropdown field widget for entity selection and inject ARB keys.';
+      'Generate shared dropdown field widget and inject ARB keys.';
 
   @override
   String get invocation =>
-      'fsda input-dropdown <field> -f <feature> -m <module> --type <entity_type> [--strict] [--hook-disabled]';
+      'fsda input-dropdown <field> -f <feature> -m <module> --type <value_type> [--strict] [--hook-disabled]';
 
   @override
   Future<void> run() async {
@@ -108,12 +109,12 @@ class InputDropdownCommand extends Command<void> {
     }
 
     final field = _resolveField();
-    final entityType = _resolveEntityType();
+    final valueType = _resolveValueType();
 
     await inputGenerator.generateDropdown((
       feature: feature,
       module: module,
-      fields: <TypedProp>[TypedProp(type: entityType, name: field)],
+      fields: <TypedProp>[TypedProp(type: valueType, name: field)],
       strict: strict,
       hookDisabled: hookDisabled,
     ));
@@ -165,28 +166,93 @@ class InputDropdownCommand extends Command<void> {
     return resolved;
   }
 
-  String _resolveEntityType() {
+  String _resolveValueType() {
     final rawType = (argResults?['type'] as String?)?.trim() ?? '';
     if (rawType.isEmpty) {
       throw UsageException('Missing required option(s): --type', usage);
     }
 
     final normalized = rawType.replaceAll(' ', '');
-    if (normalized.startsWith('List<')) {
+    if (normalized.contains('?')) {
       throw UsageException(
-        'Invalid dropdown type "$rawType". Use entity type without List wrapper (for example ProductCategoryEntity).',
+        'Invalid dropdown type "$rawType". Nullable marker (?) is not allowed for --type.',
         usage,
       );
     }
 
-    final typeRegExp = RegExp(CliRules.modelPrefixPattern);
-    if (!typeRegExp.hasMatch(normalized) || !normalized.endsWith('Entity')) {
+    if (normalized.startsWith('List<')) {
       throw UsageException(
-        'Invalid dropdown type "$rawType". Use PascalCase entity type, for example ProductCategoryEntity.',
+        'Invalid dropdown type "$rawType". Use item type without List wrapper.',
+        usage,
+      );
+    }
+
+    final snakeTypeRegExp = RegExp(CliRules.sliceNamePattern);
+    if (snakeTypeRegExp.hasMatch(normalized)) {
+      return _resolveSnakeCaseType(normalized);
+    }
+
+    final typeRegExp = RegExp(CliRules.modelPrefixPattern);
+    if (!typeRegExp.hasMatch(normalized) && !_isPrimitiveDartType(normalized)) {
+      throw UsageException(
+        'Invalid dropdown type "$rawType". Use a Dart type (for example String, ProductCategoryEntity) or snake_case alias (for example product_category_entity).',
         usage,
       );
     }
 
     return normalized;
+  }
+
+  String _resolveSnakeCaseType(String rawType) {
+    switch (rawType) {
+      case 'string':
+        return 'String';
+      case 'int':
+      case 'double':
+      case 'num':
+      case 'bool':
+      case 'dynamic':
+        return rawType;
+      case 'object':
+        return 'Object';
+      case 'date_time':
+        return 'DateTime';
+      case 'duration':
+        return 'Duration';
+      case 'big_int':
+        return 'BigInt';
+      case 'network_file':
+        return 'NetworkFile';
+      default:
+        if (rawType.endsWith('_entity')) {
+          final prefix = rawType.substring(
+            0,
+            rawType.length - '_entity'.length,
+          );
+          return '${prefix.pascalCase}Entity';
+        }
+        if (rawType.endsWith('_dto')) {
+          final prefix = rawType.substring(0, rawType.length - '_dto'.length);
+          return '${prefix.pascalCase}Dto';
+        }
+        return rawType.pascalCase;
+    }
+  }
+
+  bool _isPrimitiveDartType(String type) {
+    const primitiveTypes = <String>{
+      'String',
+      'int',
+      'double',
+      'num',
+      'bool',
+      'dynamic',
+      'Object',
+      'DateTime',
+      'Duration',
+      'BigInt',
+      'NetworkFile',
+    };
+    return primitiveTypes.contains(type);
   }
 }

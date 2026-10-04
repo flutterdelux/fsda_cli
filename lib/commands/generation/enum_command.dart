@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
+import 'package:mason/mason.dart';
 import 'package:path/path.dart' as p;
 
 import '../../constants/cli_rules.dart';
@@ -19,7 +20,7 @@ class EnumCommand extends Command<void> {
       ..addMultiOption(
         'values',
         help:
-            'Required enum values in snake_case. Repeat --values or pass comma-separated values.',
+            'Required enum values in snake_case. Repeat --values or pass comma-separated values. Generated Dart enum members are emitted as camelCase.',
       )
       ..addFlag(
         'strict',
@@ -182,6 +183,20 @@ class EnumCommand extends Command<void> {
           usage,
         );
       }
+    }
+
+    final identifierSources = <String, String>{};
+    for (final value in normalizedValues) {
+      final identifier = value.camelCase;
+      final existingSource = identifierSources[identifier];
+      if (existingSource != null && existingSource != value) {
+        throw UsageException(
+          'Enum values "$existingSource" and "$value" resolve to the same generated enum member "$identifier". Use distinct snake_case values.',
+          usage,
+        );
+      }
+
+      identifierSources[identifier] = value;
     }
 
     return normalizedValues.toList(growable: false);

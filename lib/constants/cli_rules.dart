@@ -5,8 +5,9 @@ Naming rules:
 1. Must start with a letter (a-z)
 2. Can only contain letters, numbers, underscores (_), or dashes (-)
 
-Tips: If you want to use dash/underscore, type directly: fsda create Toko-Sepatu_01
-Example: fsda create TokoSepatu_01 or fsda create Toko-Sepatu-01
+Allowed styles: kebab-case, snake_case, PascalCase, camelCase.
+Tips: If you want to use dash/underscore, type directly: fsda create toko-sepatu_01
+Example: fsda create tokoSepatu_01 or fsda create TokoSepatu_01
 ''';
 
   static const appNamePattern = _snakeCasePattern;
@@ -55,6 +56,12 @@ Tips: Common examples are `wallet` or `wallet_create`.
 Example: fsda dto Wallet -m finance -f wallet --props "String:id"
 ''';
 
+  static const sliceArtifactPrefixPattern = _snakeCasePattern;
+  static String get sliceArtifactPrefixRule => '''$_snakeCaseRule
+Tips: Use existing artifact prefix in snake_case from generated file names.
+Example: fsda slice-r detail -f category -m catalog -d getCategoryDetail --dto category --entity category
+''';
+
   static const modelPrefixPattern = _modelPrefixPattern;
   static String get modelPrefixRule => '''
 Naming rules:
@@ -64,12 +71,6 @@ Naming rules:
 
 Tips: Use base model prefix only (e.g., `Category`, not `CategoryDto`).
 Example: fsda slice-r detail -f category -m catalog -d getCategoryDetail --model Category
-''';
-
-  static const pageNamePattern = _snakeCasePattern;
-  static String get pageNameRule => '''$_snakeCaseRule
-Tips: If you want to use underscore, type directly: fsda compose-main submit_transfer -f transfer -m finance -a fsda_demo -p submit_transfer_page
-Example: fsda compose-main submit_transfer -f transfer -m finance -a fsda_demo -p submit_transfer_page
 ''';
 }
 

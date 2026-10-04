@@ -29,6 +29,7 @@ class $className extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = ${modulePascal}Localizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
     return AppSection(
       header: AppSectionHeader(titleText: l10n.${l10nKey}Label),
       child: AppTextField(
@@ -37,7 +38,11 @@ class $className extends StatelessWidget {
         hintText: l10n.${l10nKey}Hint,
         readOnly: true,
         onTap: () => onChanged(!value),
-        suffix: Switch.adaptive(value: value, onChanged: onChanged),
+        suffix: Switch.adaptive(
+          value: value,
+          onChanged: onChanged,
+          activeTrackColor: colorScheme.primary,
+        ),
       ),
     );
   }

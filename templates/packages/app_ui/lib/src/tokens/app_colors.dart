@@ -25,6 +25,10 @@ class AppColors {
   static const surfaceLight = Color(0xFFF0F4F5);
   static const onSurfaceLight = Color(0xFF171C1E);
 
+  /// Outline Colors
+  static const outlineLight = Color(0xFFBDBDBD);
+  static const outlineVariantLight = Color(0xFFE0E0E0);
+
   /// ================= DARK MODE =================
   /// Deep Black Scaffold, Elevated Lighter Grey Container/Card
   static const primaryDark = Color(0xFF00B4D8);
@@ -46,4 +50,8 @@ class AppColors {
 
   static const surfaceDark = Color(0xFF192225); // Fallback surface
   static const onSurfaceDark = Color(0xFFE6E8E8);
+
+  /// Outline Colors
+  static const outlineDark = Color(0xFF757575);
+  static const outlineVariantDark = Color(0xFFBDBDBD);
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../extensions/color_scheme_x.dart';
 import '../tokens/app_typography.dart';
@@ -9,6 +10,7 @@ import 'components/app_color_theme.dart';
 import 'components/app_divider_theme.dart';
 import 'components/app_input_theme.dart';
 import 'components/app_nav_bar_theme.dart';
+import 'components/app_nav_rail_theme.dart';
 import 'components/app_text_theme.dart';
 
 /// The central point of theme management for the entire application.
@@ -40,6 +42,7 @@ class AppTheme {
       textButtonTheme: AppButtonTheme.text(colorScheme),
       cardTheme: AppCardTheme.standard(colorScheme),
       navigationBarTheme: AppNavBarTheme.standard(colorScheme),
+      navigationRailTheme: AppNavRailTheme.standard(colorScheme),
 
       // Typography
       fontFamily: AppTypography.fontFamily,
@@ -56,6 +59,9 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         titleTextStyle: baseTextTheme.titleLarge?.copyWith(
           color: colorScheme.onSurface,
+        ),
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: colorScheme.surfaceContainerLowest,
         ),
       ),
 

@@ -1,4 +1,3 @@
-import 'package:app_l10n/app_l10n.dart';
 import 'package:flutter/material.dart';
 import '../../../../../generated/{{module.snakeCase()}}_localizations.dart';
 

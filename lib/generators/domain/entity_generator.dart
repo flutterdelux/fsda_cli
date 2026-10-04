@@ -226,13 +226,18 @@ $fieldLines
   }
 
   String _buildFieldLine(TypedProp prop) {
+    final propertyName = _resolvePropertyName(prop);
     final defaultLiteral = _buildDefaultLiteral(prop);
     final defaultAnnotation = defaultLiteral == null
         ? ''
         : '@Default($defaultLiteral) ';
     final requiredPrefix = prop.isRequired ? 'required ' : '';
 
-    return '    $defaultAnnotation$requiredPrefix${prop.normalizedType} ${prop.name},';
+    return '    $defaultAnnotation$requiredPrefix${prop.normalizedType} $propertyName,';
+  }
+
+  String _resolvePropertyName(TypedProp prop) {
+    return prop.name.camelCase;
   }
 
   String? _buildDefaultLiteral(TypedProp prop) {

@@ -19,10 +19,11 @@ class RegenFeatureCommand extends Command<void> {
     argParser
       ..addOption('module', abbr: 'm', help: 'Target module name.')
       ..addOption(
-        'ds',
+        'datasource',
         defaultsTo: DataSourceMode.both.value,
         help: datasourceHelp,
-      );
+      )
+      ..addOption('ds', help: datasourceHelp);
   }
 
   @override
@@ -34,7 +35,7 @@ class RegenFeatureCommand extends Command<void> {
 
   @override
   String get invocation =>
-      'fsda regen-feature <feature> -m <module> [--ds <datasource_mode>]';
+      'fsda regen-feature <feature> -m <module> [--ds <datasource_mode>|--datasource <datasource_mode>]';
 
   @override
   Future<void> run() async {
@@ -51,10 +52,26 @@ class RegenFeatureCommand extends Command<void> {
     final feature = args.first;
 
     final module = argResults?['module'] as String?;
-    final datasource = argResults?['ds'] as String?;
+    final datasourceAlias = (argResults?['ds'] as String?)?.trim();
+    final datasourceOption = (argResults?['datasource'] as String?)?.trim();
     if (module == null || module.isEmpty) {
       throw UsageException('Missing required option: --module (-m).', usage);
     }
+
+    if (datasourceAlias != null &&
+        datasourceAlias.isNotEmpty &&
+        datasourceOption != null &&
+        datasourceOption.isNotEmpty &&
+        datasourceAlias != datasourceOption) {
+      throw UsageException(
+        'Conflicting datasource mode values between --ds and --datasource.',
+        usage,
+      );
+    }
+
+    final datasource = (datasourceAlias != null && datasourceAlias.isNotEmpty)
+        ? datasourceAlias
+        : datasourceOption;
 
     DataSourceMode dataSourceMode;
     try {

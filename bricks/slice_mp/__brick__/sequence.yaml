@@ -11,7 +11,7 @@ remote_data_source_impl:
     @override
     Future<void> {{method.camelCase()}}({{feature.pascalCase()}}{{slice.pascalCase()}}Request request) async {
       final response = await _apiClient.post<Map<String, dynamic>>(
-        '/{{#paramCase}}{{feature}}{{/paramCase}}/{{#paramCase}}{{slice}}{{/paramCase}}',
+        '/{{#paramCase}}{{feature}}s{{/paramCase}}/{{#paramCase}}{{slice}}{{/paramCase}}',
         body: request.toJson(),
       );
       if (response.statusCode == 200) return;

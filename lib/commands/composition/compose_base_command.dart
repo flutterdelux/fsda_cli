@@ -15,7 +15,11 @@ abstract class ComposeBaseCommand extends Command<void> {
       ..addOption('feature', abbr: 'f', help: 'Target feature name.')
       ..addOption('module', abbr: 'm', help: 'Target module name.')
       ..addOption('app', abbr: 'a', help: 'Target app name.')
-      ..addOption('page', abbr: 'p', help: 'Target page name in snake_case.')
+      ..addOption(
+        'page',
+        abbr: 'p',
+        help: 'Target page name in snake_case. Example: wallet_detail_page.',
+      )
       ..addFlag(
         'route',
         negatable: false,
@@ -103,15 +107,6 @@ abstract class ComposeBaseCommand extends Command<void> {
       );
     }
 
-    final pageNameRegExp = RegExp(CliRules.pageNamePattern);
-    if (!pageNameRegExp.hasMatch(targetPage!)) {
-      throw UsageException(
-        'Invalid target page name "$targetPage".\n'
-        '${CliRules.pageNameRule}',
-        usage,
-      );
-    }
-
     final moduleDir = Directory(
       p.join(Directory.current.path, 'modules', module),
     );
@@ -144,7 +139,7 @@ abstract class ComposeBaseCommand extends Command<void> {
       module: module,
       feature: feature,
       slice: slice,
-      targetPage: targetPage,
+      targetPage: targetPage!,
       route: route,
       strict: strict,
     ));

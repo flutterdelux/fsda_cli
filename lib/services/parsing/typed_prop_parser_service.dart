@@ -1,3 +1,6 @@
+import 'package:mason/mason.dart';
+
+import '../../constants/cli_rules.dart';
 import '../../models/generation/typed_prop.dart';
 
 class TypedPropParserService {
@@ -6,7 +9,7 @@ class TypedPropParserService {
   static final _validTypePattern = RegExp(
     r'^[A-Za-z_][A-Za-z0-9_]*(?:<[^<>]+>)?\??$',
   );
-  static final _validNamePattern = RegExp(r'^[A-Za-z_][A-Za-z0-9_]*$');
+  static final _validNamePattern = RegExp(CliRules.sliceNamePattern);
 
   List<TypedProp> parse({
     required List<String> optionValues,
@@ -22,6 +25,7 @@ class TypedPropParserService {
 
     final parsed = <TypedProp>[];
     final seenNames = <String>{};
+    final seenCamelNames = <String>{};
 
     for (final segment in segments) {
       final token = _normalizeToken(segment);
@@ -59,7 +63,7 @@ class TypedPropParserService {
 
       if (!_validNamePattern.hasMatch(rawName)) {
         throw FormatException(
-          'Invalid property name "$rawName" in token "$token".',
+          'Invalid property name "$rawName" in token "$token". Use snake_case for property names.',
         );
       }
 
@@ -71,6 +75,13 @@ class TypedPropParserService {
 
       if (!seenNames.add(rawName)) {
         throw FormatException('Duplicate property name "$rawName".');
+      }
+
+      final normalizedPropertyName = rawName.camelCase;
+      if (!seenCamelNames.add(normalizedPropertyName)) {
+        throw FormatException(
+          'Duplicate property name after camelCase normalization: "$normalizedPropertyName".',
+        );
       }
 
       parsed.add(

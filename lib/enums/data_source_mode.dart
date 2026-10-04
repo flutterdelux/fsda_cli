@@ -9,11 +9,11 @@ enum DataSourceMode {
   const DataSourceMode(this.value, this.description);
 
   factory DataSourceMode.fromValue(String? rawValue) {
-    final normalizedValue = rawValue?.trim();
+    final normalizedValue = rawValue?.trim().toLowerCase();
     return values.firstWhere(
       (mode) => mode.value == normalizedValue,
       orElse: () => throw ArgumentError(
-        'Unsupported datasource mode: $rawValue. Supported mode(ds): ${values.map((mode) => mode.value).join(', ')}',
+        'Unsupported datasource mode: $rawValue. Supported mode(ds/datasource): ${values.map((mode) => mode.value).join(', ')}',
       ),
     );
   }

@@ -203,7 +203,7 @@ class EnumGenerator
   }
 
   String _buildEnumValuesBlock(List<String> values) {
-    return values.map((value) => '  $value,').join('\n');
+    return values.map((value) => '  ${_toEnumIdentifier(value)},').join('\n');
   }
 
   String _buildFromJsonCases({
@@ -211,7 +211,10 @@ class EnumGenerator
     required List<String> values,
   }) {
     return values
-        .map((value) => "      '${value.toUpperCase()}' => $enumClass.$value,")
+        .map(
+          (value) =>
+              "      '${value.toUpperCase()}' => $enumClass.${_toEnumIdentifier(value)},",
+        )
         .join('\n');
   }
 
@@ -220,7 +223,10 @@ class EnumGenerator
     required List<String> values,
   }) {
     return values
-        .map((value) => "      $enumClass.$value => '${value.toUpperCase()}',")
+        .map(
+          (value) =>
+              "      $enumClass.${_toEnumIdentifier(value)} => '${value.toUpperCase()}',",
+        )
         .join('\n');
   }
 
@@ -233,10 +239,12 @@ class EnumGenerator
     return values
         .map(
           (value) =>
-              '      $enumClass.$value => l10n.$enumCamel${value.pascalCase},',
+              '      $enumClass.${_toEnumIdentifier(value)} => l10n.$enumCamel${value.pascalCase},',
         )
         .join('\n');
   }
+
+  String _toEnumIdentifier(String value) => value.camelCase;
 
   Map<String, dynamic> _buildArbEntries({
     required String enumName,

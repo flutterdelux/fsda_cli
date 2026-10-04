@@ -20,10 +20,10 @@ class GenFeatureCommand extends Command<void> {
       ..addOption('module', abbr: 'm', help: 'Target module name.')
       ..addOption(
         'datasource',
+        aliases: ['ds'],
         defaultsTo: DataSourceMode.both.value,
         help: datasourceHelp,
       )
-      ..addOption('ds', help: 'Alias for datasource. $datasourceHelp')
       ..addFlag(
         'hook-disabled',
         negatable: false,
@@ -41,7 +41,7 @@ class GenFeatureCommand extends Command<void> {
 
   @override
   String get invocation =>
-      'fsda gen-feature <feature> -m <module> [--ds <datasource_mode>] [--hook-disabled]';
+      'fsda gen-feature <feature> -m <module> [--ds <datasource_mode>|--datasource <datasource_mode>] [--hook-disabled]';
 
   @override
   Future<void> run() async {
@@ -58,7 +58,9 @@ class GenFeatureCommand extends Command<void> {
     final feature = args.first;
 
     final module = argResults?['module'] as String?;
-    final datasource = argResults?['ds'] as String?;
+    final datasource =
+        (argResults?['datasource'] as String?)?.trim() ??
+        DataSourceMode.both.value;
     final hookDisabled = argResults?['hook-disabled'] as bool? ?? false;
     if (module == null || module.isEmpty) {
       throw UsageException('Missing required option: --module (-m).', usage);

@@ -1,4 +1,5 @@
 {
+  "apply": "Terapkan",
   "required": "Wajib",
   "create": "Buat",
   "add": "Tambah",
@@ -25,12 +26,13 @@
   "notFoundPageMessage": "Halaman yang Anda cari tidak ada.",
   "unknownError": "Kesalahan tidak diketahui",
   "unavailableFeature": "Fitur ini saat ini tidak tersedia.",
+  "todayWithTime": "Hari ini, {time}",
 
   "@coreFailureUnauthenticated": {
     "description": "========================= Core =================="
   },
   "coreFailureUnauthenticated": "Tidak terautentikasi",
-  "coreFailureUnauthorized": "Tidak diizinkan",
+  "coreFailureUnauthorized": "Anda tidak memiliki izin untuk mengakses",
   "coreFailureServiceUnavailable": "Layanan tidak tersedia",
   "coreFailureNetworkError": "Kesalahan jaringan",
   "coreFailureTimeoutError": "Permintaan habis waktu",

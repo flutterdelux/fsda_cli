@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
+import 'package:mason/mason.dart';
 import 'package:path/path.dart' as p;
 
 import '../../constants/cli_rules.dart';
@@ -26,9 +27,8 @@ class InputImageCommand extends Command<void> {
       )
       ..addOption(
         'type',
-        defaultsTo: 'NetworkFile',
         help:
-            'Optional image value type. Defaults to NetworkFile. Use PascalCase Entity type if you need entity-backed image data.',
+            'Required image value type in snake_case. Use network_file or entity prefix such as product_image.',
       )
       ..addFlag(
         'strict',
@@ -53,7 +53,7 @@ class InputImageCommand extends Command<void> {
 
   @override
   String get invocation =>
-      'fsda input-image <field> -f <feature> -m <module> [--type <value_type>] [--strict] [--hook-disabled]';
+      'fsda input-image <field> -f <feature> -m <module> --type <value_type> [--strict] [--hook-disabled]';
 
   @override
   Future<void> run() async {
@@ -111,6 +111,23 @@ class InputImageCommand extends Command<void> {
     final field = _resolveField();
     final imageType = _resolveImageType();
 
+    if (imageType != 'NetworkFile') {
+      final entityFile = File(
+        p.join(
+          featureDir.path,
+          'domain',
+          'entities',
+          '${imageType.snakeCase}.dart',
+        ),
+      );
+      if (!await entityFile.exists()) {
+        throw UsageException(
+          'Image type "$imageType" is not ready in "$feature" feature. Expected file: domain/entities/${imageType.snakeCase}.dart. Run fsda entity first.',
+          usage,
+        );
+      }
+    }
+
     await inputGenerator.generateImage((
       feature: feature,
       module: module,
@@ -167,24 +184,48 @@ class InputImageCommand extends Command<void> {
   }
 
   String _resolveImageType() {
-    final rawType = (argResults?['type'] as String?)?.trim() ?? 'NetworkFile';
+    final rawType = (argResults?['type'] as String?)?.trim() ?? '';
     if (rawType.isEmpty) {
-      return 'NetworkFile';
+      throw UsageException('Missing required option(s): --type', usage);
     }
 
     final normalized = rawType.replaceAll(' ', '');
-    if (normalized == 'NetworkFile') {
-      return normalized;
-    }
-
-    final typeRegExp = RegExp(CliRules.modelPrefixPattern);
-    if (!typeRegExp.hasMatch(normalized) || !normalized.endsWith('Entity')) {
+    if (normalized.contains('?')) {
       throw UsageException(
-        'Invalid image type "$rawType". Use NetworkFile or PascalCase entity type, for example ProductImageEntity.',
+        'Invalid image type "$rawType". Nullable marker (?) is not allowed for --type.',
         usage,
       );
     }
 
-    return normalized;
+    if (normalized.startsWith('List<')) {
+      throw UsageException(
+        'Invalid image type "$rawType". Use single value type without List wrapper.',
+        usage,
+      );
+    }
+
+    final typeRegExp = RegExp(CliRules.sliceNamePattern);
+    if (!typeRegExp.hasMatch(normalized)) {
+      throw UsageException(
+        'Invalid image type "$rawType". Use snake_case type, for example network_file or product_image.',
+        usage,
+      );
+    }
+
+    if (normalized == 'network_file') {
+      return 'NetworkFile';
+    }
+
+    final entityPrefix = normalized.endsWith('_entity')
+        ? normalized.substring(0, normalized.length - '_entity'.length)
+        : normalized;
+    if (entityPrefix.isEmpty) {
+      throw UsageException(
+        'Invalid image type "$rawType". Entity prefix cannot be empty.',
+        usage,
+      );
+    }
+
+    return '${entityPrefix.pascalCase}Entity';
   }
 }

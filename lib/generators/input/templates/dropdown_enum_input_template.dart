@@ -11,8 +11,7 @@ String buildDropdownEnumInputTemplate({
   final l10nKey = '${featureName.camelCase}Field$fieldPascal';
   final className = '$featurePascal${fieldPascal}Field';
 
-  return '''import 'package:app_core/app_core.dart';
-import 'package:app_ui/app_ui.dart';
+  return '''import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../../generated/${moduleName.snakeCase}_localizations.dart';

@@ -1,5 +1,6 @@
 enum FormInputType {
   text('text'),
+  number('number'),
   selector('selector'),
   textArea('text_area'),
   qty('qty'),
@@ -17,6 +18,7 @@ enum FormInputType {
   static FormInputType? tryParse(String raw) {
     return switch (raw.trim()) {
       'text' => FormInputType.text,
+      'number' => FormInputType.number,
       'text_area' => FormInputType.textArea,
       'selector' => FormInputType.selector,
       'selector_list' => FormInputType.selectorList,

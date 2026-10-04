@@ -203,7 +203,7 @@ class DtoGenerator
     final toEntityAssignments = props
         .map(
           (prop) =>
-              '      ${prop.name}: ${_resolveDtoToEntityExpression(prop)},',
+              '      ${_resolvePropertyName(prop)}: ${_resolveDtoToEntityExpression(prop)},',
         )
         .join('\n');
 
@@ -236,7 +236,7 @@ $toEntityAssignments
 
   String _resolveDtoToEntityExpression(TypedProp prop) {
     final type = prop.typeWithoutNullability;
-    final value = prop.name;
+    final value = _resolvePropertyName(prop);
 
     if (_isDtoType(type)) {
       if (prop.isNullable) {
@@ -262,6 +262,7 @@ $toEntityAssignments
     required TypedProp prop,
     required bool withConverter,
   }) {
+    final propertyName = _resolvePropertyName(prop);
     final annotations = <String>[];
 
     if (withConverter) {
@@ -281,7 +282,11 @@ $toEntityAssignments
         : '${annotations.join(' ')} ';
     final requiredPrefix = prop.isRequired ? 'required ' : '';
 
-    return '    $annotationPrefix$requiredPrefix${prop.normalizedType} ${prop.name},';
+    return '    $annotationPrefix$requiredPrefix${prop.normalizedType} $propertyName,';
+  }
+
+  String _resolvePropertyName(TypedProp prop) {
+    return prop.name.camelCase;
   }
 
   String? _buildConverterAnnotation(TypedProp prop) {

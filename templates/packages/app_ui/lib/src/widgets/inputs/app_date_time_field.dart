@@ -86,6 +86,7 @@ class _AppDateTimeFieldState extends State<AppDateTimeField> {
     return AppTextField(
       controller: _controller,
       readOnly: true,
+      hintText: widget.hintText,
       prefix: ValueListenableBuilder(
         valueListenable: _dateTimeNotifier,
         builder: (_, selectedDateTime, _) {

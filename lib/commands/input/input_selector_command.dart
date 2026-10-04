@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
+import 'package:mason/mason.dart';
 import 'package:path/path.dart' as p;
 
 import '../../constants/cli_rules.dart';
@@ -27,7 +28,7 @@ class InputSelectorCommand extends Command<void> {
       ..addOption(
         'type',
         help:
-            'Required selector value type in PascalCase Entity form, for example ProductCategoryEntity.',
+            'Required selector value type prefix in snake_case, for example product_category.',
       )
       ..addFlag(
         'strict',
@@ -110,6 +111,21 @@ class InputSelectorCommand extends Command<void> {
     final field = _resolveField();
     final entityType = _resolveEntityType();
 
+    final entityFile = File(
+      p.join(
+        featureDir.path,
+        'domain',
+        'entities',
+        '${entityType.snakeCase}.dart',
+      ),
+    );
+    if (!await entityFile.exists()) {
+      throw UsageException(
+        'Entity type "$entityType" is not ready in "$feature" feature. Expected file: domain/entities/${entityType.snakeCase}.dart. Run fsda entity first.',
+        usage,
+      );
+    }
+
     await inputGenerator.generateSelector((
       feature: feature,
       module: module,
@@ -179,14 +195,24 @@ class InputSelectorCommand extends Command<void> {
       );
     }
 
-    final typeRegExp = RegExp(CliRules.modelPrefixPattern);
-    if (!typeRegExp.hasMatch(normalized) || !normalized.endsWith('Entity')) {
+    final prefixRegExp = RegExp(CliRules.sliceNamePattern);
+    if (!prefixRegExp.hasMatch(normalized)) {
       throw UsageException(
-        'Invalid selector type "$rawType". Use PascalCase entity type, for example ProductCategoryEntity.',
+        'Invalid selector type "$rawType". Use snake_case entity prefix, for example product_category.',
         usage,
       );
     }
 
-    return normalized;
+    final entityPrefix = normalized.endsWith('_entity')
+        ? normalized.substring(0, normalized.length - '_entity'.length)
+        : normalized;
+    if (entityPrefix.isEmpty) {
+      throw UsageException(
+        'Invalid selector type "$rawType". Entity prefix cannot be empty.',
+        usage,
+      );
+    }
+
+    return '${entityPrefix.pascalCase}Entity';
   }
 }

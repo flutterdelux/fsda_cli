@@ -18,7 +18,7 @@ class ComposePmiCommand extends ComposeBaseCommand {
 
   @override
   String get invocation =>
-      'fsda compose-pmi <slice> -f <feature> -m <module> -a <app> -p <target_page> [--route] [--strict]';
+      'fsda compose-pmi <slice> -f <feature> -m <module> -a <app> -p <prefix_target_page> [--route] [--strict]';
 
   @override
   Future<void> runValidated(args) async {

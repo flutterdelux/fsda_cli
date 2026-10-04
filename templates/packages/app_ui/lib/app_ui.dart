@@ -17,6 +17,7 @@ export 'src/widgets/feedback/app_loading_mini.dart';
 export 'src/widgets/feedback/app_loading_overlay.dart';
 export 'src/widgets/feedback/app_shimmer.dart';
 export 'src/widgets/images/app_network_image.dart';
+export 'src/widgets/inputs/app_choice_field.dart';
 export 'src/widgets/inputs/app_color_field.dart';
 export 'src/widgets/inputs/app_date_time_field.dart';
 export 'src/widgets/inputs/app_dropdown_field.dart';

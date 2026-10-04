@@ -8,7 +8,6 @@ import '../generated/bricks/slice_rp_bundle.dart';
 import '../generated/bricks/slice_rpag_bundle.dart';
 import '../generated/bricks/slice_rs_bundle.dart';
 import '../generated/bricks/slice_rsp_bundle.dart';
-import '../models/generation/typed_prop.dart';
 import '../services/slices/slice_service.dart';
 import 'base_generator.dart';
 
@@ -70,7 +69,8 @@ class SliceGenerator extends BaseGenerator<void, Never> {
       String feature,
       String module,
       String method,
-      List<TypedProp> props,
+      String paramPrefix,
+      String requestPrefix,
       bool hookDisabled,
     })
     args,
@@ -87,7 +87,8 @@ class SliceGenerator extends BaseGenerator<void, Never> {
       bundle: sliceMpBundle,
       strict: false,
       hookDisabled: args.hookDisabled,
-      paramProps: args.props,
+      paramPrefix: args.paramPrefix,
+      requestPrefix: args.requestPrefix,
     );
   }
 
@@ -128,7 +129,8 @@ class SliceGenerator extends BaseGenerator<void, Never> {
       String method,
       String model,
       bool isList,
-      List<TypedProp> props,
+      String paramPrefix,
+      String requestPrefix,
       bool hookDisabled,
     })
     args,
@@ -147,7 +149,8 @@ class SliceGenerator extends BaseGenerator<void, Never> {
       bundle: sliceMrpBundle,
       strict: false,
       hookDisabled: args.hookDisabled,
-      paramProps: args.props,
+      paramPrefix: args.paramPrefix,
+      requestPrefix: args.requestPrefix,
     );
   }
 
@@ -188,7 +191,8 @@ class SliceGenerator extends BaseGenerator<void, Never> {
       String method,
       String model,
       bool isList,
-      List<TypedProp> props,
+      String paramPrefix,
+      String requestPrefix,
       bool hookDisabled,
     })
     args,
@@ -207,7 +211,8 @@ class SliceGenerator extends BaseGenerator<void, Never> {
       bundle: sliceRpBundle,
       strict: false,
       hookDisabled: args.hookDisabled,
-      paramProps: args.props,
+      paramPrefix: args.paramPrefix,
+      requestPrefix: args.requestPrefix,
     );
   }
 
@@ -247,7 +252,8 @@ class SliceGenerator extends BaseGenerator<void, Never> {
       String module,
       String method,
       String model,
-      List<TypedProp> props,
+      String paramPrefix,
+      String requestPrefix,
       bool hookDisabled,
     })
     args,
@@ -266,7 +272,8 @@ class SliceGenerator extends BaseGenerator<void, Never> {
       bundle: sliceRpagBundle,
       strict: false,
       hookDisabled: args.hookDisabled,
-      paramProps: args.props,
+      paramPrefix: args.paramPrefix,
+      requestPrefix: args.requestPrefix,
     );
   }
 
@@ -307,7 +314,8 @@ class SliceGenerator extends BaseGenerator<void, Never> {
       String method,
       String model,
       bool isList,
-      List<TypedProp> props,
+      String paramPrefix,
+      String requestPrefix,
       bool hookDisabled,
     })
     args,
@@ -326,7 +334,8 @@ class SliceGenerator extends BaseGenerator<void, Never> {
       bundle: sliceRspBundle,
       strict: false,
       hookDisabled: args.hookDisabled,
-      paramProps: args.props,
+      paramPrefix: args.paramPrefix,
+      requestPrefix: args.requestPrefix,
     );
   }
 

@@ -57,7 +57,7 @@ class InputTypedFieldParserService {
       final inputType = FormInputType.tryParse(inputTypeToken);
       if (inputType == null) {
         throw FormatException(
-          'Invalid input_type "$inputTypeToken" in token "$token". Use fixed snake_case values: text, selector, selector_list, text_area, qty, dropdown, dropdown_enum, image, switch, password.',
+          'Invalid input_type "$inputTypeToken" in token "$token". Use fixed snake_case values: text, number, selector, selector_list, text_area, qty, dropdown, dropdown_enum, image, switch, password.',
         );
       }
 
