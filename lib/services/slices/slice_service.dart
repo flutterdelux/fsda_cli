@@ -5,41 +5,32 @@ import 'package:mason/mason.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
-import '../../generators/base_generator.dart';
+import '../file_service.dart';
+import '../logger_service.dart';
 import '../memory_generator_target.dart';
 import '../operation_report_service.dart';
 import 'slice_checkpoint_weaver_service.dart';
 import 'slice_manifest_render_service.dart';
 import 'slice_source_normalizer_service.dart';
 
-class SliceService extends BaseGenerator<void, Never> {
+class SliceService {
+  final LoggerService logger;
+  final FileService fileService;
+  final OperationReportService report;
   final SliceManifestRenderService manifestRenderService;
   final SliceSourceNormalizerService sourceNormalizerService;
   final SliceCheckpointWeaverService checkpointWeaverService;
 
   SliceService({
-    required super.logger,
-    required super.fileService,
-    required super.hookService,
-    SliceManifestRenderService? manifestRenderService,
-    SliceSourceNormalizerService? sourceNormalizerService,
-    SliceCheckpointWeaverService? checkpointWeaverService,
-  }) : manifestRenderService =
-           manifestRenderService ?? const SliceManifestRenderService(),
-       sourceNormalizerService =
-           sourceNormalizerService ?? const SliceSourceNormalizerService(),
-       checkpointWeaverService =
-           checkpointWeaverService ??
-           SliceCheckpointWeaverService(logger: logger);
+    required this.logger,
+    required this.fileService,
+    required this.report,
+    required this.manifestRenderService,
+    required this.sourceNormalizerService,
+    required this.checkpointWeaverService,
+  });
 
-  @override
-  Future<void> generate(Never args) async {
-    throw UnsupportedError(
-      'Legacy generic slice generation is removed in v2. Use dedicated slice-* commands.',
-    );
-  }
-
-  Future<void> generateVariant({
+  Future<Map<String, dynamic>> generateVariant({
     required String operationLabel,
     required String successVerb,
     required String sequenceDescription,
@@ -49,27 +40,19 @@ class SliceService extends BaseGenerator<void, Never> {
     required String moduleName,
     required String methodName,
     String? modelName,
+    String? dtoName,
+    String? entityName,
     bool? isList,
     required MasonBundle bundle,
     required bool strict,
-    required bool hookDisabled,
-    String? paramPrefix,
-    String? requestPrefix,
+    String? paramName,
+    String? requestName,
   }) async {
-    if (fileService == null || hookService == null) {
-      logger.error(
-        'FileService and HookService are required for slice weaving.',
-      );
-      exitCode = 1;
-      return;
-    }
-
     logger.info(
       'Weaving slice "$sliceName" -> "$moduleName/$featureName" as $sequenceDescription sequence...',
     );
     final progress = logger.progress('Baking slice "$sliceName" in memory...');
     final memoryGeneratorTarget = MemoryGeneratorTarget();
-    final report = OperationReportService();
 
     try {
       final vars = _buildGeneratorVars(
@@ -109,11 +92,27 @@ class SliceService extends BaseGenerator<void, Never> {
         vars: vars,
       );
 
+      final entityDtoAliases = _resolveEntityDtoAliases(
+        modelName: modelName,
+        dtoName: dtoName,
+        entityName: entityName,
+      );
+      if (entityDtoAliases != null) {
+        _rewriteStandaloneEntityDtoReferences(
+          files: standaloneFilesToSave,
+          aliases: entityDtoAliases,
+        );
+        renderedSequenceYaml = _rewriteManifestEntityDtoReferences(
+          source: renderedSequenceYaml,
+          aliases: entityDtoAliases,
+        );
+      }
+
       final paramRequestAliases = _resolveParamRequestAliases(
         featureName: featureName,
         sliceName: sliceName,
-        paramPrefix: paramPrefix,
-        requestPrefix: requestPrefix,
+        paramName: paramName,
+        requestName: requestName,
       );
       if (paramRequestAliases != null) {
         _rewriteStandaloneParamRequestReferences(
@@ -141,7 +140,7 @@ class SliceService extends BaseGenerator<void, Never> {
       );
 
       progress.update('Writing standalone slice files to disk...');
-      final templateWriteResult = await fileService!.generateTemplate(
+      final templateWriteResult = await fileService.generateTemplate(
         path: featureRoot,
         files: standaloneFilesToSave,
         failOnExisting: strict,
@@ -167,7 +166,7 @@ class SliceService extends BaseGenerator<void, Never> {
           );
           report.logSummary(logger, operationLabel: operationLabel);
           exitCode = 1;
-          return;
+          return <String, dynamic>{'success': false};
         }
       }
 
@@ -329,28 +328,24 @@ class SliceService extends BaseGenerator<void, Never> {
         }
       }
 
-      if (postHooks.isNotEmpty) {
-        progress.update('Running post hooks...');
-        await hookService!.runHook(
-          hooks: postHooks,
-          workingDirectory: p.join(
-            Directory.current.path,
-            'modules',
-            moduleName,
-          ),
-          logger: logger,
-          disabled: hookDisabled,
-          operationLabel: operationLabel,
-        );
-      }
-
       progress.complete(
         '$successVerb "$sliceName" successfully woven into "$featureName" feature! 🧵✨',
       );
       report.logSummary(logger, operationLabel: operationLabel);
+
+      return <String, dynamic>{
+        'success': true,
+        if (postHooks.isNotEmpty) 'post_hook': postHooks,
+        'working_directory': p.join(
+          Directory.current.path,
+          'modules',
+          moduleName,
+        ),
+      };
     } catch (e) {
       progress.fail('Failed to stitch slice: $e');
       exitCode = 1;
+      return <String, dynamic>{'success': false};
     }
   }
 
@@ -367,17 +362,14 @@ class SliceService extends BaseGenerator<void, Never> {
   _resolveParamRequestAliases({
     required String featureName,
     required String sliceName,
-    String? paramPrefix,
-    String? requestPrefix,
+    String? paramName,
+    String? requestName,
   }) {
-    if (paramPrefix == null || requestPrefix == null) {
+    if (paramName == null || requestName == null) {
       return null;
     }
 
-    final normalizedParamPrefix = _stripKnownSuffix(paramPrefix, 'param');
-    final normalizedRequestPrefix = _stripKnownSuffix(requestPrefix, 'request');
-
-    if (normalizedParamPrefix.isEmpty || normalizedRequestPrefix.isEmpty) {
+    if (paramName.isEmpty || requestName.isEmpty) {
       return null;
     }
 
@@ -386,14 +378,111 @@ class SliceService extends BaseGenerator<void, Never> {
     return (
       oldParamClass: '${featureName.pascalCase}${sliceName.pascalCase}Param',
       oldParamFile: '${legacyPrefixSnake}_param.dart',
-      newParamClass: '${normalizedParamPrefix.pascalCase}Param',
-      newParamFile: '${normalizedParamPrefix.snakeCase}_param.dart',
+      newParamClass: paramName.pascalCase,
+      newParamFile: '${paramName.snakeCase}.dart',
       oldRequestClass:
           '${featureName.pascalCase}${sliceName.pascalCase}Request',
       oldRequestFile: '${legacyPrefixSnake}_request.dart',
-      newRequestClass: '${normalizedRequestPrefix.pascalCase}Request',
-      newRequestFile: '${normalizedRequestPrefix.snakeCase}_request.dart',
+      newRequestClass: requestName.pascalCase,
+      newRequestFile: '${requestName.snakeCase}.dart',
     );
+  }
+
+  ({
+    String oldDtoClass,
+    String oldDtoFile,
+    String newDtoClass,
+    String newDtoFile,
+    String oldEntityClass,
+    String oldEntityFile,
+    String newEntityClass,
+    String newEntityFile,
+  })?
+  _resolveEntityDtoAliases({
+    String? modelName,
+    String? dtoName,
+    String? entityName,
+  }) {
+    if (modelName == null || dtoName == null || entityName == null) {
+      return null;
+    }
+
+    final modelSnake = modelName.snakeCase;
+    return (
+      oldDtoClass: '${modelName}Dto',
+      oldDtoFile: '${modelSnake}_dto.dart',
+      newDtoClass: dtoName.pascalCase,
+      newDtoFile: '${dtoName.snakeCase}.dart',
+      oldEntityClass: '${modelName}Entity',
+      oldEntityFile: '${modelSnake}_entity.dart',
+      newEntityClass: entityName.pascalCase,
+      newEntityFile: '${entityName.snakeCase}.dart',
+    );
+  }
+
+  void _rewriteStandaloneEntityDtoReferences({
+    required Map<String, List<int>> files,
+    required ({
+      String oldDtoClass,
+      String oldDtoFile,
+      String newDtoClass,
+      String newDtoFile,
+      String oldEntityClass,
+      String oldEntityFile,
+      String newEntityClass,
+      String newEntityFile,
+    })
+    aliases,
+  }) {
+    for (final entry in files.entries.toList(growable: false)) {
+      if (!entry.key.endsWith('.dart')) continue;
+      final source = utf8.decode(entry.value);
+      final rewritten = _replaceLegacyEntityDtoReferences(
+        source: source,
+        aliases: aliases,
+      );
+      if (rewritten != source) {
+        files[entry.key] = utf8.encode(rewritten);
+      }
+    }
+  }
+
+  String _rewriteManifestEntityDtoReferences({
+    required String source,
+    required ({
+      String oldDtoClass,
+      String oldDtoFile,
+      String newDtoClass,
+      String newDtoFile,
+      String oldEntityClass,
+      String oldEntityFile,
+      String newEntityClass,
+      String newEntityFile,
+    })
+    aliases,
+  }) {
+    return _replaceLegacyEntityDtoReferences(source: source, aliases: aliases);
+  }
+
+  String _replaceLegacyEntityDtoReferences({
+    required String source,
+    required ({
+      String oldDtoClass,
+      String oldDtoFile,
+      String newDtoClass,
+      String newDtoFile,
+      String oldEntityClass,
+      String oldEntityFile,
+      String newEntityClass,
+      String newEntityFile,
+    })
+    aliases,
+  }) {
+    return source
+        .replaceAll(aliases.oldDtoClass, aliases.newDtoClass)
+        .replaceAll(aliases.oldEntityClass, aliases.newEntityClass)
+        .replaceAll(aliases.oldDtoFile, aliases.newDtoFile)
+        .replaceAll(aliases.oldEntityFile, aliases.newEntityFile);
   }
 
   void _rewriteStandaloneParamRequestReferences({
@@ -466,27 +555,6 @@ class SliceService extends BaseGenerator<void, Never> {
         .replaceAll(aliases.oldRequestClass, aliases.newRequestClass)
         .replaceAll(aliases.oldParamFile, aliases.newParamFile)
         .replaceAll(aliases.oldRequestFile, aliases.newRequestFile);
-  }
-
-  String _stripKnownSuffix(String raw, String suffix) {
-    final value = raw.trim();
-    if (value.isEmpty) {
-      return value;
-    }
-
-    final lowerValue = value.toLowerCase();
-    final lowerSuffix = suffix.toLowerCase();
-    final snakeSuffix = '_$lowerSuffix';
-
-    if (lowerValue.endsWith(snakeSuffix)) {
-      return value.substring(0, value.length - snakeSuffix.length);
-    }
-
-    if (lowerValue.endsWith(lowerSuffix)) {
-      return value.substring(0, value.length - lowerSuffix.length);
-    }
-
-    return value;
   }
 
   Map<String, dynamic> _buildGeneratorVars({

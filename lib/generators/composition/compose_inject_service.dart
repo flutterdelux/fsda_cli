@@ -16,8 +16,8 @@ class ComposeInjectService {
     ComposeArgs args, {
     bool sectionMode = false,
     bool actionMode = false,
+    required OperationReportService report,
   }) async {
-    final report = OperationReportService();
     final routeEnabled = args.route;
     final strict = args.strict;
     final modeLabel = sectionMode
@@ -445,7 +445,13 @@ class ComposeInjectService {
       const blockedExact = <String>{'init', 'refresh', 'loadMore'};
       if (blockedExact.contains(method.name)) return false;
 
-      const blockedPrefixes = <String>['get', 'load', 'fetch', 'watch'];
+      const blockedPrefixes = <String>[
+        'get',
+        'load',
+        'fetch',
+        'watch',
+        'listen',
+      ];
       for (final prefix in blockedPrefixes) {
         if (method.name.startsWith(prefix)) {
           return false;
@@ -475,7 +481,13 @@ class ComposeInjectService {
         if (found.isValid) return found;
       }
 
-      const preferredPrefixes = <String>['get', 'load', 'fetch', 'watch'];
+      const preferredPrefixes = <String>[
+        'get',
+        'load',
+        'fetch',
+        'watch',
+        'listen',
+      ];
       for (final prefix in preferredPrefixes) {
         final found = zeroArgMethods.firstWhere(
           (method) => method.name.startsWith(prefix),

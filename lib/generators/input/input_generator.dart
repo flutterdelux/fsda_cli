@@ -4,47 +4,36 @@ import 'package:path/path.dart' as p;
 
 import '../../enums/input_code.dart';
 import '../../models/generation/typed_prop.dart';
+import '../../services/command_operation_service.dart';
+import '../../services/file_service.dart';
 import '../../services/l10n/arb_injector_service.dart';
+import '../../services/logger_service.dart';
 import '../../services/operation_report_service.dart';
-import '../base_generator.dart';
 import 'services/input_arb_entry_builder_service.dart';
 import 'services/input_widget_file_builder_service.dart';
 
 const _inputPostHooks = ['flutter gen-l10n'];
 
-class InputGenerator
-    extends
-        BaseGenerator<
-          void,
-          ({
-            String feature,
-            String module,
-            List<String> fields,
-            InputCode input,
-            bool strict,
-            bool hookDisabled,
-          })
-        > {
+class InputGenerator {
   final ArbInjectorService arbInjectorService;
   final InputWidgetFileBuilderService widgetFileBuilderService;
   final InputArbEntryBuilderService arbEntryBuilderService;
+  final FileService fileService;
+  final OperationReportService report;
+  final LoggerService logger;
+  final CommandOperationService commandOperationService;
 
   InputGenerator({
-    required super.logger,
-    required super.fileService,
-    required super.hookService,
-    ArbInjectorService? arbInjectorService,
-    InputWidgetFileBuilderService? widgetFileBuilderService,
-    InputArbEntryBuilderService? arbEntryBuilderService,
-  }) : arbInjectorService =
-           arbInjectorService ?? ArbInjectorService(logger: logger),
-       widgetFileBuilderService =
-           widgetFileBuilderService ?? const InputWidgetFileBuilderService(),
-       arbEntryBuilderService =
-           arbEntryBuilderService ?? const InputArbEntryBuilderService();
+    required this.arbInjectorService,
+    required this.widgetFileBuilderService,
+    required this.arbEntryBuilderService,
+    required this.fileService,
+    required this.report,
+    required this.logger,
+    required this.commandOperationService,
+  });
 
-  @override
-  Future<void> generate(
+  Future<Map<String, dynamic>> generate(
     ({
       String feature,
       String module,
@@ -67,7 +56,7 @@ class InputGenerator
         'InputGenerator.generate only supports text/password mode. Use dedicated dropdown generator methods.',
       );
       exitCode = 1;
-      return;
+      return <String, dynamic>{'success': false};
     }
 
     if (input == InputCode.text) {
@@ -75,14 +64,13 @@ class InputGenerator
           .map((field) => TypedProp(type: 'String', name: field))
           .toList(growable: false);
 
-      await generateTextTyped((
+      return generateTextTyped((
         feature: feature,
         module: module,
         fields: typedFields,
         strict: strict,
         hookDisabled: hookDisabled,
       ));
-      return;
     }
 
     final files = widgetFileBuilderService.buildCodeDrivenFiles(
@@ -98,7 +86,7 @@ class InputGenerator
       inputCode: input,
     );
 
-    await _generateInputArtifacts(
+    return _generateInputArtifacts(
       feature: feature,
       module: module,
       files: files,
@@ -113,7 +101,7 @@ class InputGenerator
     );
   }
 
-  Future<void> generateTextTyped(
+  Future<Map<String, dynamic>> generateTextTyped(
     ({
       String feature,
       String module,
@@ -135,7 +123,7 @@ class InputGenerator
       inputCode: InputCode.text,
     );
 
-    await _generateInputArtifacts(
+    return _generateInputArtifacts(
       feature: args.feature,
       module: args.module,
       files: files,
@@ -149,7 +137,7 @@ class InputGenerator
     );
   }
 
-  Future<void> generateNumberTyped(
+  Future<Map<String, dynamic>> generateNumberTyped(
     ({
       String feature,
       String module,
@@ -171,7 +159,7 @@ class InputGenerator
       inputCode: InputCode.text,
     );
 
-    await _generateInputArtifacts(
+    return _generateInputArtifacts(
       feature: args.feature,
       module: args.module,
       files: files,
@@ -185,7 +173,7 @@ class InputGenerator
     );
   }
 
-  Future<void> generateTextAreaTyped(
+  Future<Map<String, dynamic>> generateTextAreaTyped(
     ({
       String feature,
       String module,
@@ -211,7 +199,7 @@ class InputGenerator
       inputCode: InputCode.text,
     );
 
-    await _generateInputArtifacts(
+    return _generateInputArtifacts(
       feature: args.feature,
       module: args.module,
       files: files,
@@ -225,7 +213,7 @@ class InputGenerator
     );
   }
 
-  Future<void> generateQty(
+  Future<Map<String, dynamic>> generateQty(
     ({
       String feature,
       String module,
@@ -247,7 +235,7 @@ class InputGenerator
       inputCode: InputCode.text,
     );
 
-    await _generateInputArtifacts(
+    return _generateInputArtifacts(
       feature: args.feature,
       module: args.module,
       files: files,
@@ -261,7 +249,7 @@ class InputGenerator
     );
   }
 
-  Future<void> generateDropdownEnum(
+  Future<Map<String, dynamic>> generateDropdownEnum(
     ({
       String feature,
       String module,
@@ -282,7 +270,7 @@ class InputGenerator
       fields: args.fields,
     );
 
-    await _generateInputArtifacts(
+    return _generateInputArtifacts(
       feature: args.feature,
       module: args.module,
       files: files,
@@ -296,7 +284,7 @@ class InputGenerator
     );
   }
 
-  Future<void> generateDropdown(
+  Future<Map<String, dynamic>> generateDropdown(
     ({
       String feature,
       String module,
@@ -317,7 +305,7 @@ class InputGenerator
       fields: args.fields,
     );
 
-    await _generateInputArtifacts(
+    return _generateInputArtifacts(
       feature: args.feature,
       module: args.module,
       files: files,
@@ -331,7 +319,7 @@ class InputGenerator
     );
   }
 
-  Future<void> generateSelector(
+  Future<Map<String, dynamic>> generateSelector(
     ({
       String feature,
       String module,
@@ -353,7 +341,7 @@ class InputGenerator
       inputCode: InputCode.dropdown,
     );
 
-    await _generateInputArtifacts(
+    return _generateInputArtifacts(
       feature: args.feature,
       module: args.module,
       files: files,
@@ -367,7 +355,7 @@ class InputGenerator
     );
   }
 
-  Future<void> generateSelectorList(
+  Future<Map<String, dynamic>> generateSelectorList(
     ({
       String feature,
       String module,
@@ -389,7 +377,7 @@ class InputGenerator
       inputCode: InputCode.dropdown,
     );
 
-    await _generateInputArtifacts(
+    return _generateInputArtifacts(
       feature: args.feature,
       module: args.module,
       files: files,
@@ -403,7 +391,7 @@ class InputGenerator
     );
   }
 
-  Future<void> generateImage(
+  Future<Map<String, dynamic>> generateImage(
     ({
       String feature,
       String module,
@@ -425,7 +413,7 @@ class InputGenerator
       inputCode: InputCode.dropdown,
     );
 
-    await _generateInputArtifacts(
+    return _generateInputArtifacts(
       feature: args.feature,
       module: args.module,
       files: files,
@@ -439,7 +427,7 @@ class InputGenerator
     );
   }
 
-  Future<void> generateSwitch(
+  Future<Map<String, dynamic>> generateSwitch(
     ({
       String feature,
       String module,
@@ -460,7 +448,7 @@ class InputGenerator
       fields: args.fields,
     );
 
-    await _generateInputArtifacts(
+    return _generateInputArtifacts(
       feature: args.feature,
       module: args.module,
       files: files,
@@ -474,7 +462,7 @@ class InputGenerator
     );
   }
 
-  Future<void> _generateInputArtifacts({
+  Future<Map<String, dynamic>> _generateInputArtifacts({
     required String feature,
     required String module,
     required Map<String, List<int>> files,
@@ -485,122 +473,97 @@ class InputGenerator
     required bool strict,
     required bool hookDisabled,
   }) async {
-    if (fileService == null || hookService == null) {
-      logger.error(
-        'FileService and HookService are required for input generation.',
-      );
-      exitCode = 1;
-      return;
-    }
-
-    final featureRoot = p.join(
-      Directory.current.path,
-      'modules',
-      module,
-      'lib',
-      'src',
-      'features',
-      feature,
-    );
-
-    final featureDir = Directory(featureRoot);
-    if (!await featureDir.exists()) {
-      logger.error(
-        'Feature path not found: modules/$module/lib/src/features/$feature',
-      );
-      exitCode = 1;
-      return;
-    }
-
-    final progress = logger.progress(progressLabel);
-    var progressCompleted = false;
-    final report = OperationReportService();
-
-    try {
-      final writeResult = await fileService!.generateTemplate(
-        path: featureRoot,
-        files: files,
-        failOnExisting: strict,
-      );
-
-      report.addCreatedTemplateFiles(
-        targetRoot: featureRoot,
-        relativeFiles: writeResult.writtenFiles,
-      );
-      report.addSkippedTemplateFiles(
-        targetRoot: featureRoot,
-        relativeFiles: writeResult.skippedFiles,
-      );
-
-      if (writeResult.skippedCount > 0) {
-        logger.info(
-          'Skipped ${writeResult.skippedCount} existing input widget file(s) to prevent overwrite.',
+    return commandOperationService.run<Map<String, dynamic>>(
+      operationLabel: operationLabel,
+      hookDisabled: hookDisabled,
+      action: () async {
+        final featureRoot = p.join(
+          Directory.current.path,
+          'modules',
+          module,
+          'lib',
+          'src',
+          'features',
+          feature,
         );
 
-        if (strict || writeResult.abortedDueToExisting) {
+        final featureDir = Directory(featureRoot);
+        if (!await featureDir.exists()) {
           logger.error(
-            'Strict mode: generation aborted because some input widget files already exist.',
+            'Feature path not found: modules/$module/lib/src/features/$feature',
           );
-          progress.fail('Input generation aborted by strict mode.');
-          report.logSummary(logger, operationLabel: operationLabel);
           exitCode = 1;
-          return;
+          return <String, dynamic>{'success': false};
         }
-      }
 
-      progress.complete('Input widget artifacts prepared.');
-      progressCompleted = true;
+        final progress = logger.progress(progressLabel);
+        var progressCompleted = false;
 
-      final touchedArbFiles = await _injectArbEntries(
-        moduleName: module,
-        entries: arbEntries,
-        contextLabel: operationLabel,
-      );
-      for (final filePath in touchedArbFiles) {
-        report.addInjected(filePath);
-      }
-
-      if (touchedArbFiles.isNotEmpty) {
-        if (hookDisabled) {
-          await hookService!.runHook(
-            hooks: _inputPostHooks,
-            workingDirectory: p.join(Directory.current.path, 'modules', module),
-            logger: logger,
-            disabled: true,
-            operationLabel: operationLabel,
+        try {
+          final writeResult = await fileService.generateTemplate(
+            path: featureRoot,
+            files: files,
+            failOnExisting: strict,
           );
-        } else {
-          final postHookProgress = logger.progress('Running post hooks...');
-          try {
-            await hookService!.runHook(
-              hooks: _inputPostHooks,
-              workingDirectory: p.join(
-                Directory.current.path,
-                'modules',
-                module,
-              ),
-              logger: logger,
-              disabled: false,
-              operationLabel: operationLabel,
-            );
-            postHookProgress.complete('Post hooks executed successfully.');
-          } catch (e) {
-            postHookProgress.fail('Failed running post hooks: $e');
-            rethrow;
-          }
-        }
-      }
 
-      logger.success(successLabel);
-      report.logSummary(logger, operationLabel: operationLabel);
-    } catch (e) {
-      if (!progressCompleted) {
-        progress.fail('Failed to generate input widget(s): $e');
-      } else {
-        logger.error('Failed to generate input widget(s): $e');
-      }
-      exitCode = 1;
-    }
+          report.addCreatedTemplateFiles(
+            targetRoot: featureRoot,
+            relativeFiles: writeResult.writtenFiles,
+          );
+          report.addSkippedTemplateFiles(
+            targetRoot: featureRoot,
+            relativeFiles: writeResult.skippedFiles,
+          );
+
+          if (writeResult.skippedCount > 0) {
+            logger.info(
+              'Skipped ${writeResult.skippedCount} existing input widget file(s) to prevent overwrite.',
+            );
+
+            if (strict || writeResult.abortedDueToExisting) {
+              logger.error(
+                'Strict mode: generation aborted because some input widget files already exist.',
+              );
+              progress.fail('Input generation aborted by strict mode.');
+              exitCode = 1;
+              return <String, dynamic>{'success': false};
+            }
+          }
+
+          progress.complete('Input widget artifacts prepared.');
+          progressCompleted = true;
+
+          final touchedArbFiles = await _injectArbEntries(
+            moduleName: module,
+            entries: arbEntries,
+            contextLabel: operationLabel,
+          );
+          for (final filePath in touchedArbFiles) {
+            report.addInjected(filePath);
+          }
+
+          logger.success(successLabel);
+          return <String, dynamic>{
+            'success': true,
+            if (touchedArbFiles.isNotEmpty) 'post_hook': _inputPostHooks,
+            'working_directory': p.join(
+              Directory.current.path,
+              'modules',
+              module,
+            ),
+          };
+        } catch (e) {
+          if (!progressCompleted) {
+            progress.fail('Failed to generate input widget(s): $e');
+          } else {
+            logger.error('Failed to generate input widget(s): $e');
+          }
+          exitCode = 1;
+          return <String, dynamic>{'success': false};
+        }
+      },
+      hookResults: (result) => [result],
+    );
   }
 
   Future<Set<String>> _injectArbEntries({

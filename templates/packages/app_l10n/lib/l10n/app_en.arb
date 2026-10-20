@@ -1,4 +1,29 @@
 {
+  "launchUrlFailed": "Could not launch {url}",
+  "@launchUrlFailed": {
+    "description": "url to launch",
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "itemsCount": "{count, plural, =1{1 item} other{{count} items}}",
+  "@itemsCount": {
+    "description": "Label for displaying the number of items in the order",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "synchronize": "Synchronize",
+  "available": "Available",
+  "notAvailable": "Not available",
+  "required": "Required",
+  "notRequired": "Not Required",
+  "previous": "Previous",
+  "next": "Next",
   "apply": "Apply",
   "required": "Required",
   "create": "Create",

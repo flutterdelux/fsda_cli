@@ -4,31 +4,34 @@ import 'package:path/path.dart' as p;
 
 import '../generated/package_bundle.dart';
 import '../services/bundle_service.dart';
-import '../services/process_service.dart';
-import 'base_generator.dart';
+import '../services/file_service.dart';
+import '../services/logger_service.dart';
+import '../services/pubspec_service.dart';
 
-class PackageGenerator extends BaseGenerator<bool, String> {
-  final ProcessService processService;
+class PackageGenerator {
   final BundleService bundleService;
+  final LoggerService logger;
+  final FileService fileService;
+  final PubspecService pubspecService;
 
   PackageGenerator({
-    required super.logger,
-    required this.processService,
-    required super.pubspecService,
-    required super.fileService,
-    required super.hookService,
     required this.bundleService,
+    required this.logger,
+    required this.fileService,
+    required this.pubspecService,
   });
 
-  @override
-  Future<bool> generate(
-    String packageName, {
-    bool hookDisabled = false,
-    String operationLabel = 'fsda package',
-  }) async {
+  Future<Map<String, dynamic>?> generate(String packageName) async {
     if (packageName.isEmpty) {
       logger.error('Package name is required');
-      return false;
+      return null;
+    }
+
+    if (!packageBundle.containsKey(packageName)) {
+      logger.error(
+        'Package template "$packageName" not found. Use "fsda list-pckg" to see available templates.',
+      );
+      return null;
     }
 
     final targetDir = Directory(
@@ -37,7 +40,7 @@ class PackageGenerator extends BaseGenerator<bool, String> {
 
     if (await targetDir.exists()) {
       logger.error('Package "$packageName" already exists');
-      return false;
+      return null;
     }
 
     final targetPath = p.join(Directory.current.path, 'packages', packageName);
@@ -51,24 +54,30 @@ class PackageGenerator extends BaseGenerator<bool, String> {
         targetPath: targetPath,
       );
 
-      final templateSuccess = await generateTemplatePipeline(
-        name: packageName,
-        targetDir: targetDir,
+      template.spec.postHooks;
+
+      await pubspecService.addDependencies(
+        path: targetPath,
         dependencies: template.spec.dependencies,
-        devDependencies: template.spec.devDependencies,
-        postHooks: template.spec.postHooks,
-        hookDisabled: hookDisabled,
-        operationLabel: operationLabel,
+        operationLabel: 'Adding dependencies for $packageName',
       );
-      if (!templateSuccess) return false;
+      // if (!dependencyAdded) return null;
+
+      await pubspecService.addDependencies(
+        path: targetPath,
+        dependencies: template.spec.devDependencies,
+        operationLabel: 'Adding dev dependencies for $packageName',
+        forDev: true,
+      );
+      // if (!devDependencyAdded) return null;
 
       logger.success(
         'Package $packageName has been successfully created at $targetPath',
       );
-      return true;
+      return {'post_hooks': template.spec.postHooks, 'dir': targetPath};
     } catch (e) {
       logger.error('$e');
-      return false;
+      return null;
     }
   }
 }

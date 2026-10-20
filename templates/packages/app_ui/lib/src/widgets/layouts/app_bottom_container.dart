@@ -1,9 +1,7 @@
-import 'package:flutter/material.dart';
-
-import '../../tokens/app_spacing.dart';
-
 class AppBottomContainer extends StatelessWidget {
   final Widget child;
+
+  /// Only for bottom
   final bool withSafeArea;
   final EdgeInsetsGeometry padding;
   final bool withShadow;
@@ -27,7 +25,13 @@ class AppBottomContainer extends StatelessWidget {
         ),
         boxShadow: _buildShadow(context),
       ),
-      child: withSafeArea ? SafeArea(child: child) : child,
+      child: SafeArea(
+        child: child,
+        bottom: withSafeArea,
+        left: false,
+        right: false,
+        top: false,
+      ),
     );
   }
 

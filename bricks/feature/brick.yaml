@@ -16,3 +16,6 @@ vars:
     type: string
     description: The mutation check point for the feature (e.g. // --- Mutation ---)
     prompt: What is the mutation check point for the feature?
+  base_path:
+    type: string
+    description: The base path for remote data source

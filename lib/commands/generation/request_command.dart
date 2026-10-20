@@ -4,7 +4,7 @@ import 'package:args/command_runner.dart';
 import 'package:path/path.dart' as p;
 
 import '../../constants/cli_rules.dart';
-import '../../generators/domain/request_generator.dart';
+import '../../generators/modelling/request_generator.dart';
 import '../../models/generation/typed_prop.dart';
 import '../../services/parsing/typed_prop_parser_service.dart';
 import '../../services/workspace_service.dart';
@@ -51,7 +51,7 @@ class RequestCommand extends Command<void> {
 
   @override
   String get invocation =>
-      'fsda request <prefix> -m <module> -f <feature> --props "<type:prop_1,type:prop_2,...>" [--strict] [--hook-disabled]';
+      'fsda request <name> -m <module> -f <feature> --props "<type:prop_1,type:prop_2,...>" [--strict] [--hook-disabled]';
 
   @override
   Future<void> run() async {
@@ -60,25 +60,24 @@ class RequestCommand extends Command<void> {
     _trailingPropTokens.clear();
     final args = argResults!.rest;
     if (args.isEmpty) {
-      throw UsageException('Missing request prefix.', usage);
+      throw UsageException('Missing Request name.', usage);
     }
 
     _collectTrailingPropTokens(args.skip(1).toList(growable: false));
 
-    final prefix = args.first.trim();
+    final name = args.first.trim();
     final feature = argResults?['feature'] as String?;
     final module = argResults?['module'] as String?;
     final strict = argResults?['strict'] as bool? ?? false;
-    final hookDisabled = argResults?['hook-disabled'] as bool? ?? false;
 
-    if (prefix.isEmpty) {
-      throw UsageException('Request prefix cannot be empty.', usage);
+    if (name.isEmpty) {
+      throw UsageException('Request name cannot be empty.', usage);
     }
 
-    final prefixPattern = RegExp(CliRules.artifactPrefixPattern);
-    if (!prefixPattern.hasMatch(prefix)) {
+    final namePattern = RegExp(CliRules.artifactNamePattern);
+    if (!namePattern.hasMatch(name) || !name.endsWith('_request')) {
       throw UsageException(
-        'Invalid request prefix "$prefix".\n${CliRules.artifactPrefixRule}',
+        'Invalid Request name "$name". It must be snake_case and end with _request.\n${CliRules.artifactNameRule}',
         usage,
       );
     }
@@ -132,12 +131,11 @@ class RequestCommand extends Command<void> {
     final props = _resolveProps(optionValues);
 
     await requestGenerator.generate((
-      prefix: prefix,
+      name: name,
       feature: feature,
       module: module,
       props: props,
       strict: strict,
-      hookDisabled: hookDisabled,
     ));
   }
 

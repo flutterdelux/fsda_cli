@@ -1,17 +1,17 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 
-import '../../../domain/entities/{{feature.snakeCase()}}_entity.dart';
-import 'parts/{{feature.snakeCase()}}_list_item.dart';
+import '../../../domain/entities/{{entity.snakeCase()}}.dart';
+import 'parts/{{feature.snakeCase()}}_{{slice.snakeCase()}}_item.dart';
 
-class {{feature.pascalCase()}}ListContent extends StatefulWidget {
+class {{feature.pascalCase()}}{{slice.pascalCase()}}Content extends StatefulWidget {
   final Future<void> Function() onPullRefresh;
   final bool isLoadingMore;
   final VoidCallback onLoadMore;
-  final List<{{feature.pascalCase()}}Entity> list;
-  final void Function({{feature.pascalCase()}}Entity item) onItemTap;
+  final List<{{entity.pascalCase()}}> list;
+  final void Function({{entity.pascalCase()}} item) onItemTap;
 
-  const {{feature.pascalCase()}}ListContent({
+  const {{feature.pascalCase()}}{{slice.pascalCase()}}Content({
     super.key,
     required this.list,
     required this.isLoadingMore,
@@ -21,10 +21,10 @@ class {{feature.pascalCase()}}ListContent extends StatefulWidget {
   });
 
   @override
-  State<{{feature.pascalCase()}}ListContent> createState() => _{{feature.pascalCase()}}ListContentState();
+  State<{{feature.pascalCase()}}{{slice.pascalCase()}}Content> createState() => _{{feature.pascalCase()}}{{slice.pascalCase()}}ContentState();
 }
 
-class _{{feature.pascalCase()}}ListContentState extends State<{{feature.pascalCase()}}ListContent> {
+class _{{feature.pascalCase()}}{{slice.pascalCase()}}ContentState extends State<{{feature.pascalCase()}}{{slice.pascalCase()}}Content> {
   static const _thresholdLoadMore = 0.9; // 90% of the scroll extent
 
   late final ScrollController _scrollController;
@@ -66,11 +66,11 @@ class _{{feature.pascalCase()}}ListContentState extends State<{{feature.pascalCa
         padding: const EdgeInsets.only(bottom: 80),
         separatorBuilder: (context, index) => const Divider(),
         itemBuilder: (context, index) {
-          final item = widget.list[index];
-          final tile = {{feature.pascalCase()}}ListItem(
-            {{feature.camelCase()}}: item,
-            number: index + 1,
-            onTap: () => widget.onItemTap.call(item),
+          final {{object.camelCase()}} = widget.list[index];
+          final tile = {{feature.pascalCase()}}{{slice.pascalCase()}}Item(
+            {{object.camelCase()}}: {{object.camelCase()}},
+            index: index,
+            onTap: () => widget.onItemTap.call({{object.camelCase()}}),
           );
           if (index == widget.list.length - 1) {
             return Column(

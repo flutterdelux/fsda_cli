@@ -4,6 +4,8 @@ import '../../../../shared/data/errors/{{module.snakeCase()}}_exception.dart';
 import '{{feature.snakeCase()}}_remote_data_source.dart';
 
 class {{feature.pascalCase()}}RemoteDataSourceImpl implements {{feature.pascalCase()}}RemoteDataSource {
+  static const _basePath = '{{{base_path}}}';
+
   final ApiClient _apiClient;
 
   const {{feature.pascalCase()}}RemoteDataSourceImpl({required ApiClient apiClient})

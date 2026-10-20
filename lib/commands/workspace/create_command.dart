@@ -1,4 +1,5 @@
 import 'package:args/command_runner.dart';
+
 import '../../constants/cli_rules.dart';
 import '../../generators/workspace_generator.dart';
 
@@ -42,6 +43,6 @@ class CreateCommand extends Command {
       );
     }
 
-    await workspaceGenerator.generate(workspaceName);
+    await workspaceGenerator.generate(name: workspaceName);
   }
 }

@@ -35,20 +35,20 @@ Commands requiring workspace root:
 - fsda gen-feature <feature> -m <module> [--ds <datasource_mode>|--datasource <datasource_mode>] [--hook-disabled]
 - fsda regen-feature <feature> -m <module> [--ds <datasource_mode>|--datasource <datasource_mode>]
 - fsda slice-m <slice> -f <feature> -m <module> -d <method> [--hook-disabled]
-- fsda slice-mp <slice> -f <feature> -m <module> -d <method> --param <prefix_param> --request <prefix_request> [--hook-disabled]
-- fsda slice-mr <slice> -f <feature> -m <module> -d <method> [--list] --dto <prefix_dto> --entity <prefix_entity> [--hook-disabled]
-- fsda slice-mrp <slice> -f <feature> -m <module> -d <method> [--list] --dto <prefix_dto> --entity <prefix_entity> --param <prefix_param> --request <prefix_request> [--hook-disabled]
-- fsda slice-r <slice> -f <feature> -m <module> -d <method> [--list] --dto <prefix_dto> --entity <prefix_entity> [--hook-disabled]
-- fsda slice-rof <slice> -f <feature> -m <module> -d <method> [--list] --dto <prefix_dto> --entity <prefix_entity> [--hook-disabled]
-- fsda slice-rp <slice> -f <feature> -m <module> -d <method> [--list] --dto <prefix_dto> --entity <prefix_entity> --param <prefix_param> --request <prefix_request> [--hook-disabled]
-- fsda slice-rpag <slice> -f <feature> -m <module> -d <method> --dto <prefix_dto> --entity <prefix_entity> --param <prefix_param> --request <prefix_request> [--hook-disabled]
-- fsda slice-rs <slice> -f <feature> -m <module> -d <method> [--list] --dto <prefix_dto> --entity <prefix_entity> [--hook-disabled]
-- fsda slice-rsp <slice> -f <feature> -m <module> -d <method> [--list] --dto <prefix_dto> --entity <prefix_entity> --param <prefix_param> --request <prefix_request> [--hook-disabled]
+- fsda slice-mp <slice> -f <feature> -m <module> -d <method> --param <name> --request <name> [--hook-disabled]
+- fsda slice-mr <slice> -f <feature> -m <module> -d <method> [--list] --dto <name> --entity <name> [--hook-disabled]
+- fsda slice-mrp <slice> -f <feature> -m <module> -d <method> [--list] --dto <name> --entity <name> --param <name> --request <name> [--hook-disabled]
+- fsda slice-r <slice> -f <feature> -m <module> -d <method> [--list] --dto <name> --entity <name> [--hook-disabled]
+- fsda slice-rof <slice> -f <feature> -m <module> -d <method> [--list] --dto <name> --entity <name> [--hook-disabled]
+- fsda slice-rp <slice> -f <feature> -m <module> -d <method> [--list] --dto <name> --entity <name> --param <name> --request <name> [--hook-disabled]
+- fsda slice-rpag <slice> -f <feature> -m <module> -d <method> --dto <name> --entity <name> --param <name> --request <name> [--hook-disabled]
+- fsda slice-rs <slice> -f <feature> -m <module> -d <method> [--list] --dto <name> --entity <name> [--hook-disabled]
+- fsda slice-rsp <slice> -f <feature> -m <module> -d <method> [--list] --dto <name> --entity <name> --param <name> --request <name> [--hook-disabled]
 - fsda enum <enum_name> -f <feature> -m <module> --values <value_1,value_2,...> [--hook-disabled]
-- fsda dto <prefix> -f <feature> -m <module> --props "<type:prop_1,type:prop_2,...>" [--hook-disabled]
-- fsda param <prefix> -f <feature> -m <module> --props "<type:prop_1,type:prop_2,...>" [--hook-disabled]
-- fsda request <prefix> -f <feature> -m <module> --props "<type:prop_1,type:prop_2,...>" [--hook-disabled]
-- fsda entity <prefix> -f <feature> -m <module> --props "<type:prop_1,type:prop_2,...>" [--hook-disabled]
+- fsda dto <name> -f <feature> -m <module> --props "<type:prop_1,type:prop_2,...>" [--hook-disabled]
+- fsda param <name> -f <feature> -m <module> --props "<type:prop_1,type:prop_2,...>" [--hook-disabled]
+- fsda request <name> -f <feature> -m <module> --props "<type:prop_1,type:prop_2,...>" [--hook-disabled]
+- fsda entity <name> -f <feature> -m <module> --props "<type:prop_1,type:prop_2,...>" [--hook-disabled]
 - fsda input-text <field> -f <feature> -m <module> [--hook-disabled]
 - fsda input-text-area <field> -f <feature> -m <module> [--min <min_lines>] [--max <max_lines>] [--hook-disabled]
 - fsda input-number <field> -f <feature> -m <module> [--type <numeric_type>] [--hook-disabled]
@@ -64,8 +64,8 @@ Commands requiring workspace root:
 - fsda ui-dialog <slice> -f <feature> -m <module> [--hook-disabled]
 - fsda ui-form <slice> -f <feature> -m <module> --fields "<input_type:value_type:field_name,...>" [--initial <entity_type>] [--hook-disabled]
 - fsda ui-form-dialog <slice> -f <feature> -m <module> --fields "<input_type:value_type:field_name,...>" [--initial <entity_type>] [--hook-disabled]
-- fsda ui-lsh <slice> -f <feature> -m <module> [--hook-disabled]
-- fsda ui-lsv <slice> -f <feature> -m <module> [--hook-disabled]
+- fsda ui-lsh <slice> -f <feature> -m <module> --entity <entity> --object <object> [--strict] [--hook-disabled]
+- fsda ui-lsv <slice> -f <feature> -m <module> --entity <entity> --object <object> [--strict] [--hook-disabled]
 - fsda ui-pag <slice> -f <feature> -m <module> [--hook-disabled]
 - fsda ui-pmi <slice> -f <feature> -m <module> [--hook-disabled]
 - fsda ui-action <slice> -f <feature> -m <module> [--hook-disabled]
@@ -77,13 +77,13 @@ Commands requiring workspace root:
 - fsda cp-ui <new_slice> -f <feature> -m <module> --from <from_slice>
 - fsda refresh <module>
 - fsda rebuild <module>
-- fsda compose-main <slice> -f <feature> -m <module> -a <app> -p <prefix_target_page> [--route]
-- fsda compose-form <slice> -f <feature> -m <module> -a <app> -p <prefix_target_page> [--route]
-- fsda compose-form-dialog <slice> -f <feature> -m <module> -a <app> -p <prefix_target_page> [--route]
-- fsda compose-pag <slice> -f <feature> -m <module> -a <app> -p <prefix_target_page> [--route]
-- fsda compose-pmi <slice> -f <feature> -m <module> -a <app> -p <prefix_target_page> [--route]
-- fsda compose-action <slice> -f <feature> -m <module> -a <app> -p <prefix_target_page> [--route]
-- fsda compose-sec <slice> -f <feature> -m <module> -a <app> -p <prefix_target_page> [--route]
+- fsda compose-main <slice> -f <feature> -m <module> -a <app> -p <target_page> [--route]
+- fsda compose-form <slice> -f <feature> -m <module> -a <app> -p <target_page> [--route]
+- fsda compose-form-dialog <slice> -f <feature> -m <module> -a <app> -p <target_page> [--route]
+- fsda compose-pag <slice> -f <feature> -m <module> -a <app> -p <target_page> [--route]
+- fsda compose-pmi <slice> -f <feature> -m <module> -a <app> -p <target_page> [--route]
+- fsda compose-action <slice> -f <feature> -m <module> -a <app> -p <target_page> [--route]
+- fsda compose-sec <slice> -f <feature> -m <module> -a <app> -p <target_page> [--route]
 - fsda fix-import [-m <module>] [-a <app>]
 
 Command allowed outside workspace root:
@@ -135,9 +135,10 @@ Generation workflow note:
 - Then use ui-form or ui-form-dialog with --fields for form wiring and composition.
 - For ui-form/ui-form-dialog, supported input_type values are: text, number, selector, selector_list, text_area, qty, dropdown, dropdown_enum, image, switch, password.
 - ui-form and ui-form-dialog auto-import value types (Entity/Dto/Enum/NetworkFile) based on --fields declarations.
-- Naming convention: use snake_case for CLI identifiers (app/module/feature/slice/page/field/enum_name/enum values/typed prop names/slice artifact prefixes).
-- Compose rule: pass `--page` as page prefix without `_page` suffix.
-- Type rule: `input-dropdown-enum`, `input-selector`, `input-selector-list`, and `input-image` use snake_case type prefixes; `input-dropdown` accepts both Dart type and snake_case alias.
+- Naming convention: use snake_case for CLI identifiers (app/module/feature/slice/page/field/enum_name/enum values/typed prop names/artifact names).
+- Modelling and slice commands require complete artifact names, including `_dto`, `_entity`, `_param`, or `_request` suffixes; input names match generated file stems.
+- Compose `--page` accepts the full target page name, including `_page` when that is part of the filename.
+- Type rule: `input-dropdown-enum`, `input-selector`, `input-selector-list`, and `input-image` use full snake_case artifact names; `input-dropdown` accepts Dart type names or complete snake_case artifact names.
 - Modelling rule: typed props keep snake_case input, while generated Dart property identifiers are camelCase.
 - Enum special rule: `fsda enum --values` accepts snake_case input, but generated Dart enum members are emitted in camelCase.
 - If you use --hook-disabled, FSDA skips post-hook execution and prints manual next-step commands.
@@ -203,17 +204,17 @@ fsda configure-app demo_app
 fsda gen-module finance
 fsda gen-feature wallet -m finance --ds remote
 fsda enum modifier_selection_type -f wallet -m finance --values single,multiple
-fsda dto Wallet -f wallet -m finance --props "String:id,String:name,ModifierSelectionType:selection_type,int:min_select=0,int:max_select,DateTime?:created_at"
-fsda entity Wallet -f wallet -m finance --props "String:id,String:name,ModifierSelectionType:selection_type,int:min_select=0,int:max_select,DateTime?:created_at"
-fsda param WalletDetail -f wallet -m finance --props "String:id"
-fsda request WalletDetail -f wallet -m finance --props "String:id"
-fsda param WalletDelete -f wallet -m finance --props "String:id,String:name"
-fsda request WalletDelete -f wallet -m finance --props "String:id,String:name"
-fsda slice-rp detail -f wallet -m finance -d getWalletDetail --dto wallet --entity wallet --param wallet_detail --request wallet_detail
-fsda slice-mp delete -f wallet -m finance -d deleteWallet --param wallet_delete --request wallet_delete
-fsda param WalletCreate -f wallet -m finance --props "String:id,String:name,ModifierSelectionType:selection_type,int:min_select=0,int:max_select"
-fsda request WalletCreate -f wallet -m finance --props "String:id,String:name,ModifierSelectionType:selection_type,int:min_select=0,int:max_select"
-fsda entity WalletSummary -f wallet -m finance --props "String:id,String:name"
+fsda dto wallet_dto -f wallet -m finance --props "String:id,String:name,ModifierSelectionType:selection_type,int:min_select=0,int:max_select,DateTime?:created_at"
+fsda entity wallet_entity -f wallet -m finance --props "String:id,String:name,ModifierSelectionType:selection_type,int:min_select=0,int:max_select,DateTime?:created_at"
+fsda param wallet_detail_param -f wallet -m finance --props "String:id"
+fsda request wallet_detail_request -f wallet -m finance --props "String:id"
+fsda param wallet_delete_param -f wallet -m finance --props "String:id,String:name"
+fsda request wallet_delete_request -f wallet -m finance --props "String:id,String:name"
+fsda slice-rp detail -f wallet -m finance -d getWalletDetail --dto wallet_dto --entity wallet_entity --param wallet_detail_param --request wallet_detail_request
+fsda slice-mp delete -f wallet -m finance -d deleteWallet --param wallet_delete_param --request wallet_delete_request
+fsda param wallet_create_param -f wallet -m finance --props "String:id,String:name,ModifierSelectionType:selection_type,int:min_select=0,int:max_select"
+fsda request wallet_create_request -f wallet -m finance --props "String:id,String:name,ModifierSelectionType:selection_type,int:min_select=0,int:max_select"
+fsda entity wallet_summary_entity -f wallet -m finance --props "String:id,String:name"
 
 fsda input-text name -f wallet -m finance
 fsda input-text-area notes -f wallet -m finance --min 3 --max 6
@@ -222,26 +223,28 @@ fsda input-qty min_select -f wallet -m finance
 fsda input-qty max_select -f wallet -m finance
 fsda input-dropdown-enum selection_type -f wallet -m finance --type modifier_selection_type
 fsda input-dropdown category -f wallet -m finance --type wallet_category_entity
-fsda input-selector parent_wallet -f wallet -m finance --type wallet
-fsda input-selector-list related_wallets -f wallet -m finance --type wallet
+fsda input-selector parent_wallet -f wallet -m finance --type wallet_entity
+fsda input-selector-list related_wallets -f wallet -m finance --type wallet_entity
 fsda input-image wallet_image -f wallet -m finance --type network_file
 fsda input-switch is_active -f wallet -m finance
 fsda input-password password -f wallet -m finance
 
 fsda ui-main detail -f wallet -m finance
+fsda ui-lsh list -f wallet -m finance --entity wallet_entity --object wallet
+fsda ui-lsv list -f wallet -m finance --entity wallet_entity --object wallet
 fsda ui-pmi delete -f wallet -m finance
 fsda ui-dialog delete -f wallet -m finance
 fsda ui-action delete -f wallet -m finance
 fsda ui-form create -f wallet -m finance --fields "text:String:name,dropdown_enum:ModifierSelectionType:selection_type,dropdown:WalletCategoryEntity:category,qty:int:min_select,qty:int:max_select"
-fsda ui-form-dialog update -f wallet -m finance --fields "text:String:name,dropdown_enum:ModifierSelectionType:selection_type,dropdown:WalletCategoryEntity:category,qty:int:min_select,qty:int:max_select" --initial WalletEntity
+fsda ui-form-dialog update -f wallet -m finance --fields "text:String:name,dropdown_enum:ModifierSelectionType:selection_type,dropdown:WalletCategoryEntity:category,qty:int:min_select,qty:int:max_select" --initial wallet_entity
 
 fsda reg finance -a demo_app
 fsda di finance -a demo_app
 
-fsda compose-main detail -f wallet -m finance -a demo_app -p wallet_detail
-fsda compose-form-dialog update -f wallet -m finance -a demo_app -p wallet_update
-fsda compose-pmi delete -f wallet -m finance -a demo_app -p wallet_detail
-fsda compose-action delete -f wallet -m finance -a demo_app -p wallet_edit
+fsda compose-main detail -f wallet -m finance -a demo_app -p wallet_detail_page
+fsda compose-form-dialog update -f wallet -m finance -a demo_app -p wallet_update_page
+fsda compose-pmi delete -f wallet -m finance -a demo_app -p wallet_detail_page
+fsda compose-action delete -f wallet -m finance -a demo_app -p wallet_edit_page
 
 # Quick hook sync after --hook-disabled:
 fsda refresh finance

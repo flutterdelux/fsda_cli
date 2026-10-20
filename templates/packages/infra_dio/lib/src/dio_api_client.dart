@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
+import 'dart:developer' as developer;
 
 import 'package:app_core/app_core.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import 'auth_interceptor.dart';
 
@@ -15,6 +16,7 @@ class DioApiClient implements ApiClient {
   final Duration _sendTimeout;
   final Duration _receiveTimeout;
   final Duration _streamConnectionTimeout;
+  final bool _enableLog;
 
   DioApiClient({
     required Dio dio,
@@ -24,6 +26,7 @@ class DioApiClient implements ApiClient {
     Duration receiveTimeout = const Duration(seconds: 30),
     Duration streamConnectionTimeout = const Duration(seconds: 15),
     final Future<String?> Function(String path)? getValidToken,
+    final bool enableLog = false,
   }) : _dio = dio
          ..options.baseUrl = baseUrl
          ..interceptors.add(AuthInterceptor(getValidToken: getValidToken))
@@ -32,7 +35,8 @@ class DioApiClient implements ApiClient {
        _connectTimeout = connectTimeout,
        _sendTimeout = sendTimeout,
        _receiveTimeout = receiveTimeout,
-       _streamConnectionTimeout = streamConnectionTimeout;
+       _streamConnectionTimeout = streamConnectionTimeout,
+       _enableLog = enableLog;
 
   @override
   Future<ApiResponse<T>> get<T>(
@@ -247,17 +251,38 @@ class DioApiClient implements ApiClient {
       throw _fromException(e, st);
     }
   }
-}
 
-ApiResponse<T> _mapResponse<T>(Response<T> response) {
-  return ApiResponse<T>(
-    statusCode: response.statusCode ?? 0,
-    body: response.data as T,
-    headers: {
-      for (final entry in response.headers.map.entries)
-        entry.key: entry.value.join(','),
-    },
-  );
+  ApiResponse<T> _mapResponse<T>(Response<T> response) {
+    if (_enableLog) {
+      final bodyString = response.data.toString();
+      const maxLogLength = 500;
+      final displayBody = bodyString.length > maxLogLength
+          ? '${bodyString.substring(0, maxLogLength)}... [TRUNCATED ${bodyString.length} chars]'
+          : bodyString;
+      final prefixLine = '═' * ((80 - 1 - instanceName.length) / 2).toInt();
+      final logMessage =
+          '''
+ ⌄
+$prefixLine $instanceName $prefixLine
+Method     : ${response.requestOptions.method}
+URL        : ${response.requestOptions.uri}
+Status Code: ${response.statusCode}
+Body       : $displayBody
+${'═' * 80}
+⌃
+        ''';
+      developer.log(logMessage, name: '🌐︎');
+    }
+
+    return ApiResponse<T>(
+      statusCode: response.statusCode ?? 0,
+      body: response.data as T,
+      headers: {
+        for (final entry in response.headers.map.entries)
+          entry.key: entry.value.join(','),
+      },
+    );
+  }
 }
 
 CoreException _fromException(Object e, StackTrace st) {

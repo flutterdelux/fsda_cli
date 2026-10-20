@@ -10,4 +10,6 @@ extension {{enum_class}}X on {{enum_class}} {
 {{{localize_cases}}}
     };
   }
+
+  {{{is_value_getters}}}
 }

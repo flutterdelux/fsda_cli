@@ -5,12 +5,17 @@ import 'package:path/path.dart' as p;
 
 import '../../constants/cli_rules.dart';
 import '../../generators/composition/compose_types.dart';
+import '../../services/command_operation_service.dart';
 import '../../services/workspace_service.dart';
 
 abstract class ComposeBaseCommand extends Command<void> {
   final WorkspaceService workspaceService;
+  final CommandOperationService operations;
 
-  ComposeBaseCommand({required this.workspaceService}) {
+  ComposeBaseCommand({
+    required this.workspaceService,
+    required this.operations,
+  }) {
     argParser
       ..addOption('feature', abbr: 'f', help: 'Target feature name.')
       ..addOption('module', abbr: 'm', help: 'Target module name.')
@@ -134,14 +139,17 @@ abstract class ComposeBaseCommand extends Command<void> {
       );
     }
 
-    await runValidated((
-      app: app,
-      module: module,
-      feature: feature,
-      slice: slice,
-      targetPage: targetPage!,
-      route: route,
-      strict: strict,
-    ));
+    await operations.run<void>(
+      operationLabel: 'fsda $name',
+      action: () async => runValidated((
+        app: app,
+        module: module,
+        feature: feature,
+        slice: slice,
+        targetPage: targetPage!,
+        route: route,
+        strict: strict,
+      )),
+    );
   }
 }

@@ -1,27 +1,27 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 
-import '../../../../domain/entities/{{feature.snakeCase()}}_entity.dart';
+import '../../../../domain/entities/{{entity.snakeCase()}}.dart';
 
-class {{feature.pascalCase()}}ListItem extends StatelessWidget {
-  final {{feature.pascalCase()}}Entity {{feature.camelCase()}};
-  final int number;
-  final VoidCallback? onTap;
-  const {{feature.pascalCase()}}ListItem({
+class {{feature.pascalCase()}}{{slice.pascalCase()}}Item extends StatelessWidget {
+  final int index;
+  final {{entity.pascalCase()}} {{object.camelCase()}};
+  final void Function() onTap;
+  const {{feature.pascalCase()}}{{slice.pascalCase()}}Item({
     super.key,
-    required this.{{feature.camelCase()}},
-    required this.number,
-    this.onTap,
+    required this.index,
+    required this.{{object.camelCase()}},
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return AppListTile(
-      leading: AppLeadingIndex(number: number),
-      title: '{{feature.camelCase()}}.title',
-      subtitle: 'subtitle',
-      onTap: onTap,
+      leading: AppLeadingIndex(number: index + 1),
+      title: '{{object.camelCase()}}.title',
+      subtitle: '{{object.camelCase()}}.content',
       includeChevron: true,
+      onTap: onTap,
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 
 import 'package:app_core/app_core.dart';
 import 'package:http/http.dart';
@@ -11,6 +12,7 @@ class HttpApiClient implements ApiClient {
   final Duration _requestTimeout;
   final Duration _streamConnectionTimeout;
   final Future<String?> Function(String path)? _getValidToken;
+  final bool _enableLog;
 
   const HttpApiClient({
     required Client client,
@@ -18,11 +20,13 @@ class HttpApiClient implements ApiClient {
     Duration requestTimeout = const Duration(seconds: 30),
     Duration streamConnectionTimeout = const Duration(seconds: 15),
     final Future<String?> Function(String path)? getValidToken,
+    final bool enableLog = false,
   }) : _client = client,
        _baseUrl = baseUrl,
        _requestTimeout = requestTimeout,
        _streamConnectionTimeout = streamConnectionTimeout,
-       _getValidToken = getValidToken;
+       _getValidToken = getValidToken,
+       _enableLog = enableLog;
 
   @override
   Future<ApiResponse<T>> get<T>(
@@ -243,12 +247,33 @@ class HttpApiClient implements ApiClient {
 
     return await requestCall(reqHeaders);
   }
-}
 
-ApiResponse<T> _mapResponse<T>(Response response) {
-  return ApiResponse<T>(
-    statusCode: response.statusCode,
-    body: jsonDecode(response.body) as T,
-    headers: response.headers,
-  );
+  ApiResponse<T> _mapResponse<T>(Response response) {
+    if (_enableLog) {
+      final bodyString = response.body;
+      const maxLogLength = 500;
+      final displayBody = bodyString.length > maxLogLength
+          ? '${bodyString.substring(0, maxLogLength)}... [TRUNCATED ${bodyString.length} chars]'
+          : bodyString;
+      final prefixLine = '═' * ((80 - 1 - instanceName.length) / 2).toInt();
+      final logMessage =
+          '''
+ ⌄
+$prefixLine $instanceName $prefixLine
+Method     : ${response.request?.method}
+URL        : ${response.request?.url}
+Status Code: ${response.statusCode}
+Body       : $displayBody
+${'═' * 80}
+⌃
+        ''';
+      developer.log(logMessage, name: '🌐︎');
+    }
+
+    return ApiResponse<T>(
+      statusCode: response.statusCode,
+      body: jsonDecode(response.body) as T,
+      headers: response.headers,
+    );
+  }
 }

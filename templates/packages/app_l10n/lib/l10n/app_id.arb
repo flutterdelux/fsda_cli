@@ -1,4 +1,13 @@
 {
+  "launchUrlFailed": "Tidak bisa membuka {url}",
+  "itemsCount": "{count, plural, =1{1 item} other{{count} item}}",
+  "synchronize": "Sinkronisasi",
+  "available": "Tersedia",
+  "notAvailable": "Tidak tersedia",
+  "required": "Diperlukan",
+  "notRequired": "Tidak diperlukan",
+  "previous": "Sebelumnya",
+  "next": "Berikutnya",
   "apply": "Terapkan",
   "required": "Wajib",
   "create": "Buat",

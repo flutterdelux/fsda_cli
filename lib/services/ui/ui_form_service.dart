@@ -1,8 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:mason/mason.dart';
-import 'package:path/path.dart' as p;
 
 import '../../enums/form_input_type.dart';
 import '../../models/generation/input_typed_field.dart';
@@ -18,7 +16,8 @@ class UiFormService {
     required List<InputTypedField> fields,
     required bool dialogMode,
     required Map<String, List<int>> files,
-    String? initialType,
+    required String dataType,
+    required bool initializeFormData,
   }) async {
     final formPath = files.keys.firstWhere(
       (path) =>
@@ -32,20 +31,11 @@ class UiFormService {
       );
     }
 
-    final formParamFields = await _readFormParamFields(
-      moduleName: moduleName,
-      featureName: featureName,
-      sliceName: sliceName,
-    );
-    final canResolveParamConstructor = formParamFields.isNotEmpty;
-
     final nextFiles = Map<String, List<int>>.from(files);
     nextFiles.removeWhere(
       (path, _) =>
           path.startsWith('ui/shared/widgets/') && path.endsWith('_field.dart'),
     );
-
-    final normalizedInitialType = _normalizeInitialType(initialType);
 
     nextFiles[formPath] = utf8.encode(
       _buildDynamicFormWidget(
@@ -53,9 +43,8 @@ class UiFormService {
         featureName: featureName,
         sliceName: sliceName,
         fields: fields,
-        paramFields: formParamFields,
-        canResolveParamConstructor: canResolveParamConstructor,
-        initialType: normalizedInitialType,
+        dataType: dataType.pascalCase,
+        initializeFormData: initializeFormData,
       ),
     );
 
@@ -68,89 +57,23 @@ class UiFormService {
     return (files: nextFiles, uiYamlRaw: uiYamlRaw);
   }
 
-  Future<List<({String name, String type})>> _readFormParamFields({
-    required String moduleName,
-    required String featureName,
-    required String sliceName,
-  }) async {
-    final paramPath = p.join(
-      Directory.current.path,
-      'modules',
-      moduleName,
-      'lib',
-      'src',
-      'features',
-      featureName,
-      'domain',
-      'params',
-      '${featureName.snakeCase}_${sliceName.snakeCase}_param.dart',
-    );
-    final paramFile = File(paramPath);
-    if (!await paramFile.exists()) {
-      return const <({String name, String type})>[];
-    }
-
-    final source = await paramFile.readAsString();
-    final expectedClassName =
-        '${featureName.pascalCase}${sliceName.pascalCase}Param';
-    final constructorMatch =
-        RegExp(
-          r'const\s+factory\s+' +
-              RegExp.escape(expectedClassName) +
-              r'\s*\(([\s\S]*?)\)\s*=\s*_',
-          dotAll: true,
-        ).firstMatch(source) ??
-        RegExp(
-          r'const\s+factory\s+[A-Za-z_]\w*Param\s*\(([\s\S]*?)\)\s*=\s*_',
-          dotAll: true,
-        ).firstMatch(source);
-
-    if (constructorMatch == null) {
-      return const <({String name, String type})>[];
-    }
-
-    final constructorParams = constructorMatch.group(1) ?? '';
-    final fields = <({String name, String type})>[];
-
-    for (final paramMatch in RegExp(
-      r'(?:required\s+)?([A-Za-z_][A-Za-z0-9_<>,? ]*)\s+([A-Za-z_]\w*)\s*(?:,|$|[}\]])',
-      multiLine: true,
-    ).allMatches(constructorParams)) {
-      final fieldType = paramMatch.group(1)?.trim();
-      final fieldName = paramMatch.group(2)?.trim();
-      if (fieldType == null || fieldType.isEmpty) {
-        continue;
-      }
-      if (fieldName == null || fieldName.isEmpty) {
-        continue;
-      }
-      fields.add((name: fieldName, type: fieldType));
-    }
-
-    return fields;
-  }
-
   String _buildDynamicFormWidget({
     required String moduleName,
     required String featureName,
     required String sliceName,
     required List<InputTypedField> fields,
-    required List<({String name, String type})> paramFields,
-    required bool canResolveParamConstructor,
-    String? initialType,
+    required String dataType,
+    required bool initializeFormData,
   }) {
     final featureSnake = featureName.snakeCase;
-    final sliceSnake = sliceName.snakeCase;
     final featurePascal = featureName.pascalCase;
     final slicePascal = sliceName.pascalCase;
     final modulePascal = moduleName.pascalCase;
     final featureCamel = featureName.camelCase;
     final formClass = '$featurePascal${slicePascal}Form';
     final formStateClass = '_$featurePascal${slicePascal}FormState';
-    final paramClass = '$featurePascal${slicePascal}Param';
     final localizationsClass = '${modulePascal}Localizations';
-    final resolvedInitialType = initialType ?? '';
-    final hasInitialData = resolvedInitialType.isNotEmpty;
+    final hasInitialData = initializeFormData;
 
     final textFields = fields
         .where(_usesTextControllerForFormField)
@@ -169,7 +92,7 @@ class UiFormService {
 
     final valueTypeImports = _buildFormValueTypeImports(
       fields: fields,
-      initialType: resolvedInitialType,
+      dataType: dataType,
     );
 
     final extraWidgetFields = <String>[];
@@ -302,33 +225,18 @@ class UiFormService {
       fieldByKey[field.name.camelCase.toLowerCase()] = field;
     }
 
-    final paramAssignments = <String>[];
-    for (final paramField in paramFields) {
-      final paramName = paramField.name;
-      final matchedField =
-          fieldByKey[paramName.toLowerCase()] ??
-          fieldByKey[paramName.snakeCase.toLowerCase()] ??
-          fieldByKey[paramName.camelCase.toLowerCase()];
-
-      late final String assignmentExpression;
-      if (matchedField == null) {
-        assignmentExpression = _defaultExpressionForParamType(paramField.type);
-      } else {
-        final valueInfo = valueInfoByFieldName[matchedField.name.camelCase];
-        if (valueInfo == null) {
-          assignmentExpression = _defaultExpressionForParamType(
-            paramField.type,
-          );
-        } else {
-          assignmentExpression = _adaptValueForParamType(
-            valueInfo: valueInfo,
-            paramType: paramField.type,
-          );
-        }
-      }
-
-      paramAssignments.add('      $paramName: $assignmentExpression,');
-    }
+    final dataAssignments = fields
+        .map((field) {
+          final valueInfo = valueInfoByFieldName[field.name.camelCase];
+          final assignmentExpression = valueInfo == null
+              ? _defaultExpressionForParamType(field.type)
+              : _adaptValueForParamType(
+                  valueInfo: valueInfo,
+                  paramType: field.type,
+                );
+          return '      ${field.name.camelCase}: $assignmentExpression,';
+        })
+        .toList(growable: false);
 
     final initControllers = textFields
         .map((field) {
@@ -510,7 +418,7 @@ class UiFormService {
     ].join('\n');
 
     final initialDataFieldBlock = hasInitialData
-        ? '  final $resolvedInitialType initialData;\n'
+        ? '  final $dataType initialData;\n'
         : '';
     final initialDataCtorBlock = hasInitialData
         ? '    required this.initialData,\n'
@@ -520,7 +428,6 @@ class UiFormService {
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 
-import '../../../domain/params/${featureSnake}_${sliceSnake}_param.dart';
 $fieldImports
 ${valueTypeImports.isEmpty ? '' : '$valueTypeImports\n'}
 import '../../../../../generated/${moduleName.snakeCase}_localizations.dart';
@@ -528,7 +435,7 @@ import '../../../../../generated/${moduleName.snakeCase}_localizations.dart';
 class $formClass extends StatefulWidget {
   final void Function(
     BuildContext context,
-    $paramClass? param,
+    $dataType? data,
     String? invalidMessage,
   )
   onListen;
@@ -548,12 +455,10 @@ $fieldDeclarations
     final l10n = $localizationsClass.of(context)!;
 
 ${inputValidation.toString().trimRight()}
-${canResolveParamConstructor && paramAssignments.isNotEmpty ? '''    final param = $paramClass(
-${paramAssignments.join('\n')}
-    );''' : '''    // Keep form generation resilient when param constructor cannot be resolved.
-    // Developer can map param manually later based on use case needs.
-    final param = null;'''}
-    widget.onListen(context, param, null);
+  final data = $dataType(
+${dataAssignments.join('\n')}
+  );
+  widget.onListen(context, data, null);
   }
 
   @override
@@ -842,7 +747,7 @@ post_hooks:
 
   String _buildFormValueTypeImports({
     required List<InputTypedField> fields,
-    required String initialType,
+    required String dataType,
   }) {
     final imports = <String>{};
     final referencedTypes = <String>{};
@@ -851,8 +756,8 @@ post_hooks:
       referencedTypes.addAll(_extractTypeTokens(field.typeWithoutNullability));
     }
 
-    if (initialType.isNotEmpty) {
-      referencedTypes.add(initialType.replaceAll(' ', '').replaceAll('?', ''));
+    if (dataType.isNotEmpty) {
+      referencedTypes.add(dataType.replaceAll(' ', '').replaceAll('?', ''));
     }
 
     for (final type in referencedTypes) {
@@ -872,9 +777,9 @@ post_hooks:
         continue;
       }
 
-      if (type.endsWith('Dto')) {
+      if (type.endsWith('Param')) {
         imports.add(
-          "import '../../../data/dtos/${_resolveDtoFileName(type)}.dart';",
+          "import '../../../domain/params/${_resolveParamFileName(type)}.dart';",
         );
         continue;
       }
@@ -940,25 +845,12 @@ post_hooks:
     return '${baseName.snakeCase}_entity';
   }
 
-  String _resolveDtoFileName(String dtoType) {
-    final normalized = dtoType.replaceAll(' ', '').replaceAll('?', '');
-    final baseName = normalized.endsWith('Dto')
-        ? normalized.substring(0, normalized.length - 'Dto'.length)
+  String _resolveParamFileName(String paramType) {
+    final normalized = paramType.replaceAll(' ', '').replaceAll('?', '');
+    final baseName = normalized.endsWith('Param')
+        ? normalized.substring(0, normalized.length - 'Param'.length)
         : normalized;
-    return '${baseName.snakeCase}_dto';
-  }
-
-  String? _normalizeInitialType(String? value) {
-    if (value == null) {
-      return null;
-    }
-
-    final normalized = value.replaceAll(' ', '').trim();
-    if (normalized.isEmpty) {
-      return null;
-    }
-
-    return normalized;
+    return '${baseName.snakeCase}_param';
   }
 
   String _resolveInitialControllerTextExpression(InputTypedField field) {

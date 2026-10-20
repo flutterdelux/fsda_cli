@@ -2,15 +2,18 @@ import 'package:args/command_runner.dart';
 
 import '../../constants/cli_rules.dart';
 import '../../generators/rm_feature_generator.dart';
+import '../../services/command_operation_service.dart';
 import '../../services/workspace_service.dart';
 
 class RmFeatureCommand extends Command<void> {
   final RmFeatureGenerator rmFeatureGenerator;
   final WorkspaceService workspaceService;
+  final CommandOperationService operations;
 
   RmFeatureCommand({
     required this.rmFeatureGenerator,
     required this.workspaceService,
+    required this.operations,
   }) {
     argParser
       ..addOption('module', abbr: 'm', help: 'Target module name.')
@@ -70,10 +73,12 @@ class RmFeatureCommand extends Command<void> {
       );
     }
 
-    await rmFeatureGenerator.generate((
-      module: module,
-      feature: feature,
+    await operations.run<Map<String, dynamic>>(
+      operationLabel: 'fsda rm-feature $feature in $module',
       hookDisabled: hookDisabled,
-    ));
+      action: () =>
+          rmFeatureGenerator.generate((module: module, feature: feature)),
+      hookResults: (result) => [result],
+    );
   }
 }

@@ -28,7 +28,7 @@ class InputImageCommand extends Command<void> {
       ..addOption(
         'type',
         help:
-            'Required image value type in snake_case. Use network_file or entity prefix such as product_image.',
+            'Required image value type in snake_case. Use network_file or full Entity artifact name such as product_image_entity.',
       )
       ..addFlag(
         'strict',
@@ -207,7 +207,7 @@ class InputImageCommand extends Command<void> {
     final typeRegExp = RegExp(CliRules.sliceNamePattern);
     if (!typeRegExp.hasMatch(normalized)) {
       throw UsageException(
-        'Invalid image type "$rawType". Use snake_case type, for example network_file or product_image.',
+        'Invalid image type "$rawType". Use network_file or a full snake_case Entity name ending in _entity.',
         usage,
       );
     }
@@ -216,16 +216,13 @@ class InputImageCommand extends Command<void> {
       return 'NetworkFile';
     }
 
-    final entityPrefix = normalized.endsWith('_entity')
-        ? normalized.substring(0, normalized.length - '_entity'.length)
-        : normalized;
-    if (entityPrefix.isEmpty) {
+    if (!normalized.endsWith('_entity')) {
       throw UsageException(
-        'Invalid image type "$rawType". Entity prefix cannot be empty.',
+        'Invalid image type "$rawType". The full Entity name must end with _entity.',
         usage,
       );
     }
 
-    return '${entityPrefix.pascalCase}Entity';
+    return normalized.pascalCase;
   }
 }

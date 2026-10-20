@@ -2,7 +2,11 @@ import '../../enums/ui_code.dart';
 import 'ui_base_command.dart';
 
 class UiLsvCommand extends UiBaseCommand {
-  UiLsvCommand({required super.uiGenerator, required super.workspaceService});
+  UiLsvCommand({
+    required super.uiGenerator,
+    required super.workspaceService,
+    required super.operations,
+  });
 
   @override
   UiCode get uiTemplate => UiCode.lsv;

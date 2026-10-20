@@ -2,7 +2,8 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-import 'base_generator.dart';
+import '../services/hook_service.dart';
+import '../services/logger_service.dart';
 
 const _rebuildPostHooks = [
   'flutter clean',
@@ -11,18 +12,14 @@ const _rebuildPostHooks = [
   'dart run build_runner build --delete-conflicting-outputs --force-jit',
 ];
 
-class RebuildGenerator extends BaseGenerator<void, ({String module})> {
-  const RebuildGenerator({required super.logger, required super.hookService});
+class RebuildGenerator {
+  final LoggerService logger;
+  final HookService hookService;
 
-  @override
+  const RebuildGenerator({required this.logger, required this.hookService});
+
   Future<void> generate(({String module}) args) async {
     final module = args.module;
-
-    if (hookService == null) {
-      logger.error('HookService is required for rebuild command.');
-      exitCode = 1;
-      return;
-    }
 
     final moduleRoot = p.join(Directory.current.path, 'modules', module);
     final moduleDir = Directory(moduleRoot);
@@ -37,11 +34,11 @@ class RebuildGenerator extends BaseGenerator<void, ({String module})> {
     );
 
     try {
-      await hookService!.runHook(
+      await hookService.runHook(
         hooks: _rebuildPostHooks,
         workingDirectory: moduleRoot,
         logger: logger,
-        operationLabel: 'fsda rebuild',
+        operationLabel: 'fsda rebuild $module',
         timeout: const Duration(minutes: 15),
       );
 

@@ -14,7 +14,7 @@ remote_data_source_impl:
     {{#is_list}}Future<List<{{model.pascalCase()}}Dto>> {{method.camelCase()}}() async {{/is_list}}
     {{^is_list}}Future<{{model.pascalCase()}}Dto> {{method.camelCase()}}() async {{/is_list}}
       final response = await _apiClient.post<Map<String, dynamic>>(
-        '/{{feature.paramCase()}}s/{{slice.paramCase()}}',
+        '$_basePath/{{slice.paramCase()}}',
       );
       if (response.statusCode == 200) {
         final {{feature.camelCase()}}{{slice.pascalCase()}}Response = {{feature.pascalCase()}}{{slice.pascalCase()}}Response.fromJson(

@@ -17,43 +17,29 @@ import '../generated/bricks/ui_pag_bundle.dart';
 import '../generated/bricks/ui_pmi_bundle.dart';
 import '../generated/bricks/ui_sec_bundle.dart';
 import '../models/generation/input_typed_field.dart';
+import '../services/file_service.dart';
 import '../services/l10n/arb_injector_service.dart';
+import '../services/logger_service.dart';
 import '../services/memory_generator_target.dart';
 import '../services/operation_report_service.dart';
 import '../services/ui/ui_form_service.dart';
-import 'base_generator.dart';
 
-class UiGenerator
-    extends
-        BaseGenerator<
-          void,
-          ({
-            String slice,
-            String feature,
-            String module,
-            UiCode ui,
-            String operationLabel,
-            List<InputTypedField> formInputFields,
-            String? initialType,
-            bool strict,
-            bool hookDisabled,
-          })
-        > {
+class UiGenerator {
   final ArbInjectorService arbInjectorService;
   final UiFormService uiFormService;
+  final LoggerService logger;
+  final OperationReportService report;
+  final FileService fileService;
 
   UiGenerator({
-    required super.logger,
-    required super.fileService,
-    required super.hookService,
-    ArbInjectorService? arbInjectorService,
-    UiFormService? uiFormService,
-  }) : arbInjectorService =
-           arbInjectorService ?? ArbInjectorService(logger: logger),
-       uiFormService = uiFormService ?? const UiFormService();
+    required this.logger,
+    required this.report,
+    required this.fileService,
+    required this.arbInjectorService,
+    required this.uiFormService,
+  });
 
-  @override
-  Future<void> generate(
+  Future<Map<String, dynamic>> generate(
     ({
       String slice,
       String feature,
@@ -61,7 +47,10 @@ class UiGenerator
       UiCode ui,
       String operationLabel,
       List<InputTypedField> formInputFields,
-      String? initialType,
+      String dataType,
+      bool initializeFormData,
+      String? entity,
+      String? object,
       bool strict,
       bool hookDisabled,
     })
@@ -73,14 +62,11 @@ class UiGenerator
     final uiCode = args.ui;
     final operationLabel = args.operationLabel;
     final formInputFields = args.formInputFields;
-    final initialType = args.initialType;
+    final dataType = args.dataType;
+    final initializeFormData = args.initializeFormData;
+    final entity = args.entity;
+    final object = args.object;
     final strict = args.strict;
-    final hookDisabled = args.hookDisabled;
-
-    if (fileService == null) {
-      logger.error('FileService is required for weaving ui template.');
-      return;
-    }
 
     logger.info(
       'Weaving UI "$sliceName" -> "$moduleName/$featureName" as ${uiCode.description} template...',
@@ -88,21 +74,29 @@ class UiGenerator
 
     final progress = logger.progress('Baking UI "$sliceName" in memory...');
     final memoryGeneratorTarget = MemoryGeneratorTarget();
-    final report = OperationReportService();
 
     try {
       final generator = await MasonGenerator.fromBundle(
         _resolveUiBundle(uiCode),
       );
-      await generator.generate(
-        memoryGeneratorTarget,
-        vars: <String, dynamic>{
-          'slice': sliceName,
-          'feature': featureName,
-          'module': moduleName,
-          'ui': uiCode.code,
-        },
-      );
+      final vars = <String, dynamic>{
+        'slice': sliceName,
+        'feature': featureName,
+        'module': moduleName,
+        'ui': uiCode.code,
+      };
+
+      if (dataType.isNotEmpty) {
+        final dataTypePath = _resolveDataTypePath(dataType);
+        vars
+          ..['type'] = dataType
+          ..['type_import_ui'] = '../../../$dataTypePath'
+          ..['type_import_logic'] = '../../$dataTypePath';
+      }
+      if (entity != null) vars['entity'] = entity;
+      if (object != null) vars['object'] = object;
+
+      await generator.generate(memoryGeneratorTarget, vars: vars);
 
       String? uiYamlRaw;
       final standaloneFilesToSave = <String, List<int>>{};
@@ -134,7 +128,8 @@ class UiGenerator
               fields: formInputFields,
               dialogMode: uiCode == UiCode.formDialog,
               files: standaloneFilesToSave,
-              initialType: initialType,
+              dataType: dataType,
+              initializeFormData: initializeFormData,
             );
         standaloneFilesToSave
           ..clear()
@@ -153,7 +148,7 @@ class UiGenerator
       );
 
       progress.update('Writing standalone UI files to disk...');
-      final templateWriteResult = await fileService!.generateTemplate(
+      final templateWriteResult = await fileService.generateTemplate(
         path: featureRoot,
         files: standaloneFilesToSave,
         failOnExisting: strict,
@@ -179,7 +174,7 @@ class UiGenerator
           );
           report.logSummary(logger, operationLabel: operationLabel);
           exitCode = 1;
-          return;
+          return <String, dynamic>{'success': false};
         }
       }
 
@@ -228,28 +223,24 @@ class UiGenerator
         }
       }
 
-      if (postHooks.isNotEmpty) {
-        progress.update('Running post hooks...');
-        await hookService!.runHook(
-          hooks: postHooks,
-          workingDirectory: p.join(
-            Directory.current.path,
-            'modules',
-            moduleName,
-          ),
-          logger: logger,
-          disabled: hookDisabled,
-          operationLabel: operationLabel,
-        );
-      }
-
       progress.complete(
         'UI "$sliceName" successfully woven into "$featureName" feature! 🎨',
       );
       report.logSummary(logger, operationLabel: operationLabel);
+
+      return <String, dynamic>{
+        'success': true,
+        if (postHooks.isNotEmpty) 'post_hook': postHooks,
+        'working_directory': p.join(
+          Directory.current.path,
+          'modules',
+          moduleName,
+        ),
+      };
     } catch (e) {
       progress.fail('Failed to weave UI template: $e');
       exitCode = 1;
+      return <String, dynamic>{'success': false};
     }
   }
 
@@ -418,5 +409,25 @@ class UiGenerator
       UiCode.action => uiActionBundle,
       UiCode.sec => uiSecBundle,
     };
+  }
+
+  String _resolveDataTypePath(String dataType) {
+    if (dataType.endsWith('_entity')) {
+      return 'domain/entities/$dataType.dart';
+    }
+    if (dataType.endsWith('_dto')) {
+      return 'data/dtos/$dataType.dart';
+    }
+    if (dataType.endsWith('_param')) {
+      return 'domain/params/$dataType.dart';
+    }
+    if (dataType.endsWith('_request')) {
+      return 'data/requests/$dataType.dart';
+    }
+    throw ArgumentError.value(
+      dataType,
+      'dataType',
+      'Unsupported artifact suffix.',
+    );
   }
 }

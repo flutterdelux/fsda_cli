@@ -8,19 +8,26 @@ import 'package:path/path.dart' as p;
 import '../enums/di_class_type.dart';
 import '../models/di_class_info.dart';
 import '../models/di_param.dart';
+import '../services/logger_service.dart';
 import '../services/operation_report_service.dart';
 import '../visitors/di_ast_visitor.dart';
-import 'base_generator.dart';
 
-class DiGenerator
-    extends BaseGenerator<void, ({String module, String app, bool strict})> {
-  const DiGenerator({required super.logger});
+class DiGenerator {
+  final LoggerService logger;
+  final OperationReportService report;
 
-  @override
-  Future<void> generate(({String module, String app, bool strict}) args) async {
+  const DiGenerator({required this.logger, required this.report});
+
+  Future<void> generate(
+    ({String module, String app, String? feature, bool strict}) args,
+  ) async {
     final module = args.module;
     final app = args.app;
+    final targetFeatureOpt = args.feature;
     final strict = args.strict;
+    final operationLabel = targetFeatureOpt != null
+        ? 'fsda di $module -> $app (-f $targetFeatureOpt)'
+        : 'fsda di $module -> $app';
 
     final moduleFeaturesRoot = Directory(
       p.join(
@@ -43,6 +50,7 @@ class DiGenerator
     final targetFeatures = await _collectTargetFeatures(
       moduleFeaturesRoot: moduleFeaturesRoot,
       module: module,
+      targetFeature: targetFeatureOpt,
     );
     if (targetFeatures.isEmpty) {
       logger.info('No feature target found for module [$module].');
@@ -65,7 +73,13 @@ class DiGenerator
       return;
     }
 
-    logger.info('Scanning all features from module [$module]...');
+    if (targetFeatureOpt != null) {
+      logger.info(
+        'Scanning feature [$targetFeatureOpt] from module [$module]...',
+      );
+    } else {
+      logger.info('Scanning all features from module [$module]...');
+    }
 
     final featureTargets = <({String feature, List<DiClassInfo> classes})>[];
     for (final feature in targetFeatures) {
@@ -79,16 +93,15 @@ class DiGenerator
     }
 
     if (featureTargets.isEmpty) {
-      logger.info(
-        'No DI classes detected for all features in module [$module].',
-      );
-      final report = OperationReportService();
+      final targetDesc = targetFeatureOpt != null
+          ? 'feature [$targetFeatureOpt]'
+          : 'all features in module [$module]';
+      logger.info('No DI classes detected for $targetDesc.');
       report.addSkipped(diFilePath);
-      report.logSummary(logger, operationLabel: 'fsda di');
+      report.logSummary(logger, operationLabel: operationLabel);
       return;
     }
 
-    final report = OperationReportService();
     final originalDiSource = await diFile.readAsString();
     var diSource = originalDiSource;
     var createdMethodCount = 0;
@@ -111,7 +124,7 @@ class DiGenerator
         if (upsertResult.conflictMessage != null) {
           logger.error(upsertResult.conflictMessage!);
           report.addSkipped(diFilePath);
-          report.logSummary(logger, operationLabel: 'fsda di');
+          report.logSummary(logger, operationLabel: operationLabel);
           exitCode = 1;
           return;
         }
@@ -139,7 +152,7 @@ class DiGenerator
       if (strict && registerResult.conflictMessage != null) {
         logger.error(registerResult.conflictMessage!);
         report.addSkipped(diFilePath);
-        report.logSummary(logger, operationLabel: 'fsda di');
+        report.logSummary(logger, operationLabel: operationLabel);
         exitCode = 1;
         return;
       }
@@ -156,7 +169,7 @@ class DiGenerator
       logger.info(
         'DI registration for module [$module] is already up to date. No injection applied.',
       );
-      report.logSummary(logger, operationLabel: 'fsda di');
+      report.logSummary(logger, operationLabel: operationLabel);
       return;
     }
 
@@ -177,16 +190,26 @@ class DiGenerator
       );
     }
 
-    logger.success(
-      'Successfully synchronized module [$module] features into DI.',
-    );
-    report.logSummary(logger, operationLabel: 'fsda di');
+    if (targetFeatureOpt != null) {
+      logger.success(
+        'Successfully synchronized feature [$targetFeatureOpt] of module [$module] into DI.',
+      );
+    } else {
+      logger.success(
+        'Successfully synchronized module [$module] features into DI.',
+      );
+    }
+    report.logSummary(logger, operationLabel: operationLabel);
   }
 
   Future<List<String>> _collectTargetFeatures({
     required Directory moduleFeaturesRoot,
     required String module,
+    String? targetFeature,
   }) async {
+    if (targetFeature != null && targetFeature.isNotEmpty) {
+      return [targetFeature];
+    }
     final features = <String>[];
     await for (final entity in moduleFeaturesRoot.list(followLinks: false)) {
       if (entity is! Directory) continue;

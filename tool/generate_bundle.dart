@@ -44,7 +44,8 @@ Future<void> main() async {
     }
   }
 
-  final outputDir = Directory('$projectRoot/lib/generated');
+  // final outputDir = Directory('$projectRoot/lib/generated');
+  final outputDir = Directory('$projectRoot/lib/src/infrastructure/bundles');
   await outputDir.create(recursive: true);
 
   final packageFile = File('${outputDir.path}/package_bundle.dart');

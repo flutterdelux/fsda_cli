@@ -7,43 +7,39 @@ import 'package:path/path.dart' as p;
 import '../constants/cli_info.dart';
 import '../enums/data_source_mode.dart';
 import '../generated/bricks/feature_bundle.dart';
+import '../services/file_service.dart';
+import '../services/logger_service.dart';
 import '../services/operation_report_service.dart';
-import 'base_generator.dart';
 
-const _postHooks = ['flutter gen-l10n'];
+const _postHooks = [
+  'flutter gen-l10n',
+  'dart run build_runner build --force-jit --delete-conflicting-outputs',
+];
 
-class FeatureGenerator
-    extends
-        BaseGenerator<
-          void,
-          ({
-            String feature,
-            String module,
-            DataSourceMode dataSourceMode,
-            bool hookDisabled,
-          })
-        > {
+class FeatureGenerator {
+  final LoggerService logger;
+  final FileService fileService;
+  final OperationReportService report;
+
   FeatureGenerator({
-    required super.logger,
-    required super.fileService,
-    required super.hookService,
+    required this.logger,
+    required this.fileService,
+    required this.report,
   });
 
-  @override
-  Future<void> generate(
+  Future<Map<String, dynamic>?> generate(
     ({
       String feature,
       String module,
       DataSourceMode dataSourceMode,
-      bool hookDisabled,
+      String basePath,
     })
     args,
   ) async {
     final feature = args.feature;
     final module = args.module;
     final dataSourceMode = args.dataSourceMode;
-    final hookDisabled = args.hookDisabled;
-    final report = OperationReportService();
+    final basePath = args.basePath;
 
     final barrelFilePath = p.join(
       Directory.current.path,
@@ -58,7 +54,7 @@ class FeatureGenerator
       logger.error(
         '$barrelFilePath does not exist. Please ensure the "$module" barrel file exists.',
       );
-      return;
+      return null;
     }
 
     final targetDir = Directory(
@@ -75,7 +71,7 @@ class FeatureGenerator
 
     if (await targetDir.exists()) {
       logger.error('Feature "$feature" already exists at ${targetDir.path}');
-      return;
+      return null;
     }
 
     try {
@@ -91,6 +87,7 @@ class FeatureGenerator
         vars: <String, dynamic>{
           'feature': feature,
           'module': module,
+          'base_path': basePath,
           'retrieval_check_point': CliInfo.retrievalCheckpoint,
           'mutation_check_point': CliInfo.mutationCheckpoint,
         },
@@ -126,22 +123,6 @@ class FeatureGenerator
         report.addInjected(filePath);
       }
 
-      if (arbTouchedPaths.isNotEmpty) {
-        final progress = logger.progress('Running post-hooks for "$feature"');
-        await hookService!.runHook(
-          hooks: _postHooks,
-          workingDirectory: p.join(Directory.current.path, 'modules', module),
-          logger: logger,
-          disabled: hookDisabled,
-          operationLabel: 'fsda gen-feature',
-        );
-        if (hookDisabled) {
-          progress.complete('Post-hooks skipped by --hook-disabled');
-        } else {
-          progress.complete('Completed post-hooks for "$feature"');
-        }
-      }
-
       final moduleBarrelChanged = await _updateModuleBarrel(
         moduleBarrelPath: barrelFilePath,
         featureSnake: feature,
@@ -158,20 +139,28 @@ class FeatureGenerator
         report.addCreated(filePath);
       }
 
-      report.logSummary(logger, operationLabel: 'fsda gen-feature');
+      report.logSummary(
+        logger,
+        operationLabel: 'fsda gen-feature $feature -> $module',
+      );
+
+      return <String, dynamic>{
+        'success': true,
+        if (arbTouchedPaths.isNotEmpty) 'post_hook': _postHooks,
+        'working_directory': p.join(Directory.current.path, 'modules', module),
+      };
     } catch (e) {
       logger.error('$e');
-      return;
+      return <String, dynamic>{'success': false};
     }
   }
 
-  Future<void> regenerate(
+  Future<Map<String, dynamic>> regenerate(
     ({String feature, String module, DataSourceMode dataSourceMode}) args,
   ) async {
     final feature = args.feature;
     final module = args.module;
     final dataSourceMode = args.dataSourceMode;
-    final report = OperationReportService();
 
     final targetDir = Directory(
       p.join(
@@ -189,7 +178,7 @@ class FeatureGenerator
       logger.error(
         'Feature "$feature" does not exist in module "$module". Run gen-feature first.',
       );
-      return;
+      return <String, dynamic>{'success': false};
     }
 
     Directory? tempDir;
@@ -211,6 +200,7 @@ class FeatureGenerator
         vars: <String, dynamic>{
           'feature': feature,
           'module': module,
+          'base_path': '/${feature.replaceAll('_', '-')}s',
           'retrieval_check_point': CliInfo.retrievalCheckpoint,
           'mutation_check_point': CliInfo.mutationCheckpoint,
         },
@@ -248,10 +238,14 @@ class FeatureGenerator
       progress.complete(
         'Baseline refresh completed. Added ${syncResult.addedCount} missing file(s), kept ${syncResult.keptCount} existing file(s).',
       );
-      report.logSummary(logger, operationLabel: 'fsda regen-feature');
+      report.logSummary(
+        logger,
+        operationLabel: 'fsda regen-feature $feature -> $module',
+      );
+      return <String, dynamic>{'success': true};
     } catch (e) {
       logger.error('$e');
-      return;
+      return <String, dynamic>{'success': false};
     } finally {
       if (tempDir != null && await tempDir.exists()) {
         await tempDir.delete(recursive: true);
@@ -615,11 +609,6 @@ class FeatureGenerator
     required String moduleBarrelPath,
     required String featureSnake,
   }) async {
-    if (fileService == null) {
-      logger.error('FileService is required to update module barrel file');
-      return false;
-    }
-
     final exportStatement =
         "export 'src/features/$featureSnake/${featureSnake}_feature.dart';";
 
@@ -634,7 +623,7 @@ class FeatureGenerator
       return false;
     }
 
-    await fileService!.updateFile(
+    await fileService.updateFile(
       path: moduleBarrelPath,
       updateLines: (lines) {
         // find the last export statement for features to insert after it

@@ -4,45 +4,34 @@ import 'package:mason/mason.dart';
 import 'package:path/path.dart' as p;
 
 import '../generated/bricks/enum_bundle.dart';
+import '../services/file_service.dart';
 import '../services/l10n/arb_injector_service.dart';
+import '../services/logger_service.dart';
 import '../services/memory_generator_target.dart';
 import '../services/operation_report_service.dart';
-import 'base_generator.dart';
 
 const _postHooks = ['flutter gen-l10n'];
 
-class EnumGenerator
-    extends
-        BaseGenerator<
-          void,
-          ({
-            String enumName,
-            String feature,
-            String module,
-            List<String> values,
-            bool strict,
-            bool hookDisabled,
-          })
-        > {
+class EnumGenerator {
+  final LoggerService logger;
   final ArbInjectorService arbInjectorService;
+  final FileService fileService;
+  final OperationReportService report;
 
   EnumGenerator({
-    required super.logger,
-    required super.fileService,
-    required super.hookService,
-    ArbInjectorService? arbInjectorService,
-  }) : arbInjectorService =
-           arbInjectorService ?? ArbInjectorService(logger: logger);
+    required this.logger,
+    required this.report,
+    required this.fileService,
+    required this.arbInjectorService,
+  });
 
-  @override
-  Future<void> generate(
+  Future<Map<String, dynamic>> generate(
     ({
       String enumName,
       String feature,
       String module,
       List<String> values,
       bool strict,
-      bool hookDisabled,
     })
     args,
   ) async {
@@ -51,13 +40,7 @@ class EnumGenerator
     final module = args.module;
     final values = args.values;
     final strict = args.strict;
-    final hookDisabled = args.hookDisabled;
-
-    if (fileService == null) {
-      logger.error('FileService is required for enum generation.');
-      exitCode = 1;
-      return;
-    }
+    final operationLabel = 'fsda enum $enumName';
 
     final featureRoot = p.join(
       Directory.current.path,
@@ -75,7 +58,7 @@ class EnumGenerator
         'Feature path not found: modules/$module/lib/src/features/$feature',
       );
       exitCode = 1;
-      return;
+      return <String, dynamic>{'success': false};
     }
 
     final barrelPath = p.join(featureRoot, '${feature.snakeCase}_feature.dart');
@@ -86,11 +69,10 @@ class EnumGenerator
         'Feature barrel file not found at: modules/$module/lib/src/features/$feature/${feature}_feature.dart',
       );
       exitCode = 1;
-      return;
+      return <String, dynamic>{'success': false};
     }
 
     final progress = logger.progress('Baking enum "$enumName" in memory...');
-    final report = OperationReportService();
 
     try {
       final generator = await MasonGenerator.fromBundle(enumBundle);
@@ -123,12 +105,16 @@ class EnumGenerator
             enumName: enumName,
             values: values,
           ),
+          'is_value_getters': _buildIsValueGetters(
+            enumClass: enumClass,
+            values: values,
+          ),
           'invalid_enum_label': enumLabel.toLowerCase(),
         },
       );
 
       progress.update('Writing enum artifacts to feature directory...');
-      final writeResult = await fileService!.generateTemplate(
+      final writeResult = await fileService.generateTemplate(
         path: featureRoot,
         files: memoryTarget.files,
         failOnExisting: strict,
@@ -152,9 +138,9 @@ class EnumGenerator
           logger.error(
             'Strict mode: generation aborted because some enum files already exist.',
           );
-          report.logSummary(logger, operationLabel: 'fsda enum');
+          report.logSummary(logger, operationLabel: operationLabel);
           exitCode = 1;
-          return;
+          return <String, dynamic>{'success': false};
         }
       }
 
@@ -181,24 +167,20 @@ class EnumGenerator
         report.addInjected(filePath);
       }
 
-      if (touchedArbFiles.isNotEmpty) {
-        progress.update('Running post hooks...');
-        await hookService!.runHook(
-          hooks: _postHooks,
-          workingDirectory: p.join(Directory.current.path, 'modules', module),
-          logger: logger,
-          disabled: hookDisabled,
-          operationLabel: 'fsda enum',
-        );
-      }
-
       progress.complete(
         'Enum "$enumName" successfully generated for "$feature" feature.',
       );
-      report.logSummary(logger, operationLabel: 'fsda enum');
+      report.logSummary(logger, operationLabel: operationLabel);
+
+      return <String, dynamic>{
+        'success': true,
+        if (touchedArbFiles.isNotEmpty) 'post_hook': _postHooks,
+        'working_directory': p.join(Directory.current.path, 'modules', module),
+      };
     } catch (e) {
       progress.fail('Failed to generate enum "$enumName": $e');
       exitCode = 1;
+      return <String, dynamic>{'success': false};
     }
   }
 
@@ -392,5 +374,17 @@ class EnumGenerator
   String _normalizeBlankLines(String source) {
     final sanitized = source.replaceAll(RegExp(r'[ \t]+\n'), '\n');
     return sanitized.replaceAll(RegExp(r'\n{3,}'), '\n\n');
+  }
+
+  String _buildIsValueGetters({
+    required String enumClass,
+    required List<String> values,
+  }) {
+    return values
+        .map(
+          (value) =>
+              '  bool get is${value.pascalCase} => this == $enumClass.${_toEnumIdentifier(value)};',
+        )
+        .join('\n');
   }
 }

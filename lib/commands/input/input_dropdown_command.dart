@@ -192,7 +192,7 @@ class InputDropdownCommand extends Command<void> {
       return _resolveSnakeCaseType(normalized);
     }
 
-    final typeRegExp = RegExp(CliRules.modelPrefixPattern);
+    final typeRegExp = RegExp(CliRules.modelTypePattern);
     if (!typeRegExp.hasMatch(normalized) && !_isPrimitiveDartType(normalized)) {
       throw UsageException(
         'Invalid dropdown type "$rawType". Use a Dart type (for example String, ProductCategoryEntity) or snake_case alias (for example product_category_entity).',

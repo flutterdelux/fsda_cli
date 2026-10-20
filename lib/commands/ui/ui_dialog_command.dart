@@ -5,6 +5,7 @@ class UiDialogCommand extends UiBaseCommand {
   UiDialogCommand({
     required super.uiGenerator,
     required super.workspaceService,
+    required super.operations,
   });
 
   @override

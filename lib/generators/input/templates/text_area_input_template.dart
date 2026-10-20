@@ -36,6 +36,7 @@ class $className extends StatelessWidget {
         hintText: l10n.${l10nKey}Hint,
         minLines: $minLines,
         maxLines: $maxLines,
+        textInputAction: TextInputAction.newline,
       ),
     );
   }

@@ -2,25 +2,22 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-import 'base_generator.dart';
+import '../services/hook_service.dart';
+import '../services/logger_service.dart';
 
 const _refreshPostHooks = [
   'flutter gen-l10n',
   'dart run build_runner build --delete-conflicting-outputs --force-jit',
 ];
 
-class RefreshGenerator extends BaseGenerator<void, ({String module})> {
-  const RefreshGenerator({required super.logger, required super.hookService});
+class RefreshGenerator {
+  final LoggerService logger;
+  final HookService hookService;
 
-  @override
+  const RefreshGenerator({required this.logger, required this.hookService});
+
   Future<void> generate(({String module}) args) async {
     final module = args.module;
-
-    if (hookService == null) {
-      logger.error('HookService is required for refresh command.');
-      exitCode = 1;
-      return;
-    }
 
     final moduleRoot = p.join(Directory.current.path, 'modules', module);
     final moduleDir = Directory(moduleRoot);
@@ -30,22 +27,20 @@ class RefreshGenerator extends BaseGenerator<void, ({String module})> {
       return;
     }
 
-    final progress = logger.progress(
-      'Running refresh hooks for module "$module"...',
-    );
+    logger.info('Running refresh for module "$module"...');
 
     try {
-      await hookService!.runHook(
+      await hookService.runHook(
         hooks: _refreshPostHooks,
         workingDirectory: moduleRoot,
         logger: logger,
-        operationLabel: 'fsda refresh',
+        operationLabel: 'fsda refresh $module',
         timeout: const Duration(minutes: 10),
       );
 
-      progress.complete('Refresh hooks completed for module "$module".');
+      logger.success('Refresh completed for module "$module".');
     } catch (e) {
-      progress.fail('Failed to refresh module "$module": $e');
+      logger.error('Failed to refresh module "$module": $e');
       exitCode = 1;
     }
   }

@@ -9,11 +9,11 @@ import 'compose_types.dart';
 
 class ComposePagService {
   final LoggerService logger;
+  final OperationReportService report;
 
-  const ComposePagService({required this.logger});
+  const ComposePagService({required this.logger, required this.report});
 
   Future<void> generate(ComposeArgs args) async {
-    final report = OperationReportService();
     final routeEnabled = args.route;
     final strict = args.strict;
     final root = Directory.current.path;
@@ -26,6 +26,7 @@ class ComposePagService {
       'features',
       args.feature,
     );
+    final operationLabel = 'fsda compose-pag ${args.targetPage} -> ${args.app}';
 
     final logicDirPath = p.join(moduleFeaturePath, 'logic', args.slice);
     final uiSlicePath = p.join(moduleFeaturePath, 'ui', args.slice);
@@ -104,7 +105,7 @@ class ComposePagService {
         logger.error(
           'Strict mode: generation aborted because target page already exists.',
         );
-        report.logSummary(logger, operationLabel: 'fsda compose-pag');
+        report.logSummary(logger, operationLabel: operationLabel);
         exitCode = 1;
         return;
       }
@@ -160,7 +161,7 @@ class ComposePagService {
       );
     }
 
-    report.logSummary(logger, operationLabel: 'fsda compose-pag');
+    report.logSummary(logger, operationLabel: operationLabel);
   }
 
   Future<List<_LogicTarget>> _collectLogicTargets(String logicDirPath) async {
@@ -287,7 +288,13 @@ class ComposePagService {
       if (found.isValid) return found.name;
     }
 
-    const preferredPrefixes = <String>['get', 'load', 'fetch', 'watch'];
+    const preferredPrefixes = <String>[
+      'get',
+      'load',
+      'fetch',
+      'watch',
+      'listen',
+    ];
     for (final prefix in preferredPrefixes) {
       final found = zeroArgMethods.firstWhere(
         (method) => method.name.startsWith(prefix),

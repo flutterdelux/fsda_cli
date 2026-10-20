@@ -28,7 +28,7 @@ class InputDropdownEnumCommand extends Command<void> {
       ..addOption(
         'type',
         help:
-            'Required enum type prefix in snake_case, for example product_status.',
+            'Required full enum name in snake_case, for example product_status.',
       )
       ..addFlag(
         'strict',
@@ -186,7 +186,7 @@ class InputDropdownEnumCommand extends Command<void> {
     final enumPrefixRegExp = RegExp(CliRules.sliceNamePattern);
     if (!enumPrefixRegExp.hasMatch(normalized)) {
       throw UsageException(
-        'Invalid enum type "$rawType". Use snake_case enum type prefix, for example product_status.',
+        'Invalid enum type "$rawType". Use the full snake_case enum name, for example product_status.',
         usage,
       );
     }

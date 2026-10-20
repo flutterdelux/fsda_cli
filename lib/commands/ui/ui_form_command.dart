@@ -14,6 +14,7 @@ class UiFormCommand extends UiBaseCommand {
   UiFormCommand({
     required super.uiGenerator,
     required super.workspaceService,
+    required super.operations,
     InputTypedFieldParserService? typedFieldParser,
   }) : typedFieldParser =
            typedFieldParser ?? const InputTypedFieldParserService() {
@@ -24,9 +25,15 @@ class UiFormCommand extends UiBaseCommand {
             'Required typed form fields with syntax input_type:value_type:field_name. Supported input_type: text, number, selector, selector_list, text_area, qty, dropdown, dropdown_enum, image, switch, password. Repeat --fields or pass comma-separated values.',
       )
       ..addOption(
-        'initial',
+        'type',
         help:
-            'Optional entity type for update form prefill (for example CategoryEntity).',
+            'Required full snake_case data type name (for example manual_payment_method_entity).',
+      )
+      ..addFlag(
+        'initial',
+        negatable: false,
+        help:
+            'Include initialData of the same type as --type for edit/update forms.',
       );
   }
 
@@ -42,7 +49,7 @@ class UiFormCommand extends UiBaseCommand {
 
   @override
   String get invocation =>
-      'fsda ui-form <slice> -f <feature> -m <module> --fields "<input_type:value_type:field_name,...>" [--initial <entity_type>] [--strict] [--hook-disabled]';
+      'fsda ui-form <slice> -f <feature> -m <module> --fields "<input_type:value_type:field_name,...>" --type <data_type> [--initial] [--strict] [--hook-disabled]';
 
   @override
   void validateTrailingArgs(List<String> trailingArgs) {
@@ -98,27 +105,24 @@ class UiFormCommand extends UiBaseCommand {
   }
 
   @override
-  String? resolveInitialType() {
-    final rawInitialType = (argResults?['initial'] as String?)?.trim();
-    if (rawInitialType == null || rawInitialType.isEmpty) {
-      return null;
-    }
+  String resolveFormDataType() {
+    final rawType = (argResults?['type'] as String?)?.trim() ?? '';
+    const supportedSuffixes = <String>{'_entity', '_dto', '_param', '_request'};
+    final nameRegExp = RegExp(CliRules.artifactNamePattern);
 
-    final normalizedType = rawInitialType
-        .replaceAll(' ', '')
-        .replaceAll('?', '');
-    final typeRegExp = RegExp(CliRules.modelPrefixPattern);
-
-    if (!typeRegExp.hasMatch(normalizedType) ||
-        !normalizedType.endsWith('Entity')) {
+    if (!nameRegExp.hasMatch(rawType) ||
+        !supportedSuffixes.any(rawType.endsWith)) {
       throw UsageException(
-        'Invalid initial type "$rawInitialType". Use PascalCase entity type, for example CategoryEntity.',
+        'Invalid data type "$rawType". Use a full snake_case artifact name ending in _entity, _dto, _param, or _request (for example manual_payment_method_entity).',
         usage,
       );
     }
 
-    return normalizedType;
+    return rawType;
   }
+
+  @override
+  bool get initializeFormData => argResults?['initial'] as bool? ?? false;
 
   void _validateFieldTypeCompatibility(InputTypedField field) {
     final type = field.typeWithoutNullability;
@@ -151,7 +155,7 @@ class UiFormCommand extends UiBaseCommand {
         return;
       case FormInputType.selector:
       case FormInputType.selectorList:
-        final typeRegExp = RegExp(CliRules.modelPrefixPattern);
+        final typeRegExp = RegExp(CliRules.modelTypePattern);
         if (!typeRegExp.hasMatch(type) || !type.endsWith('Entity')) {
           throw UsageException(
             'Field "${field.name}" with input_type ${field.inputType.code} must use PascalCase Entity type (for example ProductCategoryEntity).',
@@ -160,7 +164,7 @@ class UiFormCommand extends UiBaseCommand {
         }
         return;
       case FormInputType.dropdown:
-        final typeRegExp = RegExp(CliRules.modelPrefixPattern);
+        final typeRegExp = RegExp(CliRules.modelTypePattern);
         if (!typeRegExp.hasMatch(type) || !type.endsWith('Entity')) {
           throw UsageException(
             'Field "${field.name}" with input_type dropdown must use PascalCase Entity type (for example ProductCategoryEntity).',
@@ -173,7 +177,7 @@ class UiFormCommand extends UiBaseCommand {
           return;
         }
 
-        final typeRegExp = RegExp(CliRules.modelPrefixPattern);
+        final typeRegExp = RegExp(CliRules.modelTypePattern);
         if (!typeRegExp.hasMatch(type) || !type.endsWith('Entity')) {
           throw UsageException(
             'Field "${field.name}" with input_type image must use NetworkFile or PascalCase Entity type (for example ProductImageEntity).',
@@ -182,7 +186,7 @@ class UiFormCommand extends UiBaseCommand {
         }
         return;
       case FormInputType.dropdownEnum:
-        final typeRegExp = RegExp(CliRules.modelPrefixPattern);
+        final typeRegExp = RegExp(CliRules.modelTypePattern);
         if (!typeRegExp.hasMatch(type)) {
           throw UsageException(
             'Field "${field.name}" with input_type dropdown_enum must use PascalCase enum type (for example ProductStatus).',

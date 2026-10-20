@@ -3,18 +3,18 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 import '../constants/cli_info.dart';
-import '../constants/cli_messages.dart';
 import '../generated/package_bundle.dart';
+import '../services/logger_service.dart';
 import '../services/operation_report_service.dart';
-import 'base_generator.dart';
 
-class WorkspaceGenerator extends BaseGenerator<void, String> {
-  WorkspaceGenerator({required super.logger});
+class WorkspaceGenerator {
+  final LoggerService logger;
+  final OperationReportService report;
 
-  @override
-  Future<void> generate(String name) async {
+  WorkspaceGenerator({required this.logger, required this.report});
+
+  Future<void> generate({required String name}) async {
     final root = Directory(p.join(Directory.current.path, name));
-    final report = OperationReportService();
 
     if (await root.exists()) {
       logger.error('Workspace "$name" already exists');
@@ -22,9 +22,15 @@ class WorkspaceGenerator extends BaseGenerator<void, String> {
     }
 
     for (final dir in ['apps', 'modules', 'packages']) {
-      final dirPath = p.join(root.path, dir);
-      await Directory(dirPath).create(recursive: true);
-      report.addCreated(dirPath);
+      try {
+        final dirPath = p.join(root.path, dir);
+        await Directory(dirPath).create(recursive: true);
+        report.addCreated(dirPath);
+      } catch (e) {
+        logger.error(
+          'Failed to create diretory "$dir" in workspace "$name": $e',
+        );
+      }
     }
 
     final packages = packageBundle.keys.toList()..sort();
@@ -35,9 +41,8 @@ class WorkspaceGenerator extends BaseGenerator<void, String> {
     );
     report.addCreated(configPath);
 
-    logger.success('Workspace "$name" created successfully');
-    report.logSummary(logger, operationLabel: 'fsda create');
+    report.logSummary(logger, operationLabel: 'fsda create $name');
 
-    logger.log(CliMessages.workspaceCreatedNextSteps(name));
+    logger.success('Workspace "$name" created successfully.');
   }
 }

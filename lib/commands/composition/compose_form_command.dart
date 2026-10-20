@@ -7,6 +7,7 @@ class ComposeFormCommand extends ComposeBaseCommand {
   ComposeFormCommand({
     required this.composeGenerator,
     required super.workspaceService,
+    required super.operations,
   });
 
   @override
@@ -18,7 +19,7 @@ class ComposeFormCommand extends ComposeBaseCommand {
 
   @override
   String get invocation =>
-      'fsda compose-form <slice> -f <feature> -m <module> -a <app> -p <prefix_target_page> [--route] [--strict]';
+      'fsda compose-form <slice> -f <feature> -m <module> -a <app> -p <target_page> [--route] [--strict]';
 
   @override
   Future<void> runValidated(args) async {

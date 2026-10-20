@@ -2,17 +2,17 @@ import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../domain/entities/{{feature.snakeCase()}}_entity.dart';
+import '../../../../domain/entities/{{entity.snakeCase()}}.dart';
 
 class {{feature.pascalCase()}}{{slice.pascalCase()}}Item extends StatelessWidget {
   static const aspectRatio = 10 / 16;
   static const borderRadius = BorderRadius.all(Radius.circular(16));
 
-  final {{feature.pascalCase()}}Entity {{feature.camelCase()}};
+  final {{entity.pascalCase()}} {{object.camelCase()}};
   final VoidCallback onTap;
   const {{feature.pascalCase()}}{{slice.pascalCase()}}Item({
     super.key,
-    required this.{{feature.camelCase()}},
+    required this.{{object.camelCase()}},
     required this.onTap,
   });
 
@@ -56,12 +56,12 @@ class {{feature.pascalCase()}}{{slice.pascalCase()}}Item extends StatelessWidget
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    {{feature.camelCase()}}.name,
+                    {{object.camelCase()}}.name,
                     style: textTheme.titleMedium?.copyWith(color: Colors.white),
                   ),
                   AppGap.xs,
                   Text(
-                    {{feature.camelCase()}}.description,
+                    {{object.camelCase()}}.description,
                     style: textTheme.bodySmall?.copyWith(color: Colors.white70),
                   ),                  
                 ],

@@ -1,6 +1,7 @@
 import 'package:args/command_runner.dart';
 
 import '../../generators/configure_generator.dart';
+import '../../services/command_operation_service.dart';
 import '../../services/logger_service.dart';
 import '../../services/workspace_service.dart';
 
@@ -8,11 +9,13 @@ class ConfigureCommand extends Command {
   final ConfigureGenerator initGenerator;
   final LoggerService logger;
   final WorkspaceService workspaceService;
+  final CommandOperationService operations;
 
   ConfigureCommand({
     required this.initGenerator,
     required this.logger,
     required this.workspaceService,
+    required this.operations,
   }) {
     argParser.addFlag(
       'hook-disabled',
@@ -47,6 +50,11 @@ class ConfigureCommand extends Command {
       );
     }
 
-    await initGenerator.generate(hookDisabled: hookDisabled);
+    await operations.run<List<Map<String, dynamic>>>(
+      operationLabel: 'fsda configure',
+      hookDisabled: hookDisabled,
+      action: initGenerator.generate,
+      hookResults: (results) => results,
+    );
   }
 }

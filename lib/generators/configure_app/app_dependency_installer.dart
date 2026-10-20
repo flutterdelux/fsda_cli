@@ -1,11 +1,11 @@
 import 'package:yaml/yaml.dart';
 
-import '../../services/process_service.dart';
+import '../../services/pubspec_service.dart';
 
-class AppDependencyInstaller {
-  final ProcessService processService;
+final class AppDependencyInstaller {
+  final PubspecService pubspecService;
 
-  const AppDependencyInstaller({required this.processService});
+  const AppDependencyInstaller({required this.pubspecService});
 
   Future<List<String>> addMissingDependencies({
     required String appPath,
@@ -32,12 +32,10 @@ class AppDependencyInstaller {
       return const <String>[];
     }
 
-    await processService.run(
-      label: 'Add App Dependencies',
-      executable: 'dart',
-      arguments: ['pub', 'add', ...dependenciesToInstall],
-      workingDirectory: appPath,
-      timeout: const Duration(minutes: 2),
+    await pubspecService.addDependencies(
+      path: appPath,
+      dependencies: dependenciesToInstall,
+      operationLabel: 'Add App Dependencies',
     );
 
     return dependenciesToInstall;

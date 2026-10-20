@@ -2,14 +2,14 @@ import 'package:app_l10n/app_l10n.dart';
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
 
-import '../../../domain/params/{{feature.snakeCase()}}_{{slice.snakeCase()}}_param.dart';
+import '{{{type_import_ui}}}';
 
 import '../../../../../generated/{{module.snakeCase()}}_localizations.dart';
 
 class {{feature.pascalCase()}}{{slice.pascalCase()}}Form extends StatefulWidget {
   final void Function(
     BuildContext context,
-    {{feature.pascalCase()}}{{slice.pascalCase()}}Param? param,
+    {{type.pascalCase()}}? data,
     String? invalidMessage,
   )
   onListen;

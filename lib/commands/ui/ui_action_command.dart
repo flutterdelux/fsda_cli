@@ -5,6 +5,7 @@ class UiActionCommand extends UiBaseCommand {
   UiActionCommand({
     required super.uiGenerator,
     required super.workspaceService,
+    required super.operations,
   });
 
   @override

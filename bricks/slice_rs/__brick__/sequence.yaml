@@ -12,7 +12,7 @@ remote_data_source_impl:
     @override
     {{#is_list}}Stream<List<{{model.pascalCase()}}Dto>> {{method.camelCase()}}() async* {{/is_list}}
     {{^is_list}}Stream<{{model.pascalCase()}}Dto> {{method.camelCase()}}() async* {{/is_list}}
-      final path = '/{{feature.paramCase()}}s/stream';
+      final path = '$_basePath/stream';
       try {
         {{#is_list}}await for (final data in _apiClient.stream<List>(path)) {
           yield data.map((e) => {{model.pascalCase()}}Dto.fromJson(e as Map<String, dynamic>)).toList();

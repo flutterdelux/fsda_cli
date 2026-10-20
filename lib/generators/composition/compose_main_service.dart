@@ -4,27 +4,15 @@ import 'package:mason/mason.dart';
 import 'package:path/path.dart' as p;
 
 import '../../enums/compose_page_mode.dart';
+import '../../services/logger_service.dart';
 import '../../services/operation_report_service.dart';
-import '../base_generator.dart';
 
-class ComposeMainService
-    extends
-        BaseGenerator<
-          void,
-          ({
-            String app,
-            String module,
-            String feature,
-            String slice,
-            String targetPage,
-            ComposePageMode pageMode,
-            bool route,
-            bool strict,
-          })
-        > {
-  const ComposeMainService({required super.logger});
+class ComposeMainService {
+  final LoggerService logger;
+  final OperationReportService report;
 
-  @override
+  const ComposeMainService({required this.logger, required this.report});
+
   Future<void> generate(
     ({
       String app,
@@ -65,7 +53,6 @@ class ComposeMainService
     final appLibPath = p.join(root, 'apps', app, 'lib');
     final appModulePath = p.join(appLibPath, 'modules', module);
     final routeFilePath = p.join(appModulePath, '${module}_route.dart');
-    final report = OperationReportService();
 
     final logicTargets = await _collectLogicTargets(logicDirPath);
     if (logicTargets.isEmpty) {
@@ -328,7 +315,8 @@ class ComposeMainService
           bootstrap.startsWith('get') ||
           bootstrap.startsWith('load') ||
           bootstrap.startsWith('fetch') ||
-          bootstrap.startsWith('watch')) {
+          bootstrap.startsWith('watch') ||
+          bootstrap.startsWith('listen')) {
         firstPreferred = logic;
         break;
       }
@@ -454,7 +442,13 @@ class ComposeMainService
       if (found.isValid) return found.name;
     }
 
-    const preferredPrefixes = <String>['get', 'load', 'fetch', 'watch'];
+    const preferredPrefixes = <String>[
+      'get',
+      'load',
+      'fetch',
+      'watch',
+      'listen',
+    ];
     for (final prefix in preferredPrefixes) {
       final found = zeroArgMethods.firstWhere(
         (method) => method.name.startsWith(prefix),
@@ -479,6 +473,7 @@ class ComposeMainService
           method.name.startsWith('load') ||
           method.name.startsWith('fetch') ||
           method.name.startsWith('watch') ||
+          method.name.startsWith('listen') ||
           method.name.startsWith('create') ||
           method.name.startsWith('submit') ||
           method.name.startsWith('save') ||
@@ -884,7 +879,7 @@ class ComposeMainService
       formCubitMethod: formCubitMethod,
       formStateClass: formStateClass ?? '${formCubitClass}State',
       formWidgetClass: formWidgetClass,
-      formParamType: formParamType,
+      formDataType: formParamType,
     );
   }
 
@@ -969,13 +964,13 @@ class ComposeMainService
         )
         .replaceAll('\\', '/');
 
-    final formParamVar = 'formStateParam';
+    final formDataVar = 'formStateData';
 
     final formWidgetExpression =
         '''${formArtifacts.formWidgetClass}(
-                onListen: (context, param, invalidMessage) {
+                onListen: (context, data, invalidMessage) {
                   context.read<${formArtifacts.formCubitClass}>().${formArtifacts.formCubitMethod}(
-                    param,
+                    data,
                     invalidMessage,
                   );
                 },
@@ -1027,13 +1022,13 @@ class $pageClass extends StatelessWidget with PageProviderMixin {
       return;
     }
 
-    final ${formArtifacts.formParamType}? $formParamVar = formState.param;
-    if ($formParamVar == null) {
+    final ${formArtifacts.formDataType}? $formDataVar = formState.data;
+    if ($formDataVar == null) {
       context.showErrorSnackbar(l10n.$formInvalidKey);
       return;
     }
 
-    context.read<${mutationLogic.logicClass}>().${submitMethod.name}($formParamVar);
+    context.read<${mutationLogic.logicClass}>().${submitMethod.name}($formDataVar);
   }
 
   void $listenerMethodName(BuildContext context, ${mutationLogic.stateClass} state) {
@@ -1249,7 +1244,8 @@ $loadingOverlay
         methodName.startsWith('get') ||
         methodName.startsWith('load') ||
         methodName.startsWith('fetch') ||
-        methodName.startsWith('watch');
+        methodName.startsWith('watch') ||
+        methodName.startsWith('listen');
   }
 
   String _buildDialogExecutionMethod({
@@ -1420,7 +1416,8 @@ $loadingOverlay
       if (method.name.startsWith('get') ||
           method.name.startsWith('fetch') ||
           method.name.startsWith('load') ||
-          method.name.startsWith('watch')) {
+          method.name.startsWith('watch') ||
+          method.name.startsWith('listen')) {
         return false;
       }
       return method.hasRequiredParam;
@@ -2778,14 +2775,14 @@ class _FormArtifacts {
   final String formCubitMethod;
   final String formStateClass;
   final String formWidgetClass;
-  final String formParamType;
+  final String formDataType;
 
   const _FormArtifacts({
     required this.formCubitClass,
     required this.formCubitMethod,
     required this.formStateClass,
     required this.formWidgetClass,
-    required this.formParamType,
+    required this.formDataType,
   });
 }
 

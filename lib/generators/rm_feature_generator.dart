@@ -4,38 +4,33 @@ import 'dart:io';
 import 'package:mason/mason.dart';
 import 'package:path/path.dart' as p;
 
+import '../services/logger_service.dart';
 import '../services/operation_report_service.dart';
-import 'base_generator.dart';
 
 const _postHooks = [
   'flutter gen-l10n',
   'dart run build_runner build --force-jit --delete-conflicting-outputs',
 ];
 
-class RmFeatureGenerator
-    extends
-        BaseGenerator<
-          void,
-          ({String module, String feature, bool hookDisabled})
-        > {
-  const RmFeatureGenerator({required super.logger, required super.hookService});
+class RmFeatureGenerator {
+  final LoggerService logger;
+  final OperationReportService report;
 
-  @override
-  Future<void> generate(
-    ({String module, String feature, bool hookDisabled}) args,
+  RmFeatureGenerator({required this.logger, required this.report});
+
+  Future<Map<String, dynamic>> generate(
+    ({String module, String feature}) args,
   ) async {
     final moduleName = args.module;
     final featureName = args.feature;
-    final hookDisabled = args.hookDisabled;
-    final report = OperationReportService();
+    final operationLabel = 'fsda rm-feature $featureName';
 
     final moduleRoot = p.join(Directory.current.path, 'modules', moduleName);
     final moduleDir = Directory(moduleRoot);
     if (!await moduleDir.exists()) {
       logger.error('Module "$moduleName" does not exist.');
       exitCode = 1;
-      report.logSummary(logger, operationLabel: 'fsda rm-feature');
-      return;
+      return <String, dynamic>{'success': false};
     }
 
     final featureDir = Directory(
@@ -136,22 +131,20 @@ class RmFeatureGenerator
         }
       }
 
-      await hookService!.runHook(
-        hooks: _postHooks,
-        workingDirectory: moduleRoot,
-        logger: logger,
-        disabled: hookDisabled,
-        operationLabel: 'fsda rm-feature',
-      );
-
       logger.success(
         'Feature "$featureName" rollback completed in module "$moduleName".',
       );
-      report.logSummary(logger, operationLabel: 'fsda rm-feature');
+      report.logSummary(logger, operationLabel: operationLabel);
+      return <String, dynamic>{
+        'success': true,
+        'post_hook': _postHooks,
+        'working_directory': moduleRoot,
+      };
     } catch (e) {
       logger.error('Failed to remove feature "$featureName": $e');
       exitCode = 1;
-      report.logSummary(logger, operationLabel: 'fsda rm-feature');
+      report.logSummary(logger, operationLabel: operationLabel);
+      return <String, dynamic>{'success': false};
     }
   }
 

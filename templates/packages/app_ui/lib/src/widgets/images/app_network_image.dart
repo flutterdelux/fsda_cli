@@ -13,6 +13,7 @@ class AppNetworkImage extends StatelessWidget {
   final BoxShape shape;
   final BorderRadius? borderRadius;
   final double? ratio;
+  final Color? errorBackgroundColor;
 
   const AppNetworkImage({
     super.key,
@@ -24,6 +25,7 @@ class AppNetworkImage extends StatelessWidget {
     this.shape = BoxShape.rectangle,
     this.borderRadius,
     this.ratio,
+    this.errorBackgroundColor,
   });
 
   @override
@@ -58,7 +60,7 @@ class AppNetworkImage extends StatelessWidget {
       ),
       LoadState.completed => null,
       LoadState.failed => Container(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        color: errorBackgroundColor,
         child: Center(
           child: Icon(
             Icons.broken_image_outlined,

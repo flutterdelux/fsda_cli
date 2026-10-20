@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:mason/mason.dart';
 import 'package:path/path.dart' as p;
 
+import '../services/logger_service.dart';
 import '../services/operation_report_service.dart';
-import 'base_generator.dart';
 
 typedef _PlannedCopyFile = ({
   String sourcePath,
@@ -13,15 +13,12 @@ typedef _PlannedCopyFile = ({
   String targetRelativePath,
 });
 
-class CpUiGenerator
-    extends
-        BaseGenerator<
-          void,
-          ({String module, String feature, String fromSlice, String newSlice})
-        > {
-  const CpUiGenerator({required super.logger});
+class CpUiGenerator {
+  final LoggerService logger;
+  final OperationReportService report;
 
-  @override
+  const CpUiGenerator({required this.logger, required this.report});
+
   Future<void> generate(
     ({String module, String feature, String fromSlice, String newSlice}) args,
   ) async {
@@ -29,7 +26,6 @@ class CpUiGenerator
     final featureName = args.feature;
     final fromSlice = args.fromSlice;
     final newSlice = args.newSlice;
-    final report = OperationReportService();
 
     final featureRoot = p.join(
       Directory.current.path,
@@ -41,13 +37,15 @@ class CpUiGenerator
       featureName,
     );
 
+    final operationLabel = 'fsda cp-ui $fromSlice->$newSlice';
+
     final featureDir = Directory(featureRoot);
     if (!await featureDir.exists()) {
       logger.error(
         'Feature "$featureName" does not exist in module "$moduleName".',
       );
       exitCode = 1;
-      report.logSummary(logger, operationLabel: 'fsda cp-ui');
+      report.logSummary(logger, operationLabel: operationLabel);
       return;
     }
 
@@ -60,7 +58,7 @@ class CpUiGenerator
       );
       exitCode = 1;
       report.addSkipped(sourceUiDir.path);
-      report.logSummary(logger, operationLabel: 'fsda cp-ui');
+      report.logSummary(logger, operationLabel: operationLabel);
       return;
     }
 
@@ -70,7 +68,7 @@ class CpUiGenerator
       );
       exitCode = 1;
       report.addSkipped(targetUiDir.path);
-      report.logSummary(logger, operationLabel: 'fsda cp-ui');
+      report.logSummary(logger, operationLabel: operationLabel);
       return;
     }
 
@@ -122,7 +120,7 @@ class CpUiGenerator
         'No eligible UI files found to copy from slice "$fromSlice" (generated files are skipped).',
       );
       exitCode = 1;
-      report.logSummary(logger, operationLabel: 'fsda cp-ui');
+      report.logSummary(logger, operationLabel: operationLabel);
       return;
     }
 
@@ -140,7 +138,7 @@ class CpUiGenerator
         'Target UI files for slice "$newSlice" already exist. Aborting to prevent overwrite.',
       );
       exitCode = 1;
-      report.logSummary(logger, operationLabel: 'fsda cp-ui');
+      report.logSummary(logger, operationLabel: operationLabel);
       return;
     }
 
@@ -194,7 +192,7 @@ class CpUiGenerator
     logger.success(
       'UI slice "$fromSlice" successfully copied to "$newSlice" in feature "$featureName".',
     );
-    report.logSummary(logger, operationLabel: 'fsda cp-ui');
+    report.logSummary(logger, operationLabel: operationLabel);
   }
 
   bool _isGeneratedDartFile(String filePath) {

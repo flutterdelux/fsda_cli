@@ -2,7 +2,11 @@ import '../../enums/ui_code.dart';
 import 'ui_base_command.dart';
 
 class UiPmiCommand extends UiBaseCommand {
-  UiPmiCommand({required super.uiGenerator, required super.workspaceService});
+  UiPmiCommand({
+    required super.uiGenerator,
+    required super.workspaceService,
+    required super.operations,
+  });
 
   @override
   UiCode get uiTemplate => UiCode.pmi;

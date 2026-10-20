@@ -1,35 +1,31 @@
+import 'logger_service.dart';
 import 'process_service.dart';
 
 class PubspecService {
   final ProcessService processService;
+  final LoggerService logger;
 
-  const PubspecService({required this.processService});
+  const PubspecService({required this.processService, required this.logger});
 
-  Future<void> addDependencies({
+  Future<bool> addDependencies({
     required String path,
     required List<String> dependencies,
+    required String operationLabel,
+    bool forDev = false,
   }) async {
-    if (dependencies.isNotEmpty) {
+    final installDepsProgress = logger.progress(operationLabel);
+    try {
       await processService.run(
-        label: 'Add Dependencies',
+        label: operationLabel,
         executable: 'dart',
-        arguments: ['pub', 'add', ...dependencies],
+        arguments: ['pub', 'add', if (forDev) '--dev', ...dependencies],
         workingDirectory: path,
       );
-    }
-  }
-
-  Future<void> addDevDependencies({
-    required String path,
-    required List<String> devDependencies,
-  }) async {
-    if (devDependencies.isNotEmpty) {
-      await processService.run(
-        label: 'Add Dev Dependencies',
-        executable: 'dart',
-        arguments: ['pub', 'add', '--dev', ...devDependencies],
-        workingDirectory: path,
-      );
+      installDepsProgress.complete('$operationLabel completed');
+      return true;
+    } catch (e) {
+      installDepsProgress.fail('$operationLabel failed: $e');
+      return false;
     }
   }
 }

@@ -1,8 +1,8 @@
 arb: |
-  "{{feature.camelCase()}}{{slice.pascalCase()}}Title": "{{feature.titleCase()}} {{slice.titleCase()}}",
-  "{{feature.camelCase()}}{{slice.pascalCase()}}EmptyTitle": "No {{feature.titleCase()}} Found",
-  "{{feature.camelCase()}}{{slice.pascalCase()}}EmptyMessage": "No {{feature.titleCase().lowerCase()}} found at the moment",
-  "{{feature.camelCase()}}{{slice.pascalCase()}}ErrorTitle": "Failed to Load {{feature.titleCase()}} {{slice.titleCase()}}"
+  "{{feature.camelCase()}}{{slice.pascalCase()}}Title": "{{object.titleCase()}}",
+  "{{feature.camelCase()}}{{slice.pascalCase()}}EmptyTitle": "No {{object.titleCase()}} Found",
+  "{{feature.camelCase()}}{{slice.pascalCase()}}EmptyMessage": "No {{object.titleCase().lowerCase()}} found at the moment",
+  "{{feature.camelCase()}}{{slice.pascalCase()}}ErrorTitle": "Failed to Load {{object.titleCase()}}"
 
 export:
   ui: |

@@ -7,24 +7,31 @@ import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
 import '../generated/bricks/reg_module_bundle.dart';
+import '../services/file_service.dart';
+import '../services/logger_service.dart';
 import '../services/memory_generator_target.dart';
 import '../services/operation_report_service.dart';
 import '../visitors/app_router_visitor.dart';
 import '../visitors/di_visitor.dart';
 import '../visitors/failure_x_visitor.dart';
 import '../visitors/main_app_visitor.dart';
-import 'base_generator.dart';
 
-class RegModuleGenerator
-    extends BaseGenerator<void, ({String app, String module, bool strict})> {
-  RegModuleGenerator({required super.logger, required super.fileService});
+class RegModuleGenerator {
+  final LoggerService logger;
+  final FileService fileService;
+  final OperationReportService report;
 
-  @override
+  RegModuleGenerator({
+    required this.logger,
+    required this.fileService,
+    required this.report,
+  });
+
   Future<void> generate(({String app, String module, bool strict}) arg) async {
     final appName = arg.app;
     final moduleName = arg.module;
     final strict = arg.strict;
-    final report = OperationReportService();
+    final operationLabel = 'fsda reg $moduleName -> $appName';
 
     final appPath = p.join(Directory.current.path, 'apps', appName);
     final appLibPath = p.join(appPath, 'lib');
@@ -61,12 +68,8 @@ class RegModuleGenerator
       throw Exception('reg.yaml not found in the generated reg_module files.');
     }
 
-    if (fileService == null) {
-      throw Exception('fileService is not initialized.');
-    }
-
     final moduleTargetRoot = p.join(appLibPath, 'modules', moduleSnake);
-    final templateWriteResult = await fileService!.generateTemplate(
+    final templateWriteResult = await fileService.generateTemplate(
       path: moduleTargetRoot,
       files: standaloneFilesToSave,
       failOnExisting: strict,
@@ -90,7 +93,7 @@ class RegModuleGenerator
         logger.error(
           'Strict mode: registration aborted because module wrapper files already exist.',
         );
-        report.logSummary(logger, operationLabel: 'fsda reg');
+        report.logSummary(logger, operationLabel: operationLabel);
         exitCode = 1;
         return;
       }
@@ -143,7 +146,7 @@ class RegModuleGenerator
       }
     } catch (e) {
       logger.error('$e');
-      report.logSummary(logger, operationLabel: 'fsda reg');
+      report.logSummary(logger, operationLabel: operationLabel);
       exitCode = 1;
       return;
     }
@@ -151,7 +154,7 @@ class RegModuleGenerator
     logger.success(
       'Module "$moduleName" successfully registered in "$appName"!',
     );
-    report.logSummary(logger, operationLabel: 'fsda reg');
+    report.logSummary(logger, operationLabel: operationLabel);
   }
 
   Future<bool> _injectDependency({

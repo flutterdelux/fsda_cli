@@ -15,14 +15,15 @@ typedef ExternalDiSyncResult = ({
 typedef InfraCodeSnippet = ({String packageName, String code});
 
 class DiFileSyncService {
-  const DiFileSyncService();
+  DiFileSyncService({required this.logger});
+
+  final LoggerService logger;
 
   Future<CoreDiSyncResult> syncCoreDiFile({
     required String appPath,
     required String appName,
     required List<InfraTemplateSpec> allInfraSpecs,
     required List<InfraTemplateSpec> activeInfraSpecs,
-    required LoggerService logger,
   }) async {
     final coreDiFile = File(
       p.join(appPath, 'lib', 'core', 'di', 'core_di.dart'),
@@ -81,7 +82,6 @@ class DiFileSyncService {
     required String appName,
     required List<InfraTemplateSpec> allInfraSpecs,
     required List<InfraTemplateSpec> activeInfraSpecs,
-    required LoggerService logger,
   }) async {
     final externalDiFile = File(
       p.join(appPath, 'lib', 'core', 'di', 'external_di.dart'),

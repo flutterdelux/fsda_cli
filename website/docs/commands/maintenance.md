@@ -6,7 +6,7 @@ title: Maintenance Commands
 ## reg
 
 ```bash
-fsda reg <module> -a <app> [--strict]
+fsda reg <module> [-f <feature>] -a <app> [--strict]
 ```
 
 Registers a module into an app wrapper and injects managed integration points.
@@ -16,6 +16,8 @@ What happens:
 - Generates app-side module wrapper files in `apps/<app>/lib/modules/<module>`.
 - Injects managed snippets into app dependency, DI, route, l10n delegate, and failure mapping checkpoints.
 - Prints affected paths summary.
+
+If feature set, then only register that feature in the module to target app.
 
 ## di
 

@@ -19,12 +19,13 @@ class ConfigureGenerator {
     required this.logger,
   });
 
-  Future<void> generate({bool hookDisabled = false}) async {
+  Future<List<Map<String, dynamic>>> generate() async {
+    final hookResults = <Map<String, dynamic>>[];
     try {
       final configFile = File('fsda.yaml');
       if (!await configFile.exists()) {
         logger.error('fsda.yaml not found in current workspace.');
-        return;
+        return hookResults;
       }
 
       final yamlString = await configFile.readAsString();
@@ -32,12 +33,12 @@ class ConfigureGenerator {
 
       if (doc is! YamlMap) {
         logger.error('Format fsda.yaml broken: expected a YAML map object.');
-        return;
+        return hookResults;
       }
 
       if (!doc.containsKey('packages')) {
         logger.error('Format fsda.yaml broken: Key "packages:" not found.');
-        return;
+        return hookResults;
       }
 
       final rawPackages = doc['packages'];
@@ -45,7 +46,7 @@ class ConfigureGenerator {
         logger.error(
           'Format fsda.yaml broken: Key "packages:" must be a list.',
         );
-        return;
+        return hookResults;
       }
 
       final configuredPackages = rawPackages
@@ -95,13 +96,11 @@ class ConfigureGenerator {
 
       final failedToAdd = <String>[];
       for (final package in packagesToAdd) {
-        final created = await packageGenerator.generate(
-          package,
-          hookDisabled: hookDisabled,
-          operationLabel: 'fsda configure',
-        );
-        if (!created) {
+        final result = await packageGenerator.generate(package);
+        if (result == null) {
           failedToAdd.add(package);
+        } else {
+          hookResults.add(result);
         }
       }
 
@@ -113,7 +112,7 @@ class ConfigureGenerator {
 
       if (failedToAdd.isNotEmpty) {
         logger.error('Failed to add package(s): ${failedToAdd.join(', ')}');
-        return;
+        return hookResults;
       }
 
       final addedPackages =
@@ -129,8 +128,10 @@ class ConfigureGenerator {
       logger.log(_divider);
 
       logger.success('Workspace packages have been synchronized successfully.');
+      return hookResults;
     } catch (e) {
       logger.error('Failed to read fsda.yaml configuration: $e');
+      return hookResults;
     }
   }
 

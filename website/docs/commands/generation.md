@@ -52,7 +52,7 @@ Rerun behavior:
 ## gen-feature
 
 ```bash
-fsda gen-feature <feature> -m <module> [--ds <datasource_mode>|--datasource <datasource_mode>] [--hook-disabled]
+fsda gen-feature <feature> -m <module> [--ds <datasource_mode>|--datasource <datasource_mode>] [--base-path <base-path>] [--hook-disabled]
 ```
 
 Generates feature baseline in `modules/<module>/lib/src/features/<feature>`.
@@ -61,8 +61,15 @@ What happens:
 
 - Bakes feature brick into feature folder.
 - Applies datasource mode (`both`, `remote`, `local`).
+- Sets the generated remote data source base path. Defaults to `/<feature>s` (for example, feature `product` uses `/products`).
 - Injects baseline exception/failure/l10n checkpoints.
 - Updates module barrel export.
+
+Example:
+
+```bash
+fsda gen-feature product -m catalog --base-path "/v2/catalog/products"
+```
 
 Rerun behavior:
 

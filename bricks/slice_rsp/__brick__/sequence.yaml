@@ -5,7 +5,7 @@ remote_data_source_contract:
   code: |
     {{#is_list}}Stream<List<{{model.pascalCase()}}Dto>> {{method.camelCase()}}({{/is_list}}
     {{^is_list}}Stream<{{model.pascalCase()}}Dto> {{method.camelCase()}}({{/is_list}}
-      {{feature.pascalCase()}}{{slice.pascalCase()}}Request {{feature.camelCase()}}{{slice.pascalCase()}}Request,
+      {{feature.pascalCase()}}{{slice.pascalCase()}}Request request,
     );
 
 remote_data_source_impl:
@@ -16,9 +16,9 @@ remote_data_source_impl:
     @override
     {{#is_list}}Stream<List<{{model.pascalCase()}}Dto>> {{method.camelCase()}}({{/is_list}}
     {{^is_list}}Stream<{{model.pascalCase()}}Dto> {{method.camelCase()}}({{/is_list}}
-      {{feature.pascalCase()}}{{slice.pascalCase()}}Request {{feature.camelCase()}}{{slice.pascalCase()}}Request,
+      {{feature.pascalCase()}}{{slice.pascalCase()}}Request request,
     ) async* {
-      final path = '/{{feature.paramCase()}}s/${{{feature.camelCase()}}{{slice.pascalCase()}}Request.id}/{{slice.paramCase()}}/stream';
+      final path = '$_basePath/${request.id}/{{slice.paramCase()}}/stream';
       try {
         {{#is_list}}await for (final data in _apiClient.stream<List>(path)) {
           yield data.map((e) => {{model.pascalCase()}}Dto.fromJson(e as Map<String, dynamic>)).toList();

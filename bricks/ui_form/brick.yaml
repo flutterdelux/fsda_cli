@@ -13,3 +13,10 @@ vars:
   slice:
     type: string
     description: The snake_case name of the slice (e.g. create)
+  type:
+    type: string
+    description: The snake_case name of the data type for result data and initial data (e.g. task_entity)
+  type_import_ui:
+    type: string
+  type_import_logic:
+    type: string

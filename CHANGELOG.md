@@ -8,11 +8,16 @@
     - `ui-form` and `ui-form-dialog` with `--fields` no longer generate shared field widgets or field ARB keys.
     - all `input-*` commands now use single-field mode (`<field>` or `--field`) per command run.
     - `ui-form` / `ui-form-dialog` input_type values are fixed to snake_case tokens: `text`, `number`, `selector`, `selector_list`, `text_area`, `qty`, `dropdown`, `dropdown_enum`, `image`, `switch`, `password`.
-    - slice artifact references in `slice-*` commands (`--dto`, `--entity`, `--param`, `--request`) now require snake_case prefixes that match generated artifact file prefixes.
-    - compose commands now treat `--page` as page prefix only (snake_case without `_page` suffix).
+    - slice artifact references in `slice-*` commands (`--dto`, `--entity`, `--param`, `--request`) now require complete snake_case names matching generated artifact file stems.
+    - compose commands now describe `--page` as the complete snake_case target page name.
     - input type prefixes for `input-dropdown-enum`, `input-selector`, `input-selector-list`, and `input-image` now use snake_case contract.
     - `input-image` now requires explicit `--type` (`network_file` or entity prefix).
     - modelling `--props` names now require snake_case input, while generated Dart properties are emitted as camelCase identifiers.
+    - `dto`, `entity`, `param`, and `request` positional arguments now require full snake_case artifact names, including `_dto`, `_entity`, `_param`, or `_request`; generated filename stems and PascalCase classes map directly from those names.
+    - slice `--dto`, `--entity`, `--param`, and `--request` options now require the same complete artifact names instead of shortened base names.
+    - compose command usage now calls `--page` the full target page name (`<target_page>`).
+    - `ui-lsh` and `ui-lsv` now require `--entity` and `--object`; generated list item types/imports and item names use those explicit values instead of inferring them from the feature.
+    - `ui-form` and `ui-form-dialog` `--initial` now require the complete snake_case Entity artifact name (for example `wallet_entity`); FSDA converts it to the Dart type internally.
 - add:
     - dedicated slice command surface:
         - slice-m
@@ -45,6 +50,7 @@
     - datasource option alias handling is now consistent for both `--ds` and `--datasource` in `gen-feature` and `regen-feature`.
     - `input-dropdown` now supports typed dropdown use cases beyond entity-only mode with configurable label builder fallback.
 - refactor:
+    - slice commands now accept concise `--param-request` and `--entity-dto` prefix shortcuts while preserving explicit artifact-stem options with per-option precedence.
     - standardize build_runner post-hook commands to `dart run build_runner build --delete-conflicting-outputs --force-jit` for Flutter 3/4 compatibility.
     - align v2 documentation tracks around explicit `slice-*` and `ui-*` generation flow plus module-scoped `di` usage.
     - remove generated `resolveEntries` contract from `ui-form` and `ui-form-dialog` for dropdown widgets; dropdown entries are now built inside field widgets.

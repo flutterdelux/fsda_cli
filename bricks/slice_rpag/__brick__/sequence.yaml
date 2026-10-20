@@ -14,7 +14,7 @@ remote_data_source_impl:
     @override
     Future<List<{{model.pascalCase()}}Dto>> {{method.camelCase()}}({{feature.pascalCase()}}{{slice.pascalCase()}}Request request) async {
       final response = await _apiClient.get<Map<String, dynamic>>(
-        '/{{feature.paramCase()}}s',
+        '$_basePath/{{slice.paramCase()}}',
         queryParameters: request.toJson(),
       );
 

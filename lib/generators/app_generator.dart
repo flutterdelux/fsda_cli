@@ -5,10 +5,11 @@ import 'package:path/path.dart' as p;
 
 import '../constants/cli_messages.dart';
 import '../generated/bricks/app_bundle.dart';
+import '../services/logger_service.dart';
 import '../services/operation_report_service.dart';
 import '../services/process_service.dart';
+import '../services/pubspec_service.dart';
 import '../services/sdk_service.dart';
-import 'base_generator.dart';
 
 const _dependencies = [
   'logging',
@@ -25,25 +26,23 @@ const _devDependencies = [
   'package_rename',
 ];
 
-const _postHooks = <String>[];
-
-class AppGenerator extends BaseGenerator<void, ({String app})> {
+class AppGenerator {
   final ProcessService processService;
+  final LoggerService logger;
   final SdkService sdkService;
+  final PubspecService pubspecService;
+  final OperationReportService report;
 
   AppGenerator({
     required this.processService,
     required this.sdkService,
-    required super.pubspecService,
-    required super.hookService,
-    required super.logger,
-    required super.fileService,
+    required this.logger,
+    required this.pubspecService,
+    required this.report,
   });
 
-  @override
   Future<void> generate(({String app}) args) async {
     final app = args.app;
-    final report = OperationReportService();
 
     final targetDir = Directory(p.join(Directory.current.path, 'apps', app));
 
@@ -84,14 +83,20 @@ class AppGenerator extends BaseGenerator<void, ({String app})> {
       );
       progress.complete('Baked app template successfully');
 
-      final bundleSuccess = await generateTemplatePipeline(
-        name: app,
-        targetDir: targetDir,
+      await pubspecService.addDependencies(
+        path: targetDir.path,
         dependencies: _dependencies,
-        devDependencies: _devDependencies,
-        postHooks: _postHooks,
+        operationLabel: 'Adding dependencies for $app',
       );
-      if (!bundleSuccess) return;
+      // if (!dependencyAdded) return null;
+
+      await pubspecService.addDependencies(
+        path: targetDir.path,
+        dependencies: _devDependencies,
+        operationLabel: 'Adding dev dependencies for $app',
+        forDev: true,
+      );
+      // if (!devDependencyAdded) return null;
 
       await _appendImportantCreatedPaths(
         report: report,
@@ -99,7 +104,7 @@ class AppGenerator extends BaseGenerator<void, ({String app})> {
       );
 
       logger.success('App "$app" created successfully');
-      report.logSummary(logger, operationLabel: 'fsda gen-app');
+      report.logSummary(logger, operationLabel: 'fsda gen-app $app');
 
       logger.log(CliMessages.appGeneratedNextSteps(app));
     } catch (e) {

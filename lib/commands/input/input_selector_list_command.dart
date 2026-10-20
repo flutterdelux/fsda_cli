@@ -28,7 +28,7 @@ class InputSelectorListCommand extends Command<void> {
       ..addOption(
         'type',
         help:
-            'Required selector-list item type prefix in snake_case, for example product_category.',
+            'Required full Entity artifact name in snake_case, for example product_category_entity.',
       )
       ..addFlag(
         'strict',
@@ -198,21 +198,18 @@ class InputSelectorListCommand extends Command<void> {
     final prefixRegExp = RegExp(CliRules.sliceNamePattern);
     if (!prefixRegExp.hasMatch(normalized)) {
       throw UsageException(
-        'Invalid selector-list type "$rawType". Use snake_case entity prefix, for example product_category.',
+        'Invalid selector-list type "$rawType". Use the full snake_case Entity name, including _entity (for example product_category_entity).',
         usage,
       );
     }
 
-    final entityPrefix = normalized.endsWith('_entity')
-        ? normalized.substring(0, normalized.length - '_entity'.length)
-        : normalized;
-    if (entityPrefix.isEmpty) {
+    if (!normalized.endsWith('_entity')) {
       throw UsageException(
-        'Invalid selector-list type "$rawType". Entity prefix cannot be empty.',
+        'Invalid selector-list type "$rawType". The full Entity name must end with _entity.',
         usage,
       );
     }
 
-    return '${entityPrefix.pascalCase}Entity';
+    return normalized.pascalCase;
   }
 }

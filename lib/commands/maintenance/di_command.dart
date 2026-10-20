@@ -16,7 +16,7 @@ class DiCommand extends Command<void> {
 
   @override
   final String description =
-      'Register DI for a module in target app wrapper (always scans all module features).';
+      'Register DI for a module in target app wrapper (supports optional --feature).';
 
   DiCommand({required this.diGenerator, required this.workspaceService}) {
     argParser
@@ -25,6 +25,7 @@ class DiCommand extends Command<void> {
         abbr: 'a',
         help: 'Target application name (e.g., fsda_demo)',
       )
+      ..addOption('feature', abbr: 'f', help: 'Target feature name (optional).')
       ..addFlag(
         'strict',
         negatable: false,
@@ -33,7 +34,8 @@ class DiCommand extends Command<void> {
   }
 
   @override
-  String get invocation => 'fsda di <module> -a <app> [--strict]';
+  String get invocation =>
+      'fsda di <module> -a <app> [-f <feature>] [--strict]';
 
   @override
   Future<void> run() async {
@@ -50,6 +52,7 @@ class DiCommand extends Command<void> {
 
     final module = args.first;
     final app = argResults?['app'] as String?;
+    final feature = argResults?['feature'] as String?;
     final strict = argResults?['strict'] as bool? ?? false;
 
     if (app == null || app.isEmpty) {
@@ -74,11 +77,44 @@ class DiCommand extends Command<void> {
       );
     }
 
+    if (feature != null && feature.isNotEmpty) {
+      final featureNameRegExp = RegExp(CliRules.featureNamePattern);
+      if (!featureNameRegExp.hasMatch(feature)) {
+        throw UsageException(
+          'Invalid feature name "$feature".\n'
+          '${CliRules.featureNameRule}',
+          usage,
+        );
+      }
+      final featureDir = Directory(
+        p.join(
+          Directory.current.path,
+          'modules',
+          module,
+          'lib',
+          'src',
+          'features',
+          feature,
+        ),
+      );
+      if (!featureDir.existsSync()) {
+        throw UsageException(
+          'Feature "$feature" does not exist in module "$module".',
+          usage,
+        );
+      }
+    }
+
     final moduleDir = p.join(Directory.current.path, 'modules', module);
     if (!Directory(moduleDir).existsSync()) {
       throw UsageException('Module "$module" does not exist.', usage);
     }
 
-    await diGenerator.generate((module: module, app: app, strict: strict));
+    await diGenerator.generate((
+      module: module,
+      app: app,
+      feature: feature,
+      strict: strict,
+    ));
   }
 }

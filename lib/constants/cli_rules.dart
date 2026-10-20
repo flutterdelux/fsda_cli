@@ -46,35 +46,23 @@ Tips: Use camelCase for multiple words, type directly: fsda slice-m wallet -f tr
 Example: fsda slice-m wallet -f transfer -m finance -d post
 ''';
 
-  static const artifactPrefixPattern = _artifactPrefixPattern;
-  static String get artifactPrefixRule => '''
-Naming rules:
-1. Must start with a letter (a-z or A-Z)
-2. Can contain letters, numbers, underscores (_)
-
-Tips: Common examples are `wallet` or `wallet_create`.
-Example: fsda dto Wallet -m finance -f wallet --props "String:id"
+  static const artifactNamePattern = _artifactNamePattern;
+  static String get artifactNameRule => '''$_snakeCaseRule
+Use the full artifact name, including its type suffix.
+Examples: payment_dto, payment_entity, payment_create_param, payment_create_request.
 ''';
 
-  static const sliceArtifactPrefixPattern = _snakeCasePattern;
-  static String get sliceArtifactPrefixRule => '''$_snakeCaseRule
-Tips: Use existing artifact prefix in snake_case from generated file names.
-Example: fsda slice-r detail -f category -m catalog -d getCategoryDetail --dto category --entity category
+  static const sliceArtifactNamePattern = _artifactNamePattern;
+  static String get sliceArtifactNameRule => '''$_snakeCaseRule
+Use the full generated artifact name, including its type suffix.
+Examples: payment_dto, payment_entity, payment_detail_param, payment_detail_request.
 ''';
 
-  static const modelPrefixPattern = _modelPrefixPattern;
-  static String get modelPrefixRule => '''
-Naming rules:
-1. Must start with an uppercase letter (A-Z)
-2. Use PascalCase
-3. Do not include Dto/Entity suffix
-
-Tips: Use base model prefix only (e.g., `Category`, not `CategoryDto`).
-Example: fsda slice-r detail -f category -m catalog -d getCategoryDetail --model Category
-''';
+  static const modelTypePattern = _modelTypePattern;
 }
 
 const _snakeCasePattern = r'^[a-z][a-z0-9_]*$';
+const _artifactNamePattern = r'^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$';
 const _snakeCaseRule = '''
 Naming rules:
 1. Must start with a letter (a-z)
@@ -90,5 +78,4 @@ Naming rules:
 3. Can only contain letters and numbers (a-z, 0-9)
 ''';
 
-const _artifactPrefixPattern = r'^[A-Za-z][A-Za-z0-9_]*$';
-const _modelPrefixPattern = r'^[A-Z][A-Za-z0-9]*$';
+const _modelTypePattern = r'^[A-Z][A-Za-z0-9]*$';

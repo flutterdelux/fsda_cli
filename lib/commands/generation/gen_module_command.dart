@@ -2,15 +2,18 @@ import 'package:args/command_runner.dart';
 
 import '../../constants/cli_rules.dart';
 import '../../generators/module_generator.dart';
+import '../../services/command_operation_service.dart';
 import '../../services/workspace_service.dart';
 
 class GenModuleCommand extends Command<void> {
   final ModuleGenerator moduleGenerator;
   final WorkspaceService workspaceService;
+  final CommandOperationService operations;
 
   GenModuleCommand({
     required this.moduleGenerator,
     required this.workspaceService,
+    required this.operations,
   }) {
     argParser.addFlag(
       'hook-disabled',
@@ -53,9 +56,11 @@ class GenModuleCommand extends Command<void> {
       );
     }
 
-    await moduleGenerator.generate((
-      module: module,
+    await operations.run<Map<String, dynamic>>(
+      operationLabel: 'fsda gen-module $module',
       hookDisabled: hookDisabled,
-    ));
+      action: () => moduleGenerator.generate((module: module)),
+      hookResults: (result) => [result],
+    );
   }
 }

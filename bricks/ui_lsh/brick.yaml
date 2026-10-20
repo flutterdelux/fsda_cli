@@ -12,4 +12,10 @@ vars:
     description: The snake_case name of the feature (e.g. wallet)
   slice:
     type: string
-    description: The snake_case name of the slice (e.g. delete)
+    description: The snake_case name of the slice (e.g. list)
+  entity:
+    type: string
+    description: The snake_case name of the entity (e.g. payment_entity)
+  object:
+    type: string
+    description: The snake_case name of the object name (e.g. manual_payment_method)

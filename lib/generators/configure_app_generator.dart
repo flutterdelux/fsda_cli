@@ -1,42 +1,34 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:yaml/yaml.dart';
 
 import '../generated/package_bundle.dart';
+import '../services/logger_service.dart';
 import '../services/operation_report_service.dart';
-import '../services/process_service.dart';
-import 'base_generator.dart';
 import 'configure_app/app_dependency_installer.dart';
 import 'configure_app/di_file_sync_service.dart';
 import 'configure_app/infra_spec_bundle_reader.dart';
 import 'configure_app/managed_package_dependency_sync.dart';
 
-class ConfigureAppGenerator extends BaseGenerator<void, String> {
+class ConfigureAppGenerator {
   final InfraSpecBundleReader infraSpecBundleReader;
   final ManagedPackageDependencySync managedPackageDependencySync;
   final DiFileSyncService diFileSyncService;
-  late final AppDependencyInstaller appDependencyInstaller;
+  final AppDependencyInstaller appDependencyInstaller;
+  final LoggerService logger;
+  final OperationReportService report;
 
   ConfigureAppGenerator({
-    required super.logger,
-    required ProcessService processService,
-    InfraSpecBundleReader? infraSpecBundleReader,
-    ManagedPackageDependencySync? managedPackageDependencySync,
-    DiFileSyncService? diFileSyncService,
-    AppDependencyInstaller? appDependencyInstaller,
-  }) : infraSpecBundleReader =
-           infraSpecBundleReader ?? const InfraSpecBundleReader(),
-       managedPackageDependencySync =
-           managedPackageDependencySync ?? const ManagedPackageDependencySync(),
-       diFileSyncService = diFileSyncService ?? const DiFileSyncService() {
-    this.appDependencyInstaller =
-        appDependencyInstaller ??
-        AppDependencyInstaller(processService: processService);
-  }
+    required this.logger,
+    required this.infraSpecBundleReader,
+    required this.managedPackageDependencySync,
+    required this.diFileSyncService,
+    required this.appDependencyInstaller,
+    required this.report,
+  });
 
-  @override
   Future<void> generate(String appName) async {
-    final report = OperationReportService();
     final appPath = p.join(Directory.current.path, 'apps', appName);
     final appPubspecFile = File(p.join(appPath, 'pubspec.yaml'));
     final coreDiPath = p.join(appPath, 'lib', 'core', 'di', 'core_di.dart');
@@ -118,14 +110,12 @@ class ConfigureAppGenerator extends BaseGenerator<void, String> {
       appName: appName,
       allInfraSpecs: infraSpecs,
       activeInfraSpecs: activeInfraSpecs,
-      logger: logger,
     );
     final externalDiResult = await diFileSyncService.syncExternalDiFile(
       appPath: appPath,
       appName: appName,
       allInfraSpecs: infraSpecs,
       activeInfraSpecs: activeInfraSpecs,
-      logger: logger,
     );
 
     logger.info('Configure-app summary for "$appName":');
@@ -195,21 +185,33 @@ class ConfigureAppGenerator extends BaseGenerator<void, String> {
     );
 
     logger.success('App "$appName" package dependencies are synchronized.');
-    report.logSummary(logger, operationLabel: 'fsda configure-app');
+    report.logSummary(logger, operationLabel: 'fsda configure-app $appName');
   }
 
   Future<Set<String>> _collectWorkspacePackages() async {
-    final packagesDir = Directory(p.join(Directory.current.path, 'packages'));
-    if (!await packagesDir.exists()) return <String>{};
+    final configFile = File('fsda.yaml');
+    if (!await configFile.exists()) return <String>{};
 
-    final packageNames = <String>{};
-    await for (final entity in packagesDir.list(followLinks: false)) {
-      if (entity is Directory) {
-        packageNames.add(p.basename(entity.path));
+    try {
+      final yamlString = await configFile.readAsString();
+      final doc = loadYaml(yamlString);
+      if (doc is! YamlMap || !doc.containsKey('packages')) {
+        return <String>{};
       }
-    }
 
-    return packageNames;
+      final rawPackages = doc['packages'];
+      if (rawPackages is! YamlList) {
+        return <String>{};
+      }
+
+      // Mengambil paket yang terdaftar dan tidak kosong di fsda.yaml
+      return rawPackages
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
+          .toSet();
+    } catch (_) {
+      return <String>{};
+    }
   }
 
   Future<Map<String, int>> _snapshotFileFingerprints(String rootPath) async {

@@ -1,28 +1,33 @@
 import 'dart:io';
 
 import '../../enums/compose_page_mode.dart';
-import '../base_generator.dart';
+import '../../services/logger_service.dart';
+import '../../services/operation_report_service.dart';
 
 import 'compose_inject_service.dart';
 import 'compose_main_service.dart';
 import 'compose_pag_service.dart';
 import 'compose_types.dart';
 
-class ComposeGenerator extends BaseGenerator<void, ComposeArgs> {
+class ComposeGenerator {
+  final LoggerService logger;
+  final OperationReportService report;
   final ComposeMainService mainService;
   final ComposePagService pagService;
   final ComposeInjectService injectService;
 
   ComposeGenerator({
-    required super.logger,
+    required this.logger,
+    required this.report,
     ComposeMainService? mainService,
     ComposePagService? pagService,
     ComposeInjectService? injectService,
-  }) : mainService = mainService ?? ComposeMainService(logger: logger),
-       pagService = pagService ?? ComposePagService(logger: logger),
+  }) : mainService =
+           mainService ?? ComposeMainService(logger: logger, report: report),
+       pagService =
+           pagService ?? ComposePagService(logger: logger, report: report),
        injectService = injectService ?? ComposeInjectService(logger: logger);
 
-  @override
   Future<void> generate(ComposeArgs args) async {
     // Default direct generator entrypoint maps to compose-main.
     await composeMain(args);
@@ -96,19 +101,19 @@ class ComposeGenerator extends BaseGenerator<void, ComposeArgs> {
 
   Future<void> composePmi(ComposeArgs args) async {
     _logComposeStart(mode: 'compose-pmi', args: args);
-    await injectService.generate(args);
+    await injectService.generate(args, report: report);
     _logComposeDone();
   }
 
   Future<void> composeAction(ComposeArgs args) async {
     _logComposeStart(mode: 'compose-action', args: args);
-    await injectService.generate(args, actionMode: true);
+    await injectService.generate(args, actionMode: true, report: report);
     _logComposeDone();
   }
 
   Future<void> composeSec(ComposeArgs args) async {
     _logComposeStart(mode: 'compose-sec', args: args);
-    await injectService.generate(args, sectionMode: true);
+    await injectService.generate(args, sectionMode: true, report: report);
     _logComposeDone();
   }
 

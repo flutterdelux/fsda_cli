@@ -5,9 +5,10 @@ import 'package:path/path.dart' as p;
 
 import '../constants/cli_rules.dart';
 import '../generated/bricks/module_bundle.dart';
+import '../services/logger_service.dart';
 import '../services/operation_report_service.dart';
+import '../services/pubspec_service.dart';
 import '../services/sdk_service.dart';
-import 'base_generator.dart';
 
 const _dependencies = ['freezed_annotation', 'json_annotation', 'bloc'];
 
@@ -23,23 +24,21 @@ const _postHooks = [
   'dart run build_runner build --force-jit',
 ];
 
-class ModuleGenerator
-    extends BaseGenerator<void, ({String module, bool hookDisabled})> {
+class ModuleGenerator {
   final SdkService sdkService;
+  final LoggerService logger;
+  final OperationReportService report;
+  final PubspecService pubspecService;
 
   ModuleGenerator({
     required this.sdkService,
-    required super.pubspecService,
-    required super.hookService,
-    required super.logger,
-    required super.fileService,
+    required this.report,
+    required this.logger,
+    required this.pubspecService,
   });
 
-  @override
-  Future<void> generate(({String module, bool hookDisabled}) args) async {
+  Future<Map<String, dynamic>> generate(({String module}) args) async {
     final module = args.module;
-    final hookDisabled = args.hookDisabled;
-    final report = OperationReportService();
 
     final nameRegExp = RegExp(CliRules.moduleNamePattern);
     if (!nameRegExp.hasMatch(module)) {
@@ -47,7 +46,7 @@ class ModuleGenerator
         'Invalid module name "$module".\n'
         '${CliRules.moduleNameRule}',
       );
-      return;
+      return <String, dynamic>{'success': false};
     }
 
     final targetDir = Directory(
@@ -56,7 +55,7 @@ class ModuleGenerator
 
     if (await targetDir.exists()) {
       logger.error('Module "$module" already exists at ${targetDir.path}');
-      return;
+      return <String, dynamic>{'success': false};
     }
 
     try {
@@ -75,16 +74,20 @@ class ModuleGenerator
         'Baked ${generatedFiles.length} files into modules/$module',
       );
 
-      final templateSuccess = await generateTemplatePipeline(
-        name: module,
-        targetDir: targetDir,
+      await pubspecService.addDependencies(
+        path: targetDir.path,
         dependencies: _dependencies,
-        devDependencies: _devDependencies,
-        postHooks: _postHooks,
-        hookDisabled: hookDisabled,
-        operationLabel: 'fsda gen-module',
+        operationLabel: 'Add dependencies for $module',
       );
-      if (!templateSuccess) return;
+      // if (!dependencyAdded) return null;
+
+      await pubspecService.addDependencies(
+        path: targetDir.path,
+        dependencies: _devDependencies,
+        operationLabel: 'Add dev dependencies for $module',
+        forDev: true,
+      );
+      // if (!devDependencyAdded) return null;
 
       await _appendImportantCreatedPaths(
         report: report,
@@ -92,10 +95,15 @@ class ModuleGenerator
       );
 
       logger.success('Module "$module" created successfully');
-      report.logSummary(logger, operationLabel: 'fsda gen-module');
+      report.logSummary(logger, operationLabel: 'fsda gen-module $module');
+      return <String, dynamic>{
+        'success': true,
+        'post_hook': _postHooks,
+        'working_directory': targetDir.path,
+      };
     } catch (e) {
       logger.error('$e');
-      return;
+      return <String, dynamic>{'success': false};
     }
   }
 

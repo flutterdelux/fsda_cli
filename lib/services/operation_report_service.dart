@@ -6,6 +6,8 @@ import 'package:path/path.dart' as p;
 import 'logger_service.dart';
 
 class OperationReportService {
+  static const _doubleDivider =
+      '============================================================';
   static const _divider =
       '------------------------------------------------------------';
 
@@ -13,6 +15,23 @@ class OperationReportService {
   final SplayTreeSet<String> _injectedPaths = SplayTreeSet<String>();
   final SplayTreeSet<String> _removedPaths = SplayTreeSet<String>();
   final SplayTreeSet<String> _skippedPaths = SplayTreeSet<String>();
+  var _operationDepth = 0;
+
+  void beginOperation() {
+    if (_operationDepth == 0) {
+      clear();
+    }
+    _operationDepth++;
+  }
+
+  void endOperation(LoggerService logger, {required String operationLabel}) {
+    if (_operationDepth == 0) return;
+    _operationDepth--;
+    if (_operationDepth == 0) {
+      _writeSummary(logger, operationLabel: operationLabel);
+      clear();
+    }
+  }
 
   void addCreated(String path) {
     _createdPaths.add(_normalizePath(path));
@@ -59,8 +78,15 @@ class OperationReportService {
       _removedPaths.isNotEmpty;
 
   void logSummary(LoggerService logger, {required String operationLabel}) {
-    logger.log(_divider);
-    logger.info('Affected paths for $operationLabel:');
+    if (_operationDepth > 0) return;
+    _writeSummary(logger, operationLabel: operationLabel);
+    clear();
+  }
+
+  void _writeSummary(LoggerService logger, {required String operationLabel}) {
+    logger.log(_doubleDivider);
+    logger.info('$operationLabel:');
+    logger.log(_doubleDivider);
 
     if (!hasAnyChange && _skippedPaths.isEmpty) {
       logger.log('- no file change detected');
@@ -68,11 +94,18 @@ class OperationReportService {
       return;
     }
 
-    _logSection(logger, label: 'created', paths: _createdPaths);
-    _logSection(logger, label: 'injected', paths: _injectedPaths);
-    _logSection(logger, label: 'removed', paths: _removedPaths);
-    _logSection(logger, label: 'skipped', paths: _skippedPaths);
+    _logSection(logger, label: '✨ Created', paths: _createdPaths);
+    _logSection(logger, label: '💉 Injected', paths: _injectedPaths);
+    _logSection(logger, label: '🗑️ Removed', paths: _removedPaths);
+    _logSection(logger, label: '⏩ Skipped', paths: _skippedPaths);
     logger.log(_divider);
+  }
+
+  void clear() {
+    _createdPaths.clear();
+    _injectedPaths.clear();
+    _removedPaths.clear();
+    _skippedPaths.clear();
   }
 
   void _logSection(

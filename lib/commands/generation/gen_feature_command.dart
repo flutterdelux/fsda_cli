@@ -3,15 +3,18 @@ import 'package:args/command_runner.dart';
 import '../../constants/cli_rules.dart';
 import '../../enums/data_source_mode.dart';
 import '../../generators/feature_generator.dart';
+import '../../services/command_operation_service.dart';
 import '../../services/workspace_service.dart';
 
 class GenFeatureCommand extends Command<void> {
   final FeatureGenerator featureGenerator;
   final WorkspaceService workspaceService;
+  final CommandOperationService operations;
 
   GenFeatureCommand({
     required this.featureGenerator,
     required this.workspaceService,
+    required this.operations,
   }) {
     final datasourceHelp =
         'Datasource scaffold mode. Supported: ${DataSourceMode.values.map((mode) => mode.value).join(', ')}';
@@ -23,6 +26,11 @@ class GenFeatureCommand extends Command<void> {
         aliases: ['ds'],
         defaultsTo: DataSourceMode.both.value,
         help: datasourceHelp,
+      )
+      ..addOption(
+        'base-path',
+        help:
+            'Base route path for the generated remote data source (default: /<feature>s).',
       )
       ..addFlag(
         'hook-disabled',
@@ -41,7 +49,7 @@ class GenFeatureCommand extends Command<void> {
 
   @override
   String get invocation =>
-      'fsda gen-feature <feature> -m <module> [--ds <datasource_mode>|--datasource <datasource_mode>] [--hook-disabled]';
+      'fsda gen-feature <feature> -m <module> [--ds <datasource_mode>|--datasource <datasource_mode>] [--base-path <base-path>] [--hook-disabled]';
 
   @override
   Future<void> run() async {
@@ -61,6 +69,7 @@ class GenFeatureCommand extends Command<void> {
     final datasource =
         (argResults?['datasource'] as String?)?.trim() ??
         DataSourceMode.both.value;
+    final basePath = (argResults?['base-path'] as String?)?.trim();
     final hookDisabled = argResults?['hook-disabled'] as bool? ?? false;
     if (module == null || module.isEmpty) {
       throw UsageException('Missing required option: --module (-m).', usage);
@@ -90,11 +99,18 @@ class GenFeatureCommand extends Command<void> {
       );
     }
 
-    await featureGenerator.generate((
-      feature: feature,
-      module: module,
-      dataSourceMode: dataSourceMode,
+    await operations.run<Map<String, dynamic>?>(
+      operationLabel: 'fsda gen-feature $feature',
       hookDisabled: hookDisabled,
-    ));
+      action: () => featureGenerator.generate((
+        feature: feature,
+        module: module,
+        dataSourceMode: dataSourceMode,
+        basePath: basePath == null || basePath.isEmpty
+            ? '/${feature.replaceAll('_', '-')}s'
+            : basePath,
+      )),
+      hookResults: (result) => result == null ? const [] : [result],
+    );
   }
 }

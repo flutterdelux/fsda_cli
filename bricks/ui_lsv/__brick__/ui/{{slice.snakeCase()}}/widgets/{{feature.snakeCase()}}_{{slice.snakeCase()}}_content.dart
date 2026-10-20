@@ -1,11 +1,11 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter/material.dart';
-import '../../../domain/entities/{{feature.snakeCase()}}_entity.dart';
+import '../../../domain/entities/{{entity.snakeCase()}}.dart';
 import 'parts/{{feature.snakeCase()}}_{{slice.snakeCase()}}_item.dart';
 
 class {{feature.pascalCase()}}{{slice.pascalCase()}}Content extends StatelessWidget {
-  final List<{{feature.pascalCase()}}Entity> list;
-  final void Function({{feature.pascalCase()}}Entity item) onItemTap;
+  final List<{{entity.pascalCase()}}> list;
+  final void Function({{entity.pascalCase()}} item) onItemTap;
   const {{feature.pascalCase()}}{{slice.pascalCase()}}Content({
     super.key,
     required this.list,
@@ -25,11 +25,11 @@ class {{feature.pascalCase()}}{{slice.pascalCase()}}Content extends StatelessWid
       itemCount: list.length,
       separatorBuilder: (context, index) => const Divider(),
       itemBuilder: (context, index) {
-        final {{feature.camelCase()}} = list[index];
+        final {{object.camelCase()}} = list[index];
         return {{feature.pascalCase()}}{{slice.pascalCase()}}Item(
           index: index,
-          {{feature.camelCase()}}: {{feature.camelCase()}},
-          onTap: () => onItemTap({{feature.camelCase()}}),
+          {{object.camelCase()}}: {{object.camelCase()}},
+          onTap: () => onItemTap({{object.camelCase()}}),
         );
       },
     );

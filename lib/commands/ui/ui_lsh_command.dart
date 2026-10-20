@@ -2,7 +2,11 @@ import '../../enums/ui_code.dart';
 import 'ui_base_command.dart';
 
 class UiLshCommand extends UiBaseCommand {
-  UiLshCommand({required super.uiGenerator, required super.workspaceService});
+  UiLshCommand({
+    required super.uiGenerator,
+    required super.workspaceService,
+    required super.operations,
+  });
 
   @override
   UiCode get uiTemplate => UiCode.lsh;

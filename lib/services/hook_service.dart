@@ -2,8 +2,8 @@ import 'logger_service.dart';
 import 'process_service.dart';
 
 class HookService {
-  static const _divider =
-      '------------------------------------------------------------';
+  // static const _divider =
+  //     '------------------------------------------------------------';
   static const _defaultHookTimeout = Duration(seconds: 30);
 
   final ProcessService processService;
@@ -27,16 +27,9 @@ class HookService {
     }
 
     if (disabled) {
-      logger.log(_divider);
       logger.info(
         'Post hooks are skipped${operationLabel == null ? '' : ' for $operationLabel'} because --hook-disabled is set.',
       );
-      logger.info('Next step (run manually):');
-      logger.log('  cd $workingDirectory');
-      for (var index = 0; index < normalizedHooks.length; index++) {
-        logger.log('  ${index + 1}. ${normalizedHooks[index]}');
-      }
-      logger.log(_divider);
       return;
     }
 

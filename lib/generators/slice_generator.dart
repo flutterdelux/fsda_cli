@@ -8,48 +8,44 @@ import '../generated/bricks/slice_rp_bundle.dart';
 import '../generated/bricks/slice_rpag_bundle.dart';
 import '../generated/bricks/slice_rs_bundle.dart';
 import '../generated/bricks/slice_rsp_bundle.dart';
+import '../services/file_service.dart';
+import '../services/logger_service.dart';
+import '../services/operation_report_service.dart';
+import '../services/slices/slice_checkpoint_weaver_service.dart';
+import '../services/slices/slice_manifest_render_service.dart';
 import '../services/slices/slice_service.dart';
-import 'base_generator.dart';
+import '../services/slices/slice_source_normalizer_service.dart';
 
-class SliceGenerator extends BaseGenerator<void, Never> {
+class SliceGenerator {
+  final LoggerService logger;
+  final FileService fileService;
+  final OperationReportService report;
   late final SliceService _sliceService;
 
   SliceGenerator({
-    required super.logger,
-    required super.fileService,
-    required super.hookService,
+    required this.logger,
+    required this.fileService,
+    required this.report,
     SliceService? sliceService,
   }) {
-    final resolvedFileService = fileService;
-    final resolvedHookService = hookService;
-
-    if (resolvedFileService == null || resolvedHookService == null) {
-      throw ArgumentError(
-        'FileService and HookService are required for slice generation.',
-      );
-    }
-
     _sliceService =
         sliceService ??
         SliceService(
           logger: logger,
-          fileService: resolvedFileService,
-          hookService: resolvedHookService,
+          fileService: fileService,
+          report: report,
+          manifestRenderService: const SliceManifestRenderService(),
+          sourceNormalizerService: const SliceSourceNormalizerService(),
+          checkpointWeaverService: SliceCheckpointWeaverService(logger: logger),
         );
   }
 
-  Future<void> generateSliceM(
-    ({
-      String slice,
-      String feature,
-      String module,
-      String method,
-      bool hookDisabled,
-    })
-    args,
+  Future<Map<String, dynamic>> generateSliceM(
+    ({String slice, String feature, String module, String method}) args,
   ) {
     return _sliceService.generateVariant(
-      operationLabel: 'fsda slice-m',
+      operationLabel:
+          'fsda slice-m ${args.slice} -> ${args.module}/${args.feature}',
       successVerb: 'Mutation slice',
       sequenceDescription: 'mutation',
       isMutation: true,
@@ -59,24 +55,23 @@ class SliceGenerator extends BaseGenerator<void, Never> {
       methodName: args.method,
       bundle: sliceMBundle,
       strict: false,
-      hookDisabled: args.hookDisabled,
     );
   }
 
-  Future<void> generateSliceMp(
+  Future<Map<String, dynamic>> generateSliceMp(
     ({
       String slice,
       String feature,
       String module,
       String method,
-      String paramPrefix,
-      String requestPrefix,
-      bool hookDisabled,
+      String paramName,
+      String requestName,
     })
     args,
   ) {
     return _sliceService.generateVariant(
-      operationLabel: 'fsda slice-mp',
+      operationLabel:
+          'fsda slice-mp ${args.slice} -> ${args.module}/${args.feature}',
       successVerb: 'Mutation+Param slice',
       sequenceDescription: 'mutation+param',
       isMutation: true,
@@ -86,26 +81,27 @@ class SliceGenerator extends BaseGenerator<void, Never> {
       methodName: args.method,
       bundle: sliceMpBundle,
       strict: false,
-      hookDisabled: args.hookDisabled,
-      paramPrefix: args.paramPrefix,
-      requestPrefix: args.requestPrefix,
+      paramName: args.paramName,
+      requestName: args.requestName,
     );
   }
 
-  Future<void> generateSliceMr(
+  Future<Map<String, dynamic>> generateSliceMr(
     ({
       String slice,
       String feature,
       String module,
       String method,
       String model,
+      String dtoName,
+      String entityName,
       bool isList,
-      bool hookDisabled,
     })
     args,
   ) {
     return _sliceService.generateVariant(
-      operationLabel: 'fsda slice-mr',
+      operationLabel:
+          'fsda slice-mr ${args.slice} -> ${args.module}/${args.feature}',
       successVerb: 'Mutation+Response slice',
       sequenceDescription: 'mutation+response',
       isMutation: true,
@@ -114,29 +110,32 @@ class SliceGenerator extends BaseGenerator<void, Never> {
       moduleName: args.module,
       methodName: args.method,
       modelName: args.model,
+      dtoName: args.dtoName,
+      entityName: args.entityName,
       isList: args.isList,
       bundle: sliceMrBundle,
       strict: false,
-      hookDisabled: args.hookDisabled,
     );
   }
 
-  Future<void> generateSliceMrp(
+  Future<Map<String, dynamic>> generateSliceMrp(
     ({
       String slice,
       String feature,
       String module,
       String method,
       String model,
+      String dtoName,
+      String entityName,
+      String paramName,
+      String requestName,
       bool isList,
-      String paramPrefix,
-      String requestPrefix,
-      bool hookDisabled,
     })
     args,
   ) {
     return _sliceService.generateVariant(
-      operationLabel: 'fsda slice-mrp',
+      operationLabel:
+          'fsda slice-mrp ${args.slice} -> ${args.module}/${args.feature}',
       successVerb: 'Mutation+Response+Param slice',
       sequenceDescription: 'mutation+response+param',
       isMutation: true,
@@ -145,29 +144,32 @@ class SliceGenerator extends BaseGenerator<void, Never> {
       moduleName: args.module,
       methodName: args.method,
       modelName: args.model,
+      dtoName: args.dtoName,
+      entityName: args.entityName,
       isList: args.isList,
       bundle: sliceMrpBundle,
       strict: false,
-      hookDisabled: args.hookDisabled,
-      paramPrefix: args.paramPrefix,
-      requestPrefix: args.requestPrefix,
+      paramName: args.paramName,
+      requestName: args.requestName,
     );
   }
 
-  Future<void> generateSliceR(
+  Future<Map<String, dynamic>> generateSliceR(
     ({
       String slice,
       String feature,
       String module,
       String method,
       String model,
+      String dtoName,
+      String entityName,
       bool isList,
-      bool hookDisabled,
     })
     args,
   ) {
     return _sliceService.generateVariant(
-      operationLabel: 'fsda slice-r',
+      operationLabel:
+          'fsda slice-r ${args.slice} -> ${args.module}/${args.feature}',
       successVerb: 'Retrieval slice',
       sequenceDescription: 'retrieval',
       isMutation: false,
@@ -176,29 +178,64 @@ class SliceGenerator extends BaseGenerator<void, Never> {
       moduleName: args.module,
       methodName: args.method,
       modelName: args.model,
+      dtoName: args.dtoName,
+      entityName: args.entityName,
       isList: args.isList,
       bundle: sliceRBundle,
       strict: false,
-      hookDisabled: args.hookDisabled,
     );
   }
 
-  Future<void> generateSliceRp(
+  Future<Map<String, dynamic>> generateSliceRof(
     ({
       String slice,
       String feature,
       String module,
       String method,
       String model,
+      String dtoName,
+      String entityName,
       bool isList,
-      String paramPrefix,
-      String requestPrefix,
-      bool hookDisabled,
     })
     args,
   ) {
     return _sliceService.generateVariant(
-      operationLabel: 'fsda slice-rp',
+      operationLabel:
+          'fsda slice-rof ${args.slice} -> ${args.module}/${args.feature}',
+      successVerb: 'Retrieval Offline-First slice',
+      sequenceDescription: 'offline-first retrieval',
+      isMutation: false,
+      sliceName: args.slice,
+      featureName: args.feature,
+      moduleName: args.module,
+      methodName: args.method,
+      modelName: args.model,
+      dtoName: args.dtoName,
+      entityName: args.entityName,
+      isList: args.isList,
+      bundle: sliceRofBundle,
+      strict: false,
+    );
+  }
+
+  Future<Map<String, dynamic>> generateSliceRp(
+    ({
+      String slice,
+      String feature,
+      String module,
+      String method,
+      String model,
+      String dtoName,
+      String entityName,
+      String paramName,
+      String requestName,
+      bool isList,
+    })
+    args,
+  ) {
+    return _sliceService.generateVariant(
+      operationLabel:
+          'fsda slice-rp ${args.slice} -> ${args.module}/${args.feature}',
       successVerb: 'Retrieval+Param slice',
       sequenceDescription: 'retrieval+param',
       isMutation: false,
@@ -207,142 +244,116 @@ class SliceGenerator extends BaseGenerator<void, Never> {
       moduleName: args.module,
       methodName: args.method,
       modelName: args.model,
+      dtoName: args.dtoName,
+      entityName: args.entityName,
       isList: args.isList,
       bundle: sliceRpBundle,
       strict: false,
-      hookDisabled: args.hookDisabled,
-      paramPrefix: args.paramPrefix,
-      requestPrefix: args.requestPrefix,
+      paramName: args.paramName,
+      requestName: args.requestName,
     );
   }
 
-  Future<void> generateSliceRof(
+  Future<Map<String, dynamic>> generateSliceRpag(
     ({
       String slice,
       String feature,
       String module,
       String method,
       String model,
-      bool isList,
-      bool hookDisabled,
+      String dtoName,
+      String entityName,
+      String paramName,
+      String requestName,
     })
     args,
   ) {
     return _sliceService.generateVariant(
-      operationLabel: 'fsda slice-rof',
-      successVerb: 'Retrieval+ObjectField slice',
-      sequenceDescription: 'retrieval+object field',
+      operationLabel:
+          'fsda slice-rpag ${args.slice} -> ${args.module}/${args.feature}',
+      successVerb: 'Retrieval Pagination slice',
+      sequenceDescription: 'retrieval pagination',
       isMutation: false,
       sliceName: args.slice,
       featureName: args.feature,
       moduleName: args.module,
       methodName: args.method,
       modelName: args.model,
-      isList: args.isList,
-      bundle: sliceRofBundle,
-      strict: false,
-      hookDisabled: args.hookDisabled,
-    );
-  }
-
-  Future<void> generateSliceRpag(
-    ({
-      String slice,
-      String feature,
-      String module,
-      String method,
-      String model,
-      String paramPrefix,
-      String requestPrefix,
-      bool hookDisabled,
-    })
-    args,
-  ) {
-    return _sliceService.generateVariant(
-      operationLabel: 'fsda slice-rpag',
-      successVerb: 'Retrieval+Pagination slice',
-      sequenceDescription: 'retrieval+pagination',
-      isMutation: false,
-      sliceName: args.slice,
-      featureName: args.feature,
-      moduleName: args.module,
-      methodName: args.method,
-      modelName: args.model,
+      dtoName: args.dtoName,
+      entityName: args.entityName,
       isList: true,
       bundle: sliceRpagBundle,
       strict: false,
-      hookDisabled: args.hookDisabled,
-      paramPrefix: args.paramPrefix,
-      requestPrefix: args.requestPrefix,
+      paramName: args.paramName,
+      requestName: args.requestName,
     );
   }
 
-  Future<void> generateSliceRs(
+  Future<Map<String, dynamic>> generateSliceRs(
     ({
       String slice,
       String feature,
       String module,
       String method,
       String model,
+      String dtoName,
+      String entityName,
       bool isList,
-      bool hookDisabled,
     })
     args,
   ) {
     return _sliceService.generateVariant(
-      operationLabel: 'fsda slice-rs',
-      successVerb: 'Retrieval+Stream slice',
-      sequenceDescription: 'retrieval+stream',
+      operationLabel:
+          'fsda slice-rs ${args.slice} -> ${args.module}/${args.feature}',
+      successVerb: 'Retrieval Stream slice',
+      sequenceDescription: 'stream retrieval',
       isMutation: false,
       sliceName: args.slice,
       featureName: args.feature,
       moduleName: args.module,
       methodName: args.method,
       modelName: args.model,
+      dtoName: args.dtoName,
+      entityName: args.entityName,
       isList: args.isList,
       bundle: sliceRsBundle,
       strict: false,
-      hookDisabled: args.hookDisabled,
     );
   }
 
-  Future<void> generateSliceRsp(
+  Future<Map<String, dynamic>> generateSliceRsp(
     ({
       String slice,
       String feature,
       String module,
       String method,
       String model,
+      String dtoName,
+      String entityName,
+      String paramName,
+      String requestName,
       bool isList,
-      String paramPrefix,
-      String requestPrefix,
-      bool hookDisabled,
     })
     args,
   ) {
     return _sliceService.generateVariant(
-      operationLabel: 'fsda slice-rsp',
-      successVerb: 'Retrieval+Stream+Param slice',
-      sequenceDescription: 'retrieval+stream+param',
+      operationLabel:
+          'fsda slice-rsp ${args.slice} -> ${args.module}/${args.feature}',
+      successVerb: 'Retrieval Stream+Param slice',
+      sequenceDescription: 'stream+param retrieval',
       isMutation: false,
       sliceName: args.slice,
       featureName: args.feature,
       moduleName: args.module,
       methodName: args.method,
       modelName: args.model,
+      dtoName: args.dtoName,
+      entityName: args.entityName,
       isList: args.isList,
       bundle: sliceRspBundle,
       strict: false,
-      hookDisabled: args.hookDisabled,
-      paramPrefix: args.paramPrefix,
-      requestPrefix: args.requestPrefix,
-    );
-  }
-
-  @override
-  Future<void> generate(Never args) {
-    throw UnsupportedError(
-      'Use dedicated methods for slice generation variants.',
+      paramName: args.paramName,
+      requestName: args.requestName,
     );
   }
 }

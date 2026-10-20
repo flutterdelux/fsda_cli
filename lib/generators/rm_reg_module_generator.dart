@@ -6,19 +6,20 @@ import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
 import '../generated/bricks/reg_module_bundle.dart';
+import '../services/logger_service.dart';
 import '../services/memory_generator_target.dart';
 import '../services/operation_report_service.dart';
-import 'base_generator.dart';
 
-class RmRegModuleGenerator
-    extends BaseGenerator<void, ({String app, String module})> {
-  RmRegModuleGenerator({required super.logger, required super.fileService});
+class RmRegModuleGenerator {
+  final LoggerService logger;
+  final OperationReportService report;
 
-  @override
+  RmRegModuleGenerator({required this.logger, required this.report});
+
   Future<void> generate(({String app, String module}) arg) async {
     final appName = arg.app;
     final moduleName = arg.module;
-    final report = OperationReportService();
+    final operationLabel = 'fsda rm-reg $moduleName -> $appName';
 
     logger.info(
       'Removing module "$moduleName" registration from "$appName"...',
@@ -32,7 +33,7 @@ class RmRegModuleGenerator
       logger.error(
         'Failed to resolve reg.yaml manifest for module "$moduleName".',
       );
-      report.logSummary(logger, operationLabel: 'fsda rm-reg');
+      report.logSummary(logger, operationLabel: operationLabel);
       exitCode = 1;
       return;
     }
@@ -117,7 +118,7 @@ class RmRegModuleGenerator
     }
 
     logger.success('Module "$moduleName" unregistered from "$appName".');
-    report.logSummary(logger, operationLabel: 'fsda rm-reg');
+    report.logSummary(logger, operationLabel: operationLabel);
   }
 
   Future<YamlMap?> _loadRegManifest({
