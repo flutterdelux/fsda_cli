@@ -9,6 +9,7 @@ class AppInfoTile extends StatelessWidget {
   final (int, int) flexRatio;
   final bool includeChevron;
   final VoidCallback? onTap;
+  final int dataMaxLines;
 
   const AppInfoTile({
     super.key,
@@ -17,6 +18,7 @@ class AppInfoTile extends StatelessWidget {
     this.flexRatio = (1, 1),
     this.includeChevron = false,
     this.onTap,
+    this.dataMaxLines = 1,
   });
 
   @override
@@ -48,7 +50,7 @@ class AppInfoTile extends StatelessWidget {
               style: textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w500,
               ),
-              maxLines: 1,
+              maxLines: dataMaxLines,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.end,
             ),

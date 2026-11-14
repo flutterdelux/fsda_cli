@@ -19,39 +19,6 @@ Until a dedicated docs version is cut, v2.0.0 behavior is documented under `late
 
 ## Migration Notes
 
-### Upgrading from v1.1.x to v2.0.0
-
-Source of truth for this section is `CHANGELOG.md` entry `2.0.0`.
-
-Breaking changes:
-
-- remove legacy `gen-ui` command from active command surface (use dedicated `ui-*` commands)
-- remove legacy `gen-slice` command from active command surface (use dedicated `slice-*` commands)
-- `di` command is fixed to module scope: `fsda di <module> -a <app> [--strict]`
-- `ui-form` and `ui-form-dialog` with `--fields` no longer generate shared field widgets or field ARB keys
-
-Added:
-
-- dedicated `slice-*` command surface (`slice-m`, `slice-mp`, `slice-mr`, `slice-mrp`, `slice-r`, `slice-rof`, `slice-rp`, `slice-rpag`, `slice-rs`, `slice-rsp`)
-- `dto` for typed DTO generation
-- `entity` for typed Entity-only generation
-- `param` for typed Param-only generation
-- `request` for typed Request-only generation
-- `input-text`, `input-dropdown`, `input-password` for shared field generation + ARB sync
-- `rm-feature` rollback improvements for shared exception/failure/failure-x and ARB keys
-- `rm-feature --hook-disabled` parity and improved post-hook diagnostics
-
-Fixes:
-
-- `sequence.yaml` is rendered with generated variables before checkpoint weaving
-- generated standalone Dart file normalization to avoid trailing comma/blank-line artifacts
-- removal of stale `SequenceCode` fallback path that could trigger unresolved bundle resolver errors
-
-Refactors:
-
-- `build_runner` post-hooks standardized to `dart run build_runner build --delete-conflicting-outputs --force-jit` for Flutter 3/4 compatibility
-- v2 docs aligned around explicit `slice-*` and `ui-*` flow with module-scoped `di`
-
 ### Upgrading from v1.0.x to v1.1.0
 
 UI generation now has command-specific entry points:

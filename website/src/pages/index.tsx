@@ -4,22 +4,7 @@ import Link from '@docusaurus/Link';
 import Heading from '@theme/Heading';
 
 const cards = [
-  {
-    title: 'Safe Reruns',
-    text: 'Generator output is non-destructive by default: existing files are skipped to avoid accidental overwrite.',
-  },
-  {
-    title: 'Strict When Needed',
-    text: 'Enable --strict for fail-fast behavior when files already exist or safe injection anchors are missing.',
-  },
-  {
-    title: 'Explicit Compose Modes',
-    text: 'Choose compose mode by intent: main, form, pagination, popup menu action, or section injection.',
-  },
-  {
-    title: 'Traceable File Changes',
-    text: 'Major commands print affected path summaries so every generated or injected file is easy to audit.',
-  },
+ 
 ];
 
 export default function Home(): JSX.Element {
@@ -38,8 +23,8 @@ export default function Home(): JSX.Element {
             and command outputs you can verify before commit.
           </p>
           <div className="heroCta">
-            <Link className="button button--primary button--lg" to="/docs/overview">
-              Open Overview
+            <Link className="button button--primary button--lg" to="/docs/getting-started">
+              Getting Started
             </Link>
             <Link className="button button--secondary button--lg" to="/docs/commands">
               Command Deep Dive

@@ -1,5 +1,7 @@
 # FSDA CLI
 
+[![codecov](https://codecov.io/github/flutterdelux/fsda_cli/graph/badge.svg?token=LU0VXZYXNB)](https://codecov.io/github/flutterdelux/fsda_cli)
+
 Feature Slice Driven Architecture CLI for workspace scaffolding and code generation.
 
 

@@ -1,15 +1,10 @@
 {
-  "launchUrlFailed": "Tidak bisa membuka {url}",
-  "itemsCount": "{count, plural, =1{1 item} other{{count} item}}",
-  "synchronize": "Sinkronisasi",
-  "available": "Tersedia",
-  "notAvailable": "Tidak tersedia",
-  "required": "Diperlukan",
-  "notRequired": "Tidak diperlukan",
-  "previous": "Sebelumnya",
-  "next": "Berikutnya",
-  "apply": "Terapkan",
-  "required": "Wajib",
+  "@@locale": "id",
+
+  "@_ACTIONS": {
+    "description": "========================= Actions & Operations =================="
+  },
+  "action": "Aksi",
   "create": "Buat",
   "add": "Tambah",
   "edit": "Ubah",
@@ -17,28 +12,82 @@
   "save": "Simpan",
   "saveAs": "Simpan Sebagai",
   "saveWithCount": "Simpan ({count})",
+  "@saveWithCount": {
+    "description": "Save with a count of items",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "remove": "Hapus",
   "delete": "Hapus",
+  "apply": "Terapkan",
+  "synchronize": "Sinkronisasi",
   "refresh": "Segarkan",
   "retry": "Coba lagi",
-  "back": "Kembali",
-  "backToHome": "Kembali ke Beranda",
+  "confirm": "Konfirmasi",
+  "cancel": "Batal",
+  "close": "Tutup",
   "seeAll": "Lihat Semua",
   "more": "Lainnya",
-  "cancel": "Batal",
-  "confirm": "Konfirmasi",
-  "close": "Tutup",
+
+  "@_NAVIGATION": {
+    "description": "========================= Navigation =================="
+  },
+  "back": "Kembali",
+  "backToHome": "Kembali ke Beranda",
   "homeLabel": "Beranda",
+  "previous": "Sebelumnya",
+  "next": "Berikutnya",
+
+  "@_STATUS_AND_LABELS": {
+    "description": "========================= Status & Labels =================="
+  },
+  "available": "Tersedia",
+  "notAvailable": "Tidak tersedia",
+  "required": "Wajib",
+  "notRequired": "Tidak diperlukan",
+  "itemsCount": "{count, plural, =1{1 item} other{{count} item}}",
+  "@itemsCount": {
+    "description": "Label for displaying the number of items in the order",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "todayWithTime": "Hari ini, {time}",
+  "@todayWithTime": {
+    "description": "Label for displaying today's date with time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+
+  "@_ERRORS_AND_PAGES": {
+    "description": "========================= Errors & Special Pages =================="
+  },
+  "launchUrlFailed": "Tidak bisa membuka {url}",
+  "@launchUrlFailed": {
+    "description": "url to launch",
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
   "invalidArgumentPageTitle": "Argumen Tidak Valid",
   "invalidArgumentPageMessage": "Operasi yang diminta tidak dapat dilakukan karena argumen tidak valid.",
   "notFoundPageTitle": "Tidak Ditemukan",
   "notFoundPageMessage": "Halaman yang Anda cari tidak ada.",
   "unknownError": "Kesalahan tidak diketahui",
   "unavailableFeature": "Fitur ini saat ini tidak tersedia.",
-  "todayWithTime": "Hari ini, {time}",
 
   "@coreFailureUnauthenticated": {
-    "description": "========================= Core =================="
+    "description": "========================= Core Failures =================="
   },
   "coreFailureUnauthenticated": "Tidak terautentikasi",
   "coreFailureUnauthorized": "Anda tidak memiliki izin untuk mengakses",

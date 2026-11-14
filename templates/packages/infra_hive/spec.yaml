@@ -7,7 +7,7 @@ dev_dependencies:
 
 core_di:
   import: |
-    "import 'package:infra_hive/infra_hive.dart';"
+    import 'package:infra_hive/infra_hive.dart';
   code: |
     sl.registerLazySingleton<LocalStorage>(
       () => HiveLocalStorage(box: sl()),
@@ -15,7 +15,7 @@ core_di:
 
 external_di:
   import: |
-    "import 'package:hive_flutter/hive_flutter.dart';"
+    import 'package:hive_flutter/hive_flutter.dart';
   code: |
     sl.registerSingletonAsync<Box>(
       () => Hive.openBox('box_name'),

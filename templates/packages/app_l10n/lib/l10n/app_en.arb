@@ -1,31 +1,10 @@
 {
-  "launchUrlFailed": "Could not launch {url}",
-  "@launchUrlFailed": {
-    "description": "url to launch",
-    "placeholders": {
-      "url": {
-        "type": "String"
-      }
-    }
+  "@@locale": "en",
+
+  "@_ACTIONS": {
+    "description": "========================= Actions & Operations =================="
   },
-  "itemsCount": "{count, plural, =1{1 item} other{{count} items}}",
-  "@itemsCount": {
-    "description": "Label for displaying the number of items in the order",
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
-  "synchronize": "Synchronize",
-  "available": "Available",
-  "notAvailable": "Not available",
-  "required": "Required",
-  "notRequired": "Not Required",
-  "previous": "Previous",
-  "next": "Next",
-  "apply": "Apply",
-  "required": "Required",
+  "action": "Action",
   "create": "Create",
   "add": "Add",
   "edit": "Edit",
@@ -43,22 +22,41 @@
   },
   "remove": "Remove",
   "delete": "Delete",
+  "apply": "Apply",
+  "synchronize": "Synchronize",
   "refresh": "Refresh",
   "retry": "Retry",
-  "back": "Back",
-  "backToHome": "Back to Home",
+  "confirm": "Confirm",
+  "cancel": "Cancel",
+  "close": "Close",
   "seeAll": "See All",
   "more": "More",
-  "cancel": "Cancel",
-  "confirm": "Confirm",
-  "close": "Close",
+
+  "@_NAVIGATION": {
+    "description": "========================= Navigation =================="
+  },
+  "back": "Back",
+  "backToHome": "Back to Home",
   "homeLabel": "Home",
-  "invalidArgumentPageTitle": "Invalid Argument",
-  "invalidArgumentPageMessage": "The requested operation could not be performed due to an invalid argument.",
-  "notFoundPageTitle": "Not Found",
-  "notFoundPageMessage": "The page you are looking for does not exist.",
-  "unknownError": "Unknown error",
-  "unavailableFeature": "This feature is currently unavailable.",
+  "previous": "Previous",
+  "next": "Next",
+
+  "@_STATUS_AND_LABELS": {
+    "description": "========================= Status & Labels =================="
+  },
+  "available": "Available",
+  "notAvailable": "Not available",
+  "required": "Required",
+  "notRequired": "Not Required",
+  "itemsCount": "{count, plural, =1{1 item} other{{count} items}}",
+  "@itemsCount": {
+    "description": "Label for displaying the number of items in the order",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
   "todayWithTime": "Today, {time}",
   "@todayWithTime": {
     "description": "Label for displaying today's date with time",
@@ -68,9 +66,28 @@
       }
     }
   },
-  
+
+  "@_ERRORS_AND_PAGES": {
+    "description": "========================= Errors & Special Pages =================="
+  },
+  "launchUrlFailed": "Could not launch {url}",
+  "@launchUrlFailed": {
+    "description": "url to launch",
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "invalidArgumentPageTitle": "Invalid Argument",
+  "invalidArgumentPageMessage": "The requested operation could not be performed due to an invalid argument.",
+  "notFoundPageTitle": "Not Found",
+  "notFoundPageMessage": "The page you are looking for does not exist.",
+  "unknownError": "Unknown error",
+  "unavailableFeature": "This feature is currently unavailable.",
+
   "@coreFailureUnauthenticated": {
-    "description": "========================= Core =================="
+    "description": "========================= Core Failures =================="
   },
   "coreFailureUnauthenticated": "Unauthenticated",
   "coreFailureUnauthorized": "You do not have permission to access",

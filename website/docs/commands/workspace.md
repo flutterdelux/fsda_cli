@@ -1,9 +1,7 @@
 ---
 id: commands-workspace
-title: Workspace Commands
+title: Workspace
 ---
-
-These commands manage workspace structure, package templates, and app package synchronization.
 
 ## create
 
@@ -11,113 +9,26 @@ These commands manage workspace structure, package templates, and app package sy
 fsda create <workspace_name>
 ```
 
-Creates a new workspace folder with baseline directories and config.
+Creates a new FSDA workspace wrapper structure with baseline directories and standard configuration.
 
-What happens:
+> Note: This command should be executed outside of an existing workspace directory to initialize a brand-new FSDA project root.
 
-- Creates `<workspace_name>/apps`, `<workspace_name>/modules`, and `<workspace_name>/packages`.
-- Creates `<workspace_name>/fsda.yaml` populated with package templates available in the CLI bundle.
-- Prints affected paths summary.
+### Naming Constraints
 
-Rerun behavior:
+- **Format**: Must follow `snake_case` rules (e.g., `my_workspace_app`, `core_workspace`).
+- **Validation**: Names starting with numbers, containing hyphens, spaces, or uppercase letters will be rejected.
 
-- If workspace folder already exists, command stops and does not modify files.
+### What Happens
 
-## configure
+1. **Validates Input**: Checks whether `<workspace_name>` complies with `snake_case` naming rules.
+2. **Directory Initialization**: Creates empty foundational directories:
+   - `<workspace_name>/apps/`
+   - `<workspace_name>/modules/`
+   - `<workspace_name>/packages/`
+3. **Configuration Generation**: Creates `<workspace_name>/fsda.yaml` containing metadata and all available bundled package templates listed in an **inactive status** (prefixed with `# - package_name`).
+4. **Operation Report**: Displays a clean, structured terminal summary logging all created directories and files.
 
-```bash
-fsda configure [--hook-disabled]
-```
+### Rerun Behavior
 
-Synchronizes `workspace/packages` to match active package list in `fsda.yaml`.
+- If the directory `<workspace_name>` already exists, the command halts execution immediately with an error and leaves existing files untouched.
 
-What happens:
-
-- Reads `fsda.yaml` key `packages`.
-- Ignores unknown package names that are not available in bundled templates.
-- Removes managed template package folders that are no longer listed.
-- Generates missing managed template package folders that are listed.
-- Prints dependency/dev-dependency/post-hook execution plan for each package template that is generated.
-- Prints `added/removed/kept` summary and concise shared-package affected summary (package names only, not every file inside package templates).
-
-When `--hook-disabled` is set:
-
-- template post-hooks are skipped
-- command prints manual next-step commands for later execution
-
-Rerun behavior:
-
-- Idempotent for already-synced state.
-- Existing desired package folders are kept.
-- Unlisted managed package folders are removed.
-
-## configure-app
-
-```bash
-fsda configure-app <app>
-```
-
-Synchronizes app dependencies and DI external wiring based on active workspace packages.
-
-What happens:
-
-- Targets `apps/<app>/pubspec.yaml`.
-- Ensures managed package path dependencies under `dependencies:` match active folders in `workspace/packages`.
-- Removes managed package entries when package folder is no longer active.
-- Reads `infra_*` template specs and installs missing app dependencies via `dart pub add`.
-- Synchronizes infra DI snippets/imports in:
-	- `apps/<app>/lib/core/di/core_di.dart`
-	- `apps/<app>/lib/core/di/external_di.dart`
-- Synchronizes external config files in `apps/<app>/lib/core/externals`.
-- Prints synchronization counters and affected paths.
-
-Rerun behavior:
-
-- Idempotent when app is already aligned.
-- Adds only missing managed dependencies/snippets and removes stale managed ones.
-
-## list-pckg
-
-```bash
-fsda list-pckg
-```
-
-Lists package template names available inside the bundled package registry.
-
-What happens:
-
-- Reads bundled template catalog.
-- Prints sorted package names.
-
-Rerun behavior:
-
-- Read-only command, no file changes.
-
-## add-pckg
-
-```bash
-fsda add-pckg <name> [--hook-disabled]
-```
-
-Adds one package template to workspace and ensures it is active in `fsda.yaml`.
-
-What happens:
-
-- Validates package name and existence in bundled template catalog.
-- Updates `fsda.yaml` packages list:
-	- keeps if already active
-	- re-activates if previously commented
-	- appends if missing
-- Generates `packages/<name>` only when the folder does not already exist.
-- Runs template dependency/dev-dependency/post-hook pipeline for new package generation.
-- Prints dependency/dev-dependency/post-hook execution plan before pipeline execution.
-- Does not print per-file affected-path list for package template internals.
-
-When `--hook-disabled` is set:
-
-- post-hooks are skipped for the package template pipeline
-- command prints manual next-step commands to run later
-
-Rerun behavior:
-
-- If `packages/<name>` already exists, generation is skipped to prevent overwrite.

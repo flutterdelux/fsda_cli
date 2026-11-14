@@ -2,8 +2,7 @@ import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 
 const sidebars: SidebarsConfig = {
   docsSidebar: [
-    'overview',
-    'installation',
+    'getting-started',
     {
       type: 'category',
       label: 'Commands',
@@ -13,16 +12,23 @@ const sidebars: SidebarsConfig = {
       },
       items: [
         'commands/commands-workspace',
-        'commands/commands-generation',
-        'commands/commands-slice',
-        'commands/commands-modelling',
+        'commands/commands-package',
+        'commands/commands-module',
+        'commands/commands-feature',
+        'commands/commands-failure',
+        'commands/commands-datasource',
+        'commands/commands-enum',
+        'commands/commands-model',
+        'commands/commands-sequence',
+        'commands/commands-logic',
         'commands/commands-input',
         'commands/commands-ui',
-        'commands/commands-composition',
+        'commands/commands-app',
+        'commands/commands-app-integration',
+        'commands/commands-compose',
         'commands/commands-maintenance',
       ],
     },
-    'workflow',
     'releases',
   ],
 };

@@ -6,9 +6,23 @@ environment:
 vars:
   app:
     type: string
-    description: The snake_case name of the app (e.g. fsda_demo)
+    description: The lowercase name of the app (e.g. fsdademo)
+    prompt: What is the name for app id?
+  app_name:
+    type: string
+    description: Title or Label App (e.g. Fsda Demo)
+    prompt: What is the app name?
+  org:
+    type: string
+    description: The lowercase name that seperate by dots (e.g. com.example)
+  org_name:
+    type: string
+    description: Title or Label Organization (e.g. FDelux)
     prompt: What is the app name?
   dart_sdk:
     type: string
     description: The Dart SDK constraint for the app (e.g. ">=3.0.0 <4.0.0", ^3.0.0)
     prompt: What is the Dart SDK constraint for the app?
+  android_min_sdk:
+    type: number
+    description: Min sdk android for flutter_launcher_icons

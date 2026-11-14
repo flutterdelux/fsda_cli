@@ -1,10 +1,10 @@
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
-import 'package:fsda_cli/src/core/constants/cli_info.dart';
-import 'package:fsda_cli/src/presentation/cli_logger.dart';
-import 'package:fsda_cli/src/presentation/commands/command_registry.dart';
-import 'package:fsda_cli/src/presentation/di/injection.dart';
+import 'package:fsda_cli/core/constants/cli_info.dart';
+import 'package:fsda_cli/presentation/cli_logger.dart';
+import 'package:fsda_cli/presentation/commands/command_registry.dart';
+import 'package:fsda_cli/presentation/di/injection.dart';
 
 void main(List<String> arguments) async {
   configureDependencies();
@@ -14,18 +14,39 @@ void main(List<String> arguments) async {
   registerCommands(runner);
 
   try {
+    if (arguments.isNotEmpty) {
+      final commandName = arguments.first;
+
+      final registeredCommands = runner.commands.keys;
+      if (!registeredCommands.contains(commandName)) {
+        logger.error('Command "$commandName" is not recognized.');
+        logger.log('Run "fsda --help" to see a list of available commands.');
+        exitCode = 64;
+        return;
+      }
+    }
+
     final parsedArgs = runner.argParser.parse(arguments);
 
     if (checkVersionFlag(parsedArgs, logger)) return;
 
-    await runner.run(arguments);
+    final result = await runner.run(arguments);
+
+    if (result is int) {
+      exitCode = result;
+    }
   } on UsageException catch (e) {
     logger.error(e.message);
     logger.log('');
     logger.log(e.usage);
     exitCode = 64;
   } catch (e) {
-    // logger.error('An unexpected error occurred: $e');
+    if (e is FormatException) {
+      logger.error(e.message);
+      logger.log('Run "fsda --help" for more information.');
+    } else {
+      logger.error('An unexpected error occurred: $e');
+    }
     exitCode = 1;
   }
 }

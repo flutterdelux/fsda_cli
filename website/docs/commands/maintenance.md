@@ -1,122 +1,138 @@
 ---
 id: commands-maintenance
-title: Maintenance Commands
+title: Maintenance
 ---
 
-## reg
+These commands manage code generation, localizations, and dependency configurations across modules (`modules/`) and applications (`apps/`) within your FSDA workspace.
+
+## Workspace Guard
+
+Must be executed inside an FSDA workspace root directory where `fsda.yaml` is present. If executed outside, the command will abort immediately with an error.
+
+## Options
+
+All maintenance commands accept a module target, an application target, or **both combined**:
+
+- `-m`, `--module <name>`: Targets a specific module inside the `modules/` directory.
+- `-a`, `--app <name>`: Targets a specific application inside the `apps/` directory.
+
+> **Note**: You must specify at least one target (`--module` or `--app`). Supplying both options will execute the command sequentially for both targets.
+
+## Rerun Behavior
+
+- **Repeatable & Safe**: Maintenance commands are completely safe to rerun at any time to re-trigger code generation, localization, or dependency refreshing.
+- **Target Validation**: If a targeted module or app directory does not exist on disk, the command halts execution immediately with an error and takes no action.
+- **Fail-Fast**: When targeting multiple items, if an error occurs during execution on any target, the command immediately halts and aborts the remaining pipeline.
+
+
+## drb
 
 ```bash
-fsda reg <module> [-f <feature>] -a <app> [--strict]
+# Target a module
+fsda drb --module <module>
+
+# Target an app
+fsda drb -a <app>
+
+# Target both simultaneously
+fsda drb -m <module> -a <app>
 ```
 
-Registers a module into an app wrapper and injects managed integration points.
+Executes code generation (`build_runner`) inside the targeted module(s) or app(s).
 
-What happens:
+### What Happens
+1. **Validates Options**: Ensures at least one target (`--module` or `--app`) is provided.
+2. **Directory Check**: Verifies that the target directories physically exist.
+3. **Executes Build Runner**: Runs the code generation command in sequence for each provided target:
 
-- Generates app-side module wrapper files in `apps/<app>/lib/modules/<module>`.
-- Injects managed snippets into app dependency, DI, route, l10n delegate, and failure mapping checkpoints.
-- Prints affected paths summary.
+   ```bash
+   dart run build_runner build --delete-conflicting-outputs --force-jit
+   ```
 
-If feature set, then only register that feature in the module to target app.
 
-## di
+## l10n
 
 ```bash
-fsda di <module> -a <app> [--strict]
+# Target a module
+fsda l10n --module <module>
+
+# Target an app
+fsda l10n -a <app>
+
+# Target both simultaneously
+fsda l10n -m <module> -a <app>
 ```
 
-Synchronizes feature DI registrations into the app module DI wrapper.
+Executes localization code generation (`flutter gen-l10n`) inside the targeted module(s) or app(s).
 
-What happens:
+### What Happens
+1. **Validates Options**: Ensures at least one target (`--module` or `--app`) is provided.
+2. **Directory Check**: Verifies that the target directories physically exist.
+3. **Executes Localization**: Runs the localization command in sequence for each provided target:
 
-- Scans all feature layers inside target module.
-- Appends only missing DI registrations and register-call invocations.
-- Preserves existing custom code.
+   ```bash
+   flutter gen-l10n
+   ```
 
-## rm-reg
-
-```bash
-fsda rm-reg <module> -a <app>
-```
-
-Removes module registration from target app and cleans managed snippets.
-
-## rm-feature
-
-```bash
-fsda rm-feature <feature> -m <module> [--hook-disabled]
-```
-
-Removes a feature folder and rolls back managed shared/l10n injections.
-
-What happens:
-
-- Deletes feature directory.
-- Removes feature export from module barrel.
-- Removes feature-prefix exception/failure/failure-x snippets.
-- Removes feature ARB keys (including paired metadata entries).
-- Runs post-hooks unless `--hook-disabled` is used.
-
-## cp-ui
-
-```bash
-fsda cp-ui <new_slice> -f <feature> -m <module> --from <from_slice>
-```
-
-Copies an existing UI slice flow into a new slice name for reuse with minor adjustments.
-
-What happens:
-
-- Copies only ui slice directory from `<from_slice>` to `<new_slice>`.
-- Skips generated files (`*.freezed.dart`, `*.g.dart`) to avoid stale generated artifacts.
-- Renames copied filenames and class symbols in copied UI files from source slice token to new slice token.
-- Duplicates related ui export lines in feature barrel when available.
-
-Notes:
-
-- Logic/domain/data files are not copied; copied UI stays reusable against existing resources.
-- Command aborts when target slice already exists to prevent overwrite.
-
-## refresh
-
-```bash
-fsda refresh <module>
-```
-
-Runs lightweight module codegen refresh hooks.
-
-What happens:
-
-- Targets module root `modules/<module>`.
-- Runs:
-  - `flutter gen-l10n`
-  - `dart run build_runner build --delete-conflicting-outputs --force-jit`
-
-Use this for fast sync after non-structural edits.
 
 ## rebuild
 
 ```bash
-fsda rebuild <module>
+# Target a module
+fsda rebuild --module <module>
+
+# Target an app
+fsda rebuild -a <app>
+
+# Target both simultaneously
+fsda rebuild -m <module> -a <app>
 ```
 
-Runs full module rebuild pipeline.
+Executes both `build_runner` and `flutter gen-l10n` sequentially inside the targeted module(s) or app(s).
 
-What happens:
+### What Happens
+1. **Validates Options**: Ensures at least one target (`--module` or `--app`) is provided.
+2. **Directory Check**: Verifies that the target directories physically exist.
+3. **Executes Pipeline**: Runs `build_runner` followed by `flutter gen-l10n` sequentially for each target.
 
-- Targets module root `modules/<module>`.
-- Runs:
-  - `flutter clean`
-  - `flutter pub get`
-  - `flutter gen-l10n`
-  - `dart run build_runner build --delete-conflicting-outputs --force-jit`
 
-Use this after heavy generator/refactor cycles or when module build state is stale.
+## refresh
+
+```bash
+# Target a module
+fsda refresh --module <module>
+
+# Target an app
+fsda refresh -a <app>
+
+# Target both simultaneously
+fsda refresh -m <module> -a <app>
+```
+
+Executes cleanup (`flutter clean`) and dependency refreshing (`flutter pub get`) sequentially.
+
+### What Happens
+1. **Validates Options**: Ensures at least one target (`--module` or `--app`) is provided.
+2. **Directory Check**: Verifies that the target directories physically exist.
+3. **Executes Cleanup & Fetch**: Runs `flutter clean` followed by `flutter pub get` sequentially for each target.
+
 
 ## fix-import
 
 ```bash
-fsda fix-import [-m <module>] [-a <app>]
+# Target a module
+fsda fix-import --module <module>
+
+# Target an app
+fsda fix-import -a <app>
+
+# Target both simultaneously
+fsda fix-import -m <module> -a <app>
 ```
 
-Runs import fixes and normalizes feature barrel export ordering by layer markers.
+Fixes and organizes imports automatically inside the targeted module(s) or app(s).
+
+### What Happens
+1. **Validates Options**: Ensures at least one target (`--module` or `--app`) is provided.
+2. **Directory Check**: Verifies that the target directory physically exists.
+3. **Executes Import Fix**: Runs the import resolution command (`dart fix --apply`) sequentially for each target provided.

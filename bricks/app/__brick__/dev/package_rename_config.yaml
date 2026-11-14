@@ -1,0 +1,31 @@
+package_rename_config:
+  android:
+    app_name: {{app_name}}
+    package_name: {{{org}}}.{{app}}
+    override_old_package: {{{org}}}.{{app}}
+    lang: kotlin
+
+  ios:
+    app_name: {{app_name}}
+    bundle_name: {{app}}
+    bundle_id: {{{org}}}.{{app}}
+
+  web:
+    app_name: {{app_name}}
+    description: {{app}}
+
+  linux:
+    app_name: {{app_name}}
+    package_name: {{{org}}}.{{app}}
+    exe_name: {{app}}-linux-x64
+
+  windows:
+    app_name: {{app_name}}
+    organization: {{org_name}}
+    copyright_notice: Copyright ©️ 2026 {{org_name}}. All rights reserved.
+    exe_name: {{app}}-win32
+
+  macos:
+    app_name: {{app_name}}
+    bundle_id: {{{org}}}.{{app}}
+    copyright_notice: Copyright ©️ 2026 {{org_name}}. All rights reserved.

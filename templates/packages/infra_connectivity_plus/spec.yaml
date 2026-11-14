@@ -7,7 +7,7 @@ dev_dependencies:
 
 core_di:
   import: |
-    "import 'package:infra_connectivity_plus/infra_connectivity_plus.dart';"
+    import 'package:infra_connectivity_plus/infra_connectivity_plus.dart';
   code: |
     sl.registerLazySingleton<NetworkInfo>(
       () => NetworkInfoImpl(connectivity: sl()),
@@ -15,7 +15,7 @@ core_di:
 
 external_di:
   import: |
-    "import 'package:connectivity_plus/connectivity_plus.dart';"
+    import 'package:connectivity_plus/connectivity_plus.dart';
   code: |
     sl.registerLazySingleton<Connectivity>(() => Connectivity());
 

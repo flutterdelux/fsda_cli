@@ -19,11 +19,7 @@ class AppRouter {
     redirect: _redirect,
     debugLogDiagnostics: false,
     errorBuilder: (context, state) => const NotFoundPage(),
-    routes: [
-      _mainRoute,
-      DashboardRoute.base,
-      // ...inject here
-    ],
+    routes: [_mainRoute, DashboardRoute.base],
   );
 
   FutureOr<String?> _redirect(BuildContext context, GoRouterState state) async {

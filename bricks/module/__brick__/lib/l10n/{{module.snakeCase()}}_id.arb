@@ -1,8 +1,13 @@
 {
   "@@locale": "id",
-  "{{module.camelCase()}}Label": "{{module.titleCase()}}",
-  "@failure{{module.pascalCase()}}NotFound": {
-    "description": "========================= Failure ========================="
+  "label": "{{module.titleCase()}}",
+  "@failureStartDivider": {
+    "description": "==================== Start: Failure ===================="
   },
-  "failure{{module.pascalCase()}}NotFound": "{{module.titleCase()}} tidak ditemukan"
+  "failureStartDivider": ".",
+  "failure{{module.pascalCase()}}NotFound": "{{module.titleCase()}} tidak ditemukan",
+  "failureEndDivider": ".",
+  "@failureEndDivider": {
+    "description": "==================== End: Failure ===================="
+  }
 }

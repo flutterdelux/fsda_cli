@@ -21,7 +21,7 @@ class HomePage extends StatelessWidget {
             ),
           ),
         ),
-        title: const Text('{{app.titleCase()}}'),
+        title: const Text('{{app_name}}'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.screen),

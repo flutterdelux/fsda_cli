@@ -1,147 +1,187 @@
 ---
 id: commands-input
-title: Input Commands
+title: Input
 ---
 
-Input commands generate reusable shared field widgets under feature `ui/shared/widgets` and update ARB keys.
-
-Each `input-*` command now targets exactly one field per run.
-
-Field argument format:
-
-- Preferred: positional `<field>`
-- Alternative: `--field <field>`
-
-## input-text
+## Input Generator Commands
 
 ```bash
-fsda input-text <field> -f <feature> -m <module> [--strict] [--hook-disabled]
+fsda input-<type> <field> -f <feature> -m <module> [options]
 ```
 
-String text field generation.
+Generates UI-layer input widget components tailored to the **Feature Slice Driven Architecture (FSDA)**. Each command automates field name validation, widget file scaffolding, automatic resolution and injection of custom data type imports, and module ARB localization entry injection.
 
-## input-text-area
+---
+
+## Supported Input Types & Sub-Commands
+
+### 1. `input-text`
+
+* **Description**: Generates a standard, pure text input field widget.
+* **Syntax**:
 
 ```bash
-fsda input-text-area <field> -f <feature> -m <module> [--min <min_lines>] [--max <max_lines>] [--strict] [--hook-disabled]
+fsda input-text <field> -f <feature> -m <module>
 ```
 
-Multiline text field generation (String-only by design) with configurable min/max lines.
+### 2. `input-text-area`
 
-## input-number
+* **Description**: Generates a multi-line text input field widget.
+* **Syntax**:
 
 ```bash
-fsda input-number <field> -f <feature> -m <module> [--type <numeric_type>] [--strict] [--hook-disabled]
+fsda input-text-area <field> -f <feature> -m <module> [--min <int>] [--max <int>]
 ```
 
-Numeric text field generation.
+* **Options**: Supports `--min` and `--max` line configurations (default: `3`).
 
-Rules:
+### 3. `input-switch`
 
-- Supported `--type`: `int`, `double`, `num`, `BigInt`
-- Default type: `double`
-
-## input-qty
+* **Description**: Generates a boolean switch input widget.
+* **Syntax**:
 
 ```bash
-fsda input-qty <field> -f <feature> -m <module> [--strict] [--hook-disabled]
+fsda input-switch <field> -f <feature> -m <module>
 ```
 
-Quantity field generation with increment/decrement controls.
+### 4. `input-password`
 
-## input-dropdown
+* **Description**: Generates a secure password input field widget.
+* **Syntax**:
 
 ```bash
-fsda input-dropdown <field> -f <feature> -m <module> --type <value_type> [--strict] [--hook-disabled]
+fsda input-password <field> -f <feature> -m <module>
 ```
 
-Typed dropdown field generation.
+* **Details**: Includes a built-in stateful visibility toggle (*eye icon*) for obscuring and revealing text.
 
-Notes:
+### 5. `input-qty`
 
-- `--type` accepts Dart type (for example `String`, `ProductCategoryEntity`) or snake_case alias (for example `product_category_entity`).
-- Snake_case aliases must be the complete generated artifact name, including `_entity` or `_dto` where applicable.
-- Generated widget exposes optional `itemLabelBuilder` callback and falls back to `item.toString()`.
-
-## input-dropdown-enum
+* **Description**: Generates a numeric quantity input field widget.
+* **Syntax**:
 
 ```bash
-fsda input-dropdown-enum <field> -f <feature> -m <module> --type <enum_type> [--strict] [--hook-disabled]
+fsda input-qty <field> -f <feature> -m <module>
 ```
 
-Enum-backed dropdown generation with localization extension support.
+* **Details**: Includes action buttons for incrementing (`+`) and decrementing (`-`) the value.
 
-Notes:
+### 6. `input-number`
 
-- `--type` must be the complete snake_case enum name (for example `product_status`), matching `domain/enums/product_status.dart`.
-- Generated widget builds entries from `<EnumType>.values`.
-
-## input-selector
+* **Description**: Generates a numeric number input field widget with type-specific keyboard configurations and input formatters.
+* **Syntax**:
 
 ```bash
-fsda input-selector <field> -f <feature> -m <module> --type <entity_type> [--strict] [--hook-disabled]
+fsda input-number <field> -f <feature> -m <module> [--type <type>]
 ```
 
-Selector field wrapper for entity-style selection flows.
+* **Details**: Automatically adjusts numeric keyboards and text formatters based on the data type (`int`, `double`). Defaults to `int` if omitted.
 
-Generated selector widget now uses `onSelect(currentSelected)` callback contract and can emit selected value updates via `onSelected`.
+### 7. `input-image`
 
-Notes:
-
-- `--type` must be the complete snake_case Entity name ending in `_entity` (for example `product_category_entity`).
-- Command expects the exact generated entity file at `domain/entities/<entity_type>.dart`.
-
-## input-selector-list
+* **Description**: Generates an image file picker input widget.
+* **Syntax**:
 
 ```bash
-fsda input-selector-list <field> -f <feature> -m <module> --type <entity_type> [--strict] [--hook-disabled]
+fsda input-image <field> -f <feature> -m <module> [--type <type>]
 ```
 
-Selector-list field wrapper for multi-entity selection flows.
+* **Details**: Defaults to `NetworkFile` if the `--type` option is omitted.
 
-Notes:
+### 8. `input-dropdown`
 
-- `--type` must be the complete snake_case Entity name ending in `_entity` (for example `product_category_entity`).
-- Command expects the exact generated entity file at `domain/entities/<entity_type>.dart`.
-
-## input-image
+* **Description**: Generates a generic item dropdown input widget.
+* **Syntax**:
 
 ```bash
-fsda input-image <field> -f <feature> -m <module> --type <value_type> [--strict] [--hook-disabled]
+fsda input-dropdown <field> -f <feature> -m <module> --type <type>
 ```
 
-Image selector/preview field generation.
+* **Requirement**: The `--type` option is **required**.
+* **Reminder**: Displays a terminal notice upon generation reminding developers to adapt the data source items accordingly.
 
-Generated image selector widget now uses `onSelect(currentSelected)` callback contract and can emit selected value updates via `onSelected`.
+### 9. `input-dropdown-enum`
 
-Notes:
-
-- `--type` is required.
-- Use the complete snake_case value name: `network_file` or Entity name ending in `_entity` (`product_image_entity`).
-- For Entity values, command expects the exact generated file at `domain/entities/<value_type>.dart`.
-
-## input-switch
+* **Description**: Generates an enum-backed dropdown input widget.
+* **Syntax**:
 
 ```bash
-fsda input-switch <field> -f <feature> -m <module> [--strict] [--hook-disabled]
+fsda input-dropdown-enum <field> -f <feature> -m <module> --type <type>
 ```
 
-Readonly switch field generation.
+* **Requirement**: The `--type` option is **required**.
 
-## input-password
+### 10. `input-selector`
+
+* **Description**: Generates a custom selection input widget (supports both single object and list modes).
+* **Syntax**:
 
 ```bash
-fsda input-password <field> -f <feature> -m <module> [--strict] [--hook-disabled]
+fsda input-selector <field> -f <feature> -m <module> --type <type> [--list]
 ```
 
-Password field generation with visibility toggle.
+* **Requirement**: The `--type` option is **required**.
+* **Flag**: Use the `--list` flag to generate a multiple-selection/list-based selector widget.
 
-## Shared Behavior
+---
 
-- All input commands generate shared widget files:
-  - `ui/shared/widgets/<feature>_<field>_field.dart`
-- ARB keys are injected by field type profile (label/hint/invalid or equivalent toggle keys).
-- `ui-form` and `ui-form-dialog` no longer require `resolveEntries` callbacks for dropdown and dropdown-enum fields.
-- `ui-form` and `ui-form-dialog` auto-import required value types (Entity/Dto/Enum/NetworkFile) based on `--fields` types.
-- `--strict` fails on unsafe overwrite/injection states.
-- `--hook-disabled` skips post-hooks and prints manual next steps.
+## Naming Constraints & Validation
+
+* **Field Format**: The `<field>` positional argument must strictly adhere to the standard field naming rules (`Rules.fieldNameRegExp`).
+* **Fail-Fast**: If required arguments are missing, formatting fails, or the target widget file already exists, execution halts immediately with a usage or conflict error.
+
+#### Examples
+
+```bash
+# Generate a standard text input
+fsda input-text username -f profile -m user
+
+# Generate a number input (default int)
+fsda input-number age -f profile -m user
+
+# Generate a decimal number input
+fsda input-number price -f product -m catalog --type double
+
+# Generate a text area with custom line constraints
+fsda input-text-area address -f shipping -m order --min 2 --max 4
+
+# Generate a dropdown with a custom model type
+fsda input-dropdown category -f product -m catalog --type CategoryModel
+
+# Generate a list-based selector for multiple items
+fsda input-selector tags -f article -m blog --type TagModel --list
+
+```
+
+---
+
+## Options
+
+* `-f`, `--feature <name>`: **(Required)** Target feature name under `lib/src/features/`.
+* `-m`, `--module <name>`: **(Required)** Target module name under `modules/`.
+* `--type <type>`: *(Required for `input-dropdown`, `input-dropdown-enum`, `input-selector`; optional for `input-image`, `input-number`)* Specifies the underlying object, item, or numeric type of the input (default for `input-number`: `int`).
+* `--min <int>`: *(Optional)* Minimum line count for `input-text-area` (default: `3`).
+* `--max <int>`: *(Optional)* Maximum line count for `input-text-area` (default: `3`).
+* `--list`: *(Optional)* Flag dedicated to `input-selector` to switch template generation to a list/multiple selection layout.
+
+---
+
+## Workspace Guard
+
+Must be executed inside an FSDA workspace root directory where `fsda.yaml` is present. If executed outside, the command aborts immediately.
+
+---
+
+## What Happens
+
+1. **Input Validation & Gate**: Employs the `InputGateCommand` and `InputGateParam` architectural wrapper to validate positional field arguments, check regex patterns, and confirm file absence.
+2. **Widget Scaffolding**: Writes the appropriate widget template content to `lib/src/ui/features/<feature>/widgets/<feature>_<field>_field.dart`.
+3. **Automatic Import Resolution**: Identifies specialized custom types (via `--type`) using `_importResolverService`, automatically injecting the correct `import` statements into the widget file.
+4. **ARB Localization Injection**: Automatically inserts localization entries (labels, hints, validation keys) into the module's ARB files right before the feature's end divider marker (`<feature>EndDivider`).
+5. **Unified Operation Report**: Displays a clean progress summary in the terminal followed by a detailed operation report.
+
+---
+
+## Rerun Behavior
+
+* If the target widget file already exists on disk, the command halts execution immediately with an error and leaves existing files untouched.

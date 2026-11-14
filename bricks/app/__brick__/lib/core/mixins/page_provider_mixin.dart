@@ -1,22 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
+import 'package:provider/single_child_widget.dart';
 
-/// A mixin that provides a convenient method to build a page with multiple BlocProviders.
-/// This mixin can be used in any page that requires multiple BlocProviders to manage its state.
+/// A mixin that provides a convenient method to build a page with multiple Providers.
 mixin PageProviderMixin {
   Widget buildPage({
-    required List<BlocProvider> providers,
-    required List<BlocListener> listeners,
+    required List<SingleChildWidget> providers,
     required WidgetBuilder builder,
   }) {
-    return MultiBlocProvider(
+    return MultiProvider(
       providers: providers,
-      child: listeners.isNotEmpty
-          ? MultiBlocListener(
-              listeners: listeners,
-              child: Builder(builder: builder),
-            )
-          : Builder(builder: builder),
+      child: Builder(builder: builder),
     );
   }
 }

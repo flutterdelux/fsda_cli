@@ -78,20 +78,12 @@ const config: Config = {
           title: 'Documentation',
           items: [
             {
-              label: 'Overview',
-              to: '/docs/overview',
-            },
-            {
-              label: 'Installation',
-              to: '/docs/installation',
+              label: 'Getting Started',
+              to: '/docs/getting-started',
             },
             {
               label: 'Commands',
               to: '/docs/commands',
-            },
-            {
-              label: 'Workflow',
-              to: '/docs/workflow',
             },
           ],
         },
