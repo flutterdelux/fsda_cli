@@ -127,6 +127,7 @@ class $className extends StatelessWidget {
       content:
           '''
 import 'package:app_ui/app_ui.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import 'parts/${ui.featureSnake}_${ui.sliceSnake}_item.dart';
@@ -187,26 +188,36 @@ class $stateClassName extends State<$className> {
   Widget build(BuildContext context) {
     return RefreshIndicator.adaptive(
       onRefresh: widget.onPullRefresh,
-      child: ListView.separated(
-        controller: _scrollController,
-        itemCount: widget.data.length,
-        padding: const EdgeInsets.only(bottom: 80),
-        separatorBuilder: (context, index) => const Divider(),
-        itemBuilder: (context, index) {
-          final item = widget.data[index];
-          final tile = $itemClassName(
-            item: item,
-            index: index,
-            onTap: () => widget.onItemTap.call(item),
-          );
-          if (index == widget.data.length - 1) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [tile, if (widget.isLoadingMore) const AppLoading()],
+      child: ScrollConfiguration(
+        behavior: const ScrollBehavior().copyWith(
+          dragDevices: {
+            PointerDeviceKind.touch,
+            PointerDeviceKind.mouse,
+            PointerDeviceKind.trackpad,
+            PointerDeviceKind.stylus,
+          },
+        ),
+        child: ListView.separated(
+          controller: _scrollController,
+          itemCount: widget.data.length,
+          padding: const EdgeInsets.only(bottom: 80),
+          separatorBuilder: (context, index) => const Divider(),
+          itemBuilder: (context, index) {
+            final item = widget.data[index];
+            final tile = $itemClassName(
+              item: item,
+              index: index,
+              onTap: () => widget.onItemTap.call(item),
             );
-          }
-          return tile;
-        },
+            if (index == widget.data.length - 1) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [tile, if (widget.isLoadingMore) const AppLoading()],
+              );
+            }
+            return tile;
+          },
+        ),
       ),
     );
   }

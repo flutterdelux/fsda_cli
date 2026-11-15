@@ -202,6 +202,7 @@ class $className extends StatelessWidget {
       content:
           '''
 import 'package:app_ui/app_ui.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import 'parts/${ui.featureSnake}_${ui.sliceSnake}_item.dart';
@@ -222,18 +223,28 @@ class $className extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: height,
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-        scrollDirection: Axis.horizontal,
-        itemCount: data.length,
-        separatorBuilder: (context, index) => AppGap.md,
-        itemBuilder: (context, index) {
-          final item = data[index];
-          return $itemClassName(
-            item: item,
-            onTap: () => onItemTap(item),
-          );
-        },
+      child: ScrollConfiguration(
+        behavior: const ScrollBehavior().copyWith(
+          dragDevices: {
+            PointerDeviceKind.touch,
+            PointerDeviceKind.mouse,
+            PointerDeviceKind.trackpad,
+            PointerDeviceKind.stylus,
+          },
+        ),
+        child: ListView.separated(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          scrollDirection: Axis.horizontal,
+          itemCount: data.length,
+          separatorBuilder: (context, index) => AppGap.md,
+          itemBuilder: (context, index) {
+            final item = data[index];
+            return $itemClassName(
+              item: item,
+              onTap: () => onItemTap(item),
+            );
+          },
+        ),
       ),
     );
   }
