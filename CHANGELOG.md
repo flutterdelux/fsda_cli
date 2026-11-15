@@ -1,5 +1,29 @@
 ## 2.0.0-dev.1
 
+### Breaking changes
+
+- The CLI command surface has been redesigned; v1.1.0 scripts are not fully compatible:
+    - `gen-slice` and `regen-feature` have been removed. Generate logic with `gen-logic` / `gen-logic-flow`, data-to-domain operations with `gen-sequence`, and presentation separately with `gen-ui*`.
+    - The v1 dedicated `ui-*` commands and generic `gen-ui -u <ui_code>` interface have been replaced by `gen-ui`, `gen-ui-form`, `gen-ui-lsh`, `gen-ui-lsv`, and `gen-ui-pag`; the old UI variants do not all have one-to-one replacements. Form fields now use repeatable `--field "input_type:value_type:field_name[:default]"` options and require a model; update old `--fields` invocations.
+    - The former `compose-main`, `compose-pmi`, `compose-sec`, `compose-action`, and `compose-form-dialog` modes are no longer available. Use `compose-r`, `compose-m`, `compose-pag`, or `compose-form` with the new `--logic-flow`, `--ui` / `--logic`, and `--target` arguments as applicable.
+    - Compose commands now generate the target app artifact only; they do not synchronize module routes. Add or update route wiring in the app yourself.
+    - `reg` is replaced by `reg-module`, with `reg-feature` for feature registration. The old `di` and `rm-reg` commands are no longer registered.
+    - Package commands moved from `list-pckg` / `add-pckg` to `pkg list` / `pkg add`; `pkg get` replaces the old workspace `configure` sync command, and `pkg rm` is also available.
+
+### Added
+
+- Added model generation and removal with `gen-model` / `rm-model` for entity, DTO, param, request, and response types. Generation supports paired entity+DTO and param+request output, automatic import resolution, barrel exports, and optional entity localization.
+- Added `gen-sequence` / `rm-sequence` to create or remove a complete use-case, repository, and data-source operation, including method wiring and localization updates.
+- Added separate `gen-logic` and `gen-logic-flow` generators, with state-control options for supported state-management approaches.
+- Added dedicated `ds-remote`, `ds-local`, `gen-failure`, and `input-*` generators for data sources, failure contracts, and reusable input widgets with type imports and localization entries.
+- Added module/app-scoped maintenance commands: `drb`, `l10n`, `rebuild`, `refresh`, and `fix-import`.
+- Expanded bundled package templates with responsive helpers and breakpoints, `NetworkFile` support, additional UI components, and a Dio authentication interceptor.
+
+### Changed
+
+- Workspace package management now synchronizes selected bundled packages with `fsda.yaml` and the workspace package directory through `pkg` commands.
+- Generation commands use layer-specific inputs and validate names, required models, and target artifacts before writing; generated model/UI artifacts also resolve imports and update exports/localization where applicable.
+
 
 ## 1.1.0
 
