@@ -6,7 +6,7 @@
 
 
 # Hasil kompilasi / binary build (SANGAT PENTING)
-build/
+/build/
 
 # IDE & Editor Settings (agar settingan laptopmu tidak terbawa)
 .idea/
@@ -24,7 +24,7 @@ ehthumbs.db
 *.log
 
 # Local docs
-docs/
+/docs/
 
 # Coverage testing reports
-coverage/
+/coverage/

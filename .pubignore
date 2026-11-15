@@ -1,20 +1,20 @@
 # Documentation and site artifacts
-website/
-docs/
+/website/
+/docs/
 
 # Generated local binary artifacts
-build/
+/build/
 
 # Coverage testing reports
-coverage/
+/coverage/
 
 # Maintainer/dev-only scaffolding sources
-bricks/
-templates/
-tool/
+/bricks/
+/templates/
+/tool/
 
 # CI and repository metadata
-.github/
+/.github/
 
 # Local/temporary editor files
 .DS_Store

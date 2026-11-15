@@ -1,3 +1,10 @@
+## 2.0.0-dev.2
+
+### Fix
+
+- Include `lib/infrastructure/templates/` files in the published package archive by scoping root `/templates/` in `.pubignore`.
+
+
 ## 2.0.0-dev.1
 
 ### Breaking changes
