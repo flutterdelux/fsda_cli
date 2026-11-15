@@ -120,4 +120,4 @@ import 'package:app_core/app_core.dart';
 ...
 ```
 
-<img src="/fsda_cli/images/travelkan.png" alt="TravelKan" width="30%" />
+<img src="/fsda_cli/images/travelkan.png" alt="TravelKan" width="100%" />
