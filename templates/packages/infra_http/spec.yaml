@@ -15,6 +15,7 @@ core_di:
       () => HttpApiClient(
         client: sl(),
         baseUrl: FDeluxMockConfig.baseUrl,
+        enableLog: true,
         requestTimeout: NetworkTimeoutConfig.requestTimeout,
         streamConnectionTimeout: NetworkTimeoutConfig.streamConnectionTimeout,
       ),

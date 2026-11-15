@@ -15,6 +15,7 @@ core_di:
       () => DioApiClient(
         dio: sl(),
         baseUrl: FDeluxMockConfig.baseUrl,
+        enableLog: true,
         connectTimeout: NetworkTimeoutConfig.connectTimeout,
         sendTimeout: NetworkTimeoutConfig.sendTimeout,
         receiveTimeout: NetworkTimeoutConfig.receiveTimeout,
