@@ -72,7 +72,7 @@ class RegFeatureService {
     // Inspect Datasources (mengambil dari folder data/datasources, termasuk file _impl.dart jika ada)
     final dsPath = p.join(param.featurePath!, 'data', 'datasources');
     if (await _directoryService.exists(dsPath)) {
-      final files = await _directoryService.listFilePaths(
+      final files = await _directoryService.listPaths(
         dirPath: dsPath,
         where: (fileSystem, isFile) {
           return isFile && fileSystem.path.endsWith('.dart');
@@ -101,7 +101,7 @@ class RegFeatureService {
     // Inspect Repositories (mencari file _impl.dart atau file di repositories)
     final repoPath = p.join(param.featurePath!, 'data', 'repositories');
     if (await _directoryService.exists(repoPath)) {
-      final files = await _directoryService.listFilePaths(
+      final files = await _directoryService.listPaths(
         dirPath: repoPath,
         where: (fileSystem, isFile) =>
             isFile && fileSystem.path.endsWith('.dart'),
@@ -127,7 +127,7 @@ class RegFeatureService {
     // Inspect UseCases (domain/usecases)
     final ucPath = p.join(param.featurePath!, 'domain', 'usecases');
     if (await _directoryService.exists(ucPath)) {
-      final files = await _directoryService.listFilePaths(
+      final files = await _directoryService.listPaths(
         dirPath: ucPath,
         where: (fileSystem, isFile) =>
             isFile && fileSystem.path.endsWith('.dart'),
@@ -156,14 +156,14 @@ class RegFeatureService {
 
     if (await _directoryService.exists(logicPath)) {
       // 1. Ambil semua sub-folder (slice categories) di dalam folder logic
-      final sliceDirs = await _directoryService.listFilePaths(
+      final sliceDirs = await _directoryService.listPaths(
         dirPath: logicPath,
         where: (fileSystem, isFile) => !isFile,
       );
 
       for (final sliceDir in sliceDirs) {
         // 2. List file-file di dalam sub-folder slice tersebut
-        final files = await _directoryService.listFilePaths(
+        final files = await _directoryService.listPaths(
           dirPath: sliceDir,
           where: (fileSystem, isFile) {
             return isFile &&

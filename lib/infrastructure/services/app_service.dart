@@ -1,4 +1,3 @@
-import 'package:mason/mason.dart';
 import 'package:path/path.dart' as p;
 
 import '../../domain/models/config_model.dart';
@@ -7,6 +6,7 @@ import '../bundles/app_bundle.dart';
 import 'helpers/config_service.dart';
 import 'helpers/directory_service.dart';
 import 'helpers/file_service.dart';
+import 'helpers/mason_generator_service.dart';
 import 'helpers/operation_report_service.dart';
 import 'helpers/process_service.dart';
 
@@ -16,6 +16,7 @@ class AppService {
   final OperationReportService _reportService;
   final DirectoryService _directoryService;
   final FileService _fileService;
+  final MasonGeneratorService _generatorService;
 
   static const _dependencies = [
     'logging',
@@ -41,11 +42,13 @@ class AppService {
     required OperationReportService reportService,
     required DirectoryService directoryService,
     required FileService fileService,
+    required MasonGeneratorService generatorService,
   }) : _configService = configService,
        _processService = processService,
        _reportService = reportService,
        _directoryService = directoryService,
-       _fileService = fileService;
+       _fileService = fileService,
+       _generatorService = generatorService;
 
   Future<void> generateApp({
     required AppParam app,
@@ -60,8 +63,19 @@ class AppService {
     onProgress('Cleaning up default test directory...');
     await _deleteTestDir(app);
 
-    onProgress('Generating and overwriting files from app bundle...');
-    await _overwriteAppTemplate(app, config);
+    onProgress('Copying app bundle...');
+    await _generatorService.generate(
+      bundle: appBundle,
+      targetPath: app.projectPath,
+      vars: {
+        'app': app.projectName,
+        'app_name': app.appName,
+        'org': app.org,
+        'org_name': app.orgName,
+        'dart_sdk': config.sdkVersion,
+        'android_min_sdk': config.android.minSdk,
+      },
+    );
 
     onProgress('Configuring Android SDK versions in build.gradle.kts...');
     await _updateAndroidGradle(app, config);
@@ -87,42 +101,6 @@ class AppService {
     if (await _directoryService.exists(testPath)) {
       await _directoryService.delete(testPath);
       _reportService.addRemoved(testPath);
-    }
-  }
-
-  Future<void> _overwriteAppTemplate(AppParam app, ConfigModel config) async {
-    try {
-      final generator = await MasonGenerator.fromBundle(appBundle);
-      final generatedFiles = await generator.generate(
-        DirectoryGeneratorTarget(_directoryService.dirOf(app.projectPath)),
-        vars: {
-          'app': app.projectName,
-          'app_name': app.appName,
-          'org': app.org,
-          'org_name': app.orgName,
-          'dart_sdk': config.sdkVersion,
-          'android_min_sdk': config.android.minSdk,
-        },
-      );
-
-      for (final file in generatedFiles) {
-        final filePath = file.path;
-
-        if (filePath.endsWith('.freezed.dart') ||
-            filePath.endsWith('.g.dart')) {
-          continue;
-        }
-
-        if (filePath.endsWith('.gitkeep')) {
-          final folderPath = p.dirname(filePath);
-          _reportService.addCreated(folderPath);
-          continue;
-        }
-
-        _reportService.addCreated(filePath);
-      }
-    } catch (e) {
-      throw Exception('Failed to generate app files from bundle: $e');
     }
   }
 

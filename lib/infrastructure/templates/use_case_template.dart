@@ -63,7 +63,7 @@ String _buildExtensUseCase({
   return switch (flow) {
     .asynchronous =>
       entity != null && param != null
-          ? 'ReturnParamUseCase<$entityOrWithList,$paramPascal>'
+          ? 'ReturnParamUseCase<$entityOrWithList, $paramPascal>'
           : entity != null
           ? 'ReturnUseCase<$entityOrWithList>'
           : param != null
@@ -71,7 +71,7 @@ String _buildExtensUseCase({
           : 'VoidUseCase',
     .synchronous =>
       entity != null && param != null
-          ? 'ReturnParamSyncUseCase<$entityOrWithList,$paramPascal>'
+          ? 'ReturnParamSyncUseCase<$entityOrWithList, $paramPascal>'
           : entity != null
           ? 'ReturnSyncUseCase<$entityOrWithList>'
           : param != null
@@ -79,7 +79,7 @@ String _buildExtensUseCase({
           : 'VoidSyncUseCase',
     .stream =>
       entity != null && param != null
-          ? 'ReturnParamStreamUseCase<$entityOrWithList,$paramPascal>'
+          ? 'ReturnParamStreamUseCase<$entityOrWithList, $paramPascal>'
           : entity != null
           ? 'ReturnStreamUseCase<$entityOrWithList>'
           : param != null

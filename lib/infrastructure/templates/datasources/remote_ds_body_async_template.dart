@@ -8,10 +8,7 @@ abstract final class RemoteDsBodyAsyncTemplate {
     if (sequence.isReturnParam) return _asyncReturnParam(sequence);
     if (sequence.isReturn) return _asyncReturn(sequence);
     if (sequence.isParam) return _asyncParam(sequence);
-    if (sequence.isVoid) return _asyncVoid(sequence);
-    throw Exception(
-      'Model combination not valid: Available combination for async: Return+Param, Return, Param, Void',
-    );
+    return _asyncVoid(sequence);
   }
 }
 

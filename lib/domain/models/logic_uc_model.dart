@@ -5,7 +5,7 @@ class LogicUcModel {
   final String path;
   final UcType type;
 
-  /// Method from UseCAse VST already in camel case format
+  /// Method from UseCAse VST already in camel case format. method repo.
   final String method;
   final String?
   returnType; // include List if exist e.g List<entity> also include ? if exists

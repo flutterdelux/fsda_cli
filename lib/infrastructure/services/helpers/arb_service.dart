@@ -115,7 +115,7 @@ class ArbService {
   }
 
   Future<List<String>> getArbPaths(String modulePath) async {
-    return await _directoryService.listFilePaths(
+    return await _directoryService.listPaths(
       dirPath: p.join(modulePath, 'lib', 'l10n'),
       where: (fileSystem, isFile) => isFile && fileSystem.path.endsWith('.arb'),
     );

@@ -74,7 +74,7 @@ void main() {
         () => mockImportResolverService.resolve(
           rawTypes: any(named: 'rawTypes'),
           targetFilePath: any(named: 'targetFilePath'),
-          featurePath: any(named: 'featurePath'),
+          modulePath: any(named: 'modulePath'),
         ),
       ).thenAnswer((_) async => resolvedImports ?? <String>{});
       when(

@@ -4,6 +4,7 @@
 .packages
 .pub/
 
+
 # Hasil kompilasi / binary build (SANGAT PENTING)
 build/
 
@@ -22,4 +23,8 @@ ehthumbs.db
 # Log files
 *.log
 
-/docs/
+# Local docs
+docs/
+
+# Coverage testing reports
+coverage/

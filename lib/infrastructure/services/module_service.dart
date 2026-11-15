@@ -1,19 +1,21 @@
-import 'package:mason/mason.dart';
-import 'package:path/path.dart' as p;
-
-import '../../domain/models/config_model.dart';
 import '../../domain/params/module_param.dart';
 import '../bundles/module_bundle.dart';
 import 'helpers/config_service.dart';
 import 'helpers/directory_service.dart';
+import 'helpers/mason_generator_service.dart';
 import 'helpers/operation_report_service.dart';
 import 'helpers/process_service.dart';
+import 'maintenance/build_runner_service.dart';
+import 'maintenance/l10n_service.dart';
 
 class ModuleService {
   final ConfigService _configService;
   final ProcessService _processService;
   final OperationReportService _reportService;
   final DirectoryService _directoryService;
+  final BuildRunnerService _buildRunnerService;
+  final L10nService _l10nService;
+  final MasonGeneratorService _generatorService;
 
   static const _dependencies = [
     'freezed_annotation',
@@ -36,10 +38,16 @@ class ModuleService {
     required ProcessService processService,
     required OperationReportService reportService,
     required DirectoryService directoryService,
+    required BuildRunnerService buildRunnerService,
+    required L10nService l10nService,
+    required MasonGeneratorService masonGeneratorService,
   }) : _configService = configService,
        _processService = processService,
        _reportService = reportService,
-       _directoryService = directoryService;
+       _directoryService = directoryService,
+       _buildRunnerService = buildRunnerService,
+       _l10nService = l10nService,
+       _generatorService = masonGeneratorService;
 
   Future<void> generate({
     required ModuleParam module,
@@ -52,10 +60,23 @@ class ModuleService {
     await _createModuleDirectory(module);
 
     onProgress('Copying module bundle...');
-    await _copyModuleBundle(module, config);
+    await _generatorService.generate(
+      bundle: moduleBundle,
+      targetPath: module.path,
+      vars: {'module': module.name, 'dart_sdk': config.sdkVersion},
+    );
 
     onProgress('Installing package dependencies...');
     await _installDependencies(module);
+
+    onProgress('Generating module builder...');
+    await _buildRunnerService.runBuildRunner(
+      module.path,
+      onProgress: onProgress,
+    );
+
+    onProgress('Generating module locatization...');
+    await _l10nService.runL10n(module.path, onProgress: onProgress);
   }
 
   // ================== Generation Helper ==================
@@ -63,34 +84,6 @@ class ModuleService {
   Future<void> _createModuleDirectory(ModuleParam module) async {
     await _directoryService.create(module.path);
     _reportService.addCreated(module.path);
-  }
-
-  Future<void> _copyModuleBundle(ModuleParam module, ConfigModel config) async {
-    try {
-      final generator = await MasonGenerator.fromBundle(moduleBundle);
-      final generatedFiles = await generator.generate(
-        DirectoryGeneratorTarget(_directoryService.dirOf(module.path)),
-        vars: {'module': module.name, 'dart_sdk': config.sdkVersion},
-      );
-      for (final file in generatedFiles) {
-        final filePath = file.path;
-
-        if (filePath.endsWith('.freezed.dart') ||
-            filePath.endsWith('.g.dart')) {
-          continue;
-        }
-
-        if (filePath.endsWith('.gitkeep')) {
-          final folderPath = p.dirname(filePath);
-          _reportService.addCreated(folderPath);
-          continue;
-        }
-
-        _reportService.addCreated(filePath);
-      }
-    } catch (e) {
-      throw Exception('Failed to generate module files: $e');
-    }
   }
 
   Future<void> _installDependencies(ModuleParam module) async {

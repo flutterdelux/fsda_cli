@@ -29,7 +29,6 @@ class MockImportService extends Mock implements ImportService {}
 class MockImportResolverService extends Mock implements ImportResolverService {}
 
 void main() {
-  late SequenceService sequenceService;
   late MockOperationReportService mockReportService;
   late MockFileService mockFileService;
   late MockArbService mockArbService;
@@ -37,6 +36,7 @@ void main() {
   late MockMethodService mockMethodService;
   late MockImportService mockImportService;
   late MockImportResolverService mockImportResolverService;
+  late SequenceService sequenceService;
 
   setUp(() {
     mockReportService = MockOperationReportService();
@@ -58,94 +58,206 @@ void main() {
     );
   });
 
-  group('SequenceService Tests', () {
-    const sequenceParam = SequenceParam(
+  group('SequenceService', () {
+    const tSequenceParam = SequenceParam(
       action: Action.post,
-      usecase: 'LoginUser',
-      usecasePath: '/usecase.dart',
-      method: 'login',
-      featureName: 'auth',
-      featurePath: '/modules/auth/lib/src/features/auth',
-      moduleName: 'auth',
-      modulePath: '/modules/auth',
+      usecase: 'create_task',
+      usecasePath:
+          '/workspace/modules/todo/lib/src/features/task/domain/usecases/create_task_usecase.dart',
+      method: 'createTask',
       flow: FlowType.asynchronous,
       dsMode: DsMode.remote,
+      featureName: 'task',
+      featurePath: '/workspace/modules/todo/lib/src/features/task',
+      moduleName: 'todo',
+      modulePath: '/workspace/modules/todo',
     );
 
-    test('generate and remove sequences should execute successfully', () async {
-      when(
-        () => mockMethodService.injectToClass(
-          path: any(named: 'path'),
-          methodCode: any(named: 'methodCode'),
-        ),
-      ).thenAnswer((_) async => {});
-      when(
-        () => mockImportService.injectImport(
-          path: any(named: 'path'),
-          imports: any(named: 'imports'),
-        ),
-      ).thenAnswer((_) async => {});
-      when(
-        () => mockFileService.writeAsString(
-          path: any(named: 'path'),
-          content: any(named: 'content'),
-        ),
-      ).thenAnswer((_) async => {});
-      when(
-        () => mockExportService.inject(
-          barrelPath: any(named: 'barrelPath'),
-          exportLines: any(named: 'exportLines'),
-          checkpoint: any(named: 'checkpoint'),
-        ),
-      ).thenAnswer((_) async => {});
-      when(
-        () => mockArbService.getArbPaths(any()),
-      ).thenAnswer((_) async => ['/modules/auth/lib/l10n/app_en.arb']);
-      when(
-        () => mockArbService.injectEntriesBeforeKey(
-          arbPath: any(named: 'arbPath'),
-          arbEntries: any(named: 'arbEntries'),
-          endKey: any(named: 'endKey'),
-        ),
-      ).thenAnswer((_) async => {});
-      when(
-        () => mockMethodService.unjectFromClass(
-          path: any(named: 'path'),
-          methodName: any(named: 'methodName'),
-        ),
-      ).thenAnswer((_) async => {});
-      when(() => mockFileService.exists(any())).thenAnswer((_) async => true);
-      when(() => mockFileService.delete(any())).thenAnswer((_) async => {});
-      when(
-        () => mockExportService.unject(
-          barrelPath: any(named: 'barrelPath'),
-          exportLines: any(named: 'exportLines'),
-        ),
-      ).thenAnswer((_) async => {});
-      when(
-        () => mockArbService.unjectEntries(
-          arbPath: any(named: 'arbPath'),
-          arbEntries: any(named: 'arbEntries'),
-        ),
-      ).thenAnswer((_) async => {});
-      when(() => mockReportService.addCreated(any())).thenReturn(null);
-      when(() => mockReportService.addInjected(any())).thenReturn(null);
-      when(() => mockReportService.addRemoved(any())).thenReturn(null);
-      when(() => mockReportService.addUnjected(any())).thenReturn(null);
+    group('generate', () {
+      test(
+        'Given valid SequenceParam with remote ds mode, '
+        'When generate is called, '
+        'Then it executes all datasource, repository, usecase injections and reports progress successfully',
+        () async {
+          // Arrange (Given)
+          final progressLogs = <String>[];
 
-      final progressLogs = <String>[];
-      await sequenceService.generate(
-        sequence: sequenceParam,
-        onProgress: (msg) => progressLogs.add(msg),
-      );
-      expect(progressLogs, isNotEmpty);
+          when(
+            () => mockMethodService.injectToClass(
+              path: any(named: 'path'),
+              methodCode: any(named: 'methodCode'),
+            ),
+          ).thenAnswer((_) async {});
 
-      final removeLogs = <String>[];
-      await sequenceService.remove(
-        sequence: sequenceParam,
-        onProgress: (msg) => removeLogs.add(msg),
+          when(() => mockReportService.addInjected(any())).thenReturn(null);
+          when(() => mockReportService.addCreated(any())).thenReturn(null);
+
+          when(
+            () => mockImportResolverService.resolve(
+              rawTypes: any(named: 'rawTypes'),
+              targetFilePath: any(named: 'targetFilePath'),
+              modulePath: any(named: 'modulePath'),
+            ),
+          ).thenAnswer((_) async => {'import "some_import.dart";'});
+
+          when(
+            () => mockImportService.injectImport(
+              path: any(named: 'path'),
+              imports: any(named: 'imports'),
+            ),
+          ).thenAnswer((_) async {});
+
+          when(
+            () => mockFileService.writeAsString(
+              path: any(named: 'path'),
+              content: any(named: 'content'),
+            ),
+          ).thenAnswer((_) async {});
+
+          when(
+            () => mockExportService.inject(
+              barrelPath: any(named: 'barrelPath'),
+              exportLines: any(named: 'exportLines'),
+              checkpoint: any(named: 'checkpoint'),
+            ),
+          ).thenAnswer((_) async {});
+
+          when(() => mockArbService.getArbPaths(any())).thenAnswer(
+            (_) async => ['/workspace/modules/todo/lib/src/l10n/app_en.arb'],
+          );
+
+          when(
+            () => mockArbService.injectEntriesBeforeKey(
+              arbPath: any(named: 'arbPath'),
+              arbEntries: any(named: 'arbEntries'),
+              endKey: any(named: 'endKey'),
+            ),
+          ).thenAnswer((_) async {});
+
+          // Act (When)
+          await sequenceService.generate(
+            sequence: tSequenceParam,
+            onProgress: (msg) => progressLogs.add(msg),
+          );
+
+          // Assert (Then)
+          expect(
+            progressLogs,
+            contains('Injecting method to datasource interface...'),
+          );
+          expect(
+            progressLogs,
+            contains('Injecting method to datasource implementation...'),
+          );
+          expect(
+            progressLogs,
+            contains(
+              'Creating use case and injecting export to feature barrel...',
+            ),
+          );
+          expect(progressLogs, contains('Injecting use case localization...'));
+
+          verify(
+            () => mockMethodService.injectToClass(
+              path: any(named: 'path'),
+              methodCode: any(named: 'methodCode'),
+            ),
+          ).called(4); // DS interface, DS impl, Repo interface, Repo impl
+
+          verify(
+            () => mockFileService.writeAsString(
+              path: tSequenceParam.usecasePath,
+              content: any(named: 'content'),
+            ),
+          ).called(1);
+
+          verify(
+            () => mockArbService.getArbPaths(tSequenceParam.modulePath),
+          ).called(1);
+        },
       );
-      expect(removeLogs, isNotEmpty);
+    });
+
+    group('remove', () {
+      test(
+        'Given valid SequenceParam for removal, '
+        'When remove is called, '
+        'Then it unjects methods from classes, removes usecase file, and cleans up arb entries',
+        () async {
+          // Arrange (Given)
+          final progressLogs = <String>[];
+
+          when(
+            () => mockMethodService.unjectFromClass(
+              path: any(named: 'path'),
+              methodName: any(named: 'methodName'),
+            ),
+          ).thenAnswer((_) async {});
+
+          when(() => mockReportService.addUnjected(any())).thenReturn(null);
+          when(() => mockReportService.addRemoved(any())).thenReturn(null);
+
+          when(
+            () => mockFileService.exists(any()),
+          ).thenAnswer((_) async => true);
+          when(() => mockFileService.delete(any())).thenAnswer((_) async {});
+
+          when(
+            () => mockExportService.unject(
+              barrelPath: any(named: 'barrelPath'),
+              exportLines: any(named: 'exportLines'),
+            ),
+          ).thenAnswer((_) async {});
+
+          when(() => mockArbService.getArbPaths(any())).thenAnswer(
+            (_) async => ['/workspace/modules/todo/lib/src/l10n/app_en.arb'],
+          );
+
+          when(
+            () => mockArbService.unjectEntries(
+              arbPath: any(named: 'arbPath'),
+              arbEntries: any(named: 'arbEntries'),
+            ),
+          ).thenAnswer((_) async {});
+
+          // Act (When)
+          await sequenceService.remove(
+            sequence: tSequenceParam,
+            onProgress: (msg) => progressLogs.add(msg),
+          );
+
+          // Assert (Then)
+          expect(
+            progressLogs,
+            contains('Unjecting method from datasource interface...'),
+          );
+          expect(
+            progressLogs,
+            contains('Removing use case file and unjecting barrel export...'),
+          );
+          expect(progressLogs, contains('Unjecting localization entries...'));
+
+          verify(
+            () => mockMethodService.unjectFromClass(
+              path: any(named: 'path'),
+              methodName: tSequenceParam.method,
+            ),
+          ).called(4); // DS interface, DS impl, Repo interface, Repo impl
+
+          verify(
+            () => mockFileService.delete(tSequenceParam.usecasePath),
+          ).called(1);
+          verify(
+            () => mockReportService.addRemoved(tSequenceParam.usecasePath),
+          ).called(1);
+          verify(
+            () => mockArbService.unjectEntries(
+              arbPath: any(named: 'arbPath'),
+              arbEntries: any(named: 'arbEntries'),
+            ),
+          ).called(1);
+        },
+      );
     });
   });
 }

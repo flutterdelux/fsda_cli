@@ -257,7 +257,7 @@ void main() {
         const expectedPaths = ['/path/to/module/lib/l10n/app_en.arb'];
 
         when(
-          () => mockDirectoryService.listFilePaths(
+          () => mockDirectoryService.listPaths(
             dirPath: any(named: 'dirPath'),
             where: any(named: 'where'),
           ),
@@ -280,7 +280,7 @@ void main() {
         // Assert
         expect(result, expectedPaths);
         verify(
-          () => mockDirectoryService.listFilePaths(
+          () => mockDirectoryService.listPaths(
             dirPath: any(named: 'dirPath'),
             where: any(named: 'where'),
           ),

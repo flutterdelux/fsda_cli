@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:fsda_cli/infrastructure/services/helpers/file_finder_service.dart';
 import 'package:fsda_cli/infrastructure/services/helpers/file_service.dart';
 import 'package:fsda_cli/infrastructure/services/helpers/import_resolver_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -8,234 +7,250 @@ import 'package:test/test.dart';
 
 class MockFileService extends Mock implements FileService {}
 
-void main() {
-  late ImportResolverService importResolverService;
-  late MockFileService mockFileService;
+class MockFileFinderService extends Mock implements FileFinderService {}
 
+void main() {
+  late MockFileService mockFileService;
+  late MockFileFinderService mockFileFinderService;
+  late ImportResolverService importResolverService;
+
+  const modulePath = '/workspace/modules/todo';
   const targetFilePath =
-      '/project/lib/features/auth/presentation/auth_controller.dart';
-  const featurePath = '/project/lib/features/auth';
+      '/workspace/modules/todo/lib/src/features/task/presentation/task_page.dart';
 
   setUp(() {
     mockFileService = MockFileService();
-    importResolverService = ImportResolverService(fileService: mockFileService);
+    mockFileFinderService = MockFileFinderService();
+    importResolverService = ImportResolverService(
+      fileService: mockFileService,
+      fileFinderService: mockFileFinderService,
+    );
   });
 
-  group('ImportResolverService Tests', () {
-    test(
-      'resolve should return empty set if target file does not exist',
-      () async {
-        when(
-          () => mockFileService.exists(targetFilePath),
-        ).thenAnswer((_) async => false);
-
-        final result = await importResolverService.resolve(
-          rawTypes: {'UserEntity'},
-          targetFilePath: targetFilePath,
-          featurePath: featurePath,
-        );
-
-        expect(result, isEmpty);
-        verify(() => mockFileService.exists(targetFilePath)).called(1);
-      },
-    );
-
-    test(
-      'resolve should skip core types and types not referenced in target content',
-      () async {
-        when(
-          () => mockFileService.exists(targetFilePath),
-        ).thenAnswer((_) async => true);
-        when(() => mockFileService.readAsString(targetFilePath)).thenAnswer(
-          (_) async => 'class AuthController {}',
-        ); // Tidak memuat 'UserEntity'
-
-        final result = await importResolverService.resolve(
-          rawTypes: {'String', 'int', 'UserEntity'},
-          targetFilePath: targetFilePath,
-          featurePath: featurePath,
-        );
-
-        expect(result, isEmpty);
-      },
-    );
-
-    test('resolve should resolve special dart imports correctly', () async {
+  group('ImportResolverService', () {
+    test('returns empty set if target file does not exist', () async {
       when(
         () => mockFileService.exists(targetFilePath),
-      ).thenAnswer((_) async => true);
-      when(
-        () => mockFileService.readAsString(targetFilePath),
-      ).thenAnswer((_) async => 'File imageFile;');
+      ).thenAnswer((_) async => false);
 
       final result = await importResolverService.resolve(
-        rawTypes: {'File'},
+        rawTypes: {'String', 'TaskDto'},
         targetFilePath: targetFilePath,
-        featurePath: featurePath,
+        modulePath: modulePath,
       );
 
-      expect(result, contains("import 'dart:io';"));
+      expect(result, isEmpty);
+      verify(() => mockFileService.exists(targetFilePath)).called(1);
+      verifyNever(() => mockFileService.readAsString(any()));
     });
 
-    test(
-      'resolve should resolve app core and l10n imports correctly',
-      () async {
-        when(
-          () => mockFileService.exists(targetFilePath),
-        ).thenAnswer((_) async => true);
-        when(() => mockFileService.readAsString(targetFilePath)).thenAnswer(
-          (_) async => 'NetworkFile netFile; AppLocalizations l10n;',
-        );
-
-        final result = await importResolverService.resolve(
-          rawTypes: {'NetworkFile', 'AppLocalizations'},
-          targetFilePath: targetFilePath,
-          featurePath: featurePath,
-        );
-
-        expect(result, contains("import 'package:app_core/app_core.dart';"));
-        expect(result, contains("import 'package:app_l10n/app_l10n.dart';"));
-      },
-    );
-
-    test('resolve should find file inside current feature directory', () async {
+    test('ignores empty types and Dart core types', () async {
       when(
         () => mockFileService.exists(targetFilePath),
       ).thenAnswer((_) async => true);
       when(
         () => mockFileService.readAsString(targetFilePath),
-      ).thenAnswer((_) async => 'UserEntity user;');
+      ).thenAnswer((_) async => 'String int bool TaskDto');
 
-      // Simulasi bahwa berkas entity ditemukan di dalam fitur saat ini
       when(
-        () => mockFileService.exists(
-          '/project/lib/features/auth/domain/entities/user_entity.dart',
+        () => mockFileFinderService.findFile(
+          rawRef: 'TaskDto',
+          modulePath: modulePath,
         ),
-      ).thenAnswer((_) async => true);
+      ).thenAnswer((_) async => null);
 
       final result = await importResolverService.resolve(
-        rawTypes: {'UserEntity'},
+        rawTypes: {'', 'String', 'int', 'bool', 'TaskDto'},
         targetFilePath: targetFilePath,
-        featurePath: featurePath,
+        modulePath: modulePath,
       );
 
-      expect(result, isNotEmpty);
-      expect(result.first, contains('domain/entities/user_entity.dart'));
+      expect(result, isEmpty);
+      verify(
+        () => mockFileFinderService.findFile(
+          rawRef: 'TaskDto',
+          modulePath: modulePath,
+        ),
+      ).called(1);
     });
 
     test(
-      'resolve should check all subdirectories when type has no specific suffix',
+      'skips resolution if type is not contained in target file content',
       () async {
-        // Stub exists agar mengenali targetFilePath dan path kustom secara spesifik
-        when(() => mockFileService.exists(any())).thenAnswer((
-          invocation,
-        ) async {
-          final path = invocation.positionalArguments[0] as String;
-          if (path == targetFilePath) return true;
-          if (path.contains('domain/entities/custom_model.dart')) return true;
-          return false;
-        });
-
         when(
-          () => mockFileService.readAsString(targetFilePath),
-        ).thenAnswer((_) async => 'CustomModel model;');
+          () => mockFileService.exists(targetFilePath),
+        ).thenAnswer((_) async => true);
+        when(() => mockFileService.readAsString(targetFilePath)).thenAnswer(
+          (_) async => 'class TaskPage {}',
+        ); // Tidak ada kata 'TaskDto'
 
         final result = await importResolverService.resolve(
-          rawTypes: {'CustomModel'},
+          rawTypes: {'TaskDto'},
           targetFilePath: targetFilePath,
-          featurePath: featurePath,
+          modulePath: modulePath,
         );
 
-        expect(result, isNotEmpty);
-        expect(result.first, contains('domain/entities/custom_model.dart'));
+        expect(result, isEmpty);
+        verifyNever(
+          () => mockFileFinderService.findFile(
+            rawRef: 'TaskDto',
+            modulePath: modulePath,
+          ),
+        );
       },
     );
 
+    test('resolves Dart special imports correctly', () async {
+      when(
+        () => mockFileService.exists(targetFilePath),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockFileService.readAsString(targetFilePath),
+      ).thenAnswer((_) async => 'Uint8List fileData;');
+
+      final result = await importResolverService.resolve(
+        rawTypes: {'Uint8List'},
+        targetFilePath: targetFilePath,
+        modulePath: modulePath,
+      );
+
+      expect(result, equals({"import 'dart:typed_data';"}));
+      verifyNever(
+        () => mockFileFinderService.findFile(
+          rawRef: any(named: 'rawRef'),
+          modulePath: any(named: 'modulePath'),
+        ),
+      );
+    });
+
+    test('resolves App core types imports correctly', () async {
+      when(
+        () => mockFileService.exists(targetFilePath),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockFileService.readAsString(targetFilePath),
+      ).thenAnswer((_) async => 'AsyncResult<void> result;');
+
+      final result = await importResolverService.resolve(
+        rawTypes: {'AsyncResult'},
+        targetFilePath: targetFilePath,
+        modulePath: modulePath,
+      );
+
+      expect(result, equals({"import 'package:app_core/app_core.dart';"}));
+    });
+
+    test('resolves App l10n types imports correctly', () async {
+      when(
+        () => mockFileService.exists(targetFilePath),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockFileService.readAsString(targetFilePath),
+      ).thenAnswer((_) async => 'AppLocalizations.of(context)');
+
+      final result = await importResolverService.resolve(
+        rawTypes: {'AppLocalizations'},
+        targetFilePath: targetFilePath,
+        modulePath: modulePath,
+      );
+
+      expect(result, equals({"import 'package:app_l10n/app_l10n.dart';"}));
+    });
+
+    test('cleans generic wrappers and nullability flags from raw types', () async {
+      when(
+        () => mockFileService.exists(targetFilePath),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockFileService.readAsString(targetFilePath),
+      ).thenAnswer((_) async => 'List<TaskDto>? items;');
+
+      final foundPath =
+          '/workspace/modules/todo/lib/src/features/task/data/dtos/task_dto.dart';
+      when(
+        () => mockFileFinderService.findFile(
+          rawRef: 'TaskDto',
+          modulePath: modulePath,
+        ),
+      ).thenAnswer((_) async => foundPath);
+
+      final result = await importResolverService.resolve(
+        rawTypes: {'List<TaskDto>?'},
+        targetFilePath: targetFilePath,
+        modulePath: modulePath,
+      );
+
+      // Memastikan finder dipanggil dengan 'TaskDto' yang sudah dibersihkan dari 'List<>?'
+      verify(
+        () => mockFileFinderService.findFile(
+          rawRef: 'TaskDto',
+          modulePath: modulePath,
+        ),
+      ).called(1);
+
+      // Memastikan relative path dihitung dengan benar terhadap targetFilePath
+      final expectedRelativePath = p.relative(
+        foundPath,
+        from: p.dirname(targetFilePath),
+      );
+      expect(result, equals({"import '$expectedRelativePath';"}));
+    });
+
     test(
-      'resolve should resolve in module generated dir for custom Localizations type',
+      'adds relative import when FileFinderService successfully finds a file',
       () async {
         when(
           () => mockFileService.exists(targetFilePath),
         ).thenAnswer((_) async => true);
         when(
           () => mockFileService.readAsString(targetFilePath),
-        ).thenAnswer((_) async => 'CustomLocalizations loc;');
+        ).thenAnswer((_) async => 'TaskEntity entity;');
 
-        // Jalur file generated: /project/lib/generated/custom_localizations.dart
+        const foundPath =
+            '/workspace/modules/todo/lib/src/features/task/domain/entities/task_entity.dart';
         when(
-          () => mockFileService.exists(
-            '/project/lib/generated/custom_localizations.dart',
+          () => mockFileFinderService.findFile(
+            rawRef: 'TaskEntity',
+            modulePath: modulePath,
           ),
-        ).thenAnswer((_) async => true);
+        ).thenAnswer((_) async => foundPath);
 
         final result = await importResolverService.resolve(
-          rawTypes: {'CustomLocalizations'},
+          rawTypes: {'TaskEntity'},
           targetFilePath: targetFilePath,
-          featurePath: featurePath,
+          modulePath: modulePath,
         );
 
-        expect(result, isNotEmpty);
-        expect(result.first, contains('generated/custom_localizations.dart'));
+        final expectedRelativePath = p
+            .relative(foundPath, from: p.dirname(targetFilePath))
+            .replaceAll(r'\', '/');
+
+        expect(result, equals({"import '$expectedRelativePath';"}));
       },
     );
 
-    test(
-      'resolve should resolve across module features if not found in current feature',
-      () async {
-        // Menggunakan direktori sementara nyata untuk menguji penelusuran folder lintas fitur (_resolveAcrossModuleFeatures)
-        final tempDir = await Directory.systemTemp.createTemp(
-          'import_resolver_test_',
-        );
-        try {
-          final authDir = Directory(p.join(tempDir.path, 'auth'));
-          await authDir.create();
-          final presentationDir = Directory(
-            p.join(authDir.path, 'presentation'),
-          );
-          await presentationDir.create();
+    test('does not add import if FileFinderService returns null', () async {
+      when(
+        () => mockFileService.exists(targetFilePath),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockFileService.readAsString(targetFilePath),
+      ).thenAnswer((_) async => 'UnknownModel model;');
 
-          final targetFile = File(
-            p.join(presentationDir.path, 'auth_controller.dart'),
-          );
-          await targetFile.writeAsString('OtherEntity entity;');
+      when(
+        () => mockFileFinderService.findFile(
+          rawRef: 'UnknownModel',
+          modulePath: modulePath,
+        ),
+      ).thenAnswer((_) async => null);
 
-          final otherFeatureDir = Directory(
-            p.join(tempDir.path, 'other_feature'),
-          );
-          await otherFeatureDir.create();
-          final entitiesDir = Directory(
-            p.join(otherFeatureDir.path, 'domain', 'entities'),
-          );
-          await entitiesDir.create(recursive: true);
+      final result = await importResolverService.resolve(
+        rawTypes: {'UnknownModel'},
+        targetFilePath: targetFilePath,
+        modulePath: modulePath,
+      );
 
-          final entityFile = File(
-            p.join(entitiesDir.path, 'other_entity.dart'),
-          );
-          await entityFile.writeAsString('class OtherEntity {}');
-
-          // Menggunakan FileService asli agar operasi direktori & file sistem nyata berjalan lancar
-          final realFileService = FileService();
-          final realResolver = ImportResolverService(
-            fileService: realFileService,
-          );
-
-          final result = await realResolver.resolve(
-            rawTypes: {'OtherEntity'},
-            targetFilePath: targetFile.path,
-            featurePath: authDir.path,
-          );
-
-          expect(result, isNotEmpty);
-          expect(
-            result.first,
-            contains('other_feature/domain/entities/other_entity.dart'),
-          );
-        } finally {
-          if (await tempDir.exists()) {
-            await tempDir.delete(recursive: true);
-          }
-        }
-      },
-    );
+      expect(result, isEmpty);
+    });
   });
 }

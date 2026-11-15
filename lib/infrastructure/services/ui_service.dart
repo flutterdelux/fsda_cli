@@ -19,6 +19,7 @@ import '../templates/ui/ui_template.dart';
 import '../visitors/model_visitor.dart';
 import 'helpers/arb_service.dart';
 import 'helpers/export_service.dart';
+import 'helpers/file_finder_service.dart';
 import 'helpers/file_service.dart';
 import 'helpers/import_resolver_service.dart';
 import 'helpers/import_service.dart';
@@ -28,6 +29,7 @@ class UiService {
   final OperationReportService _reportService;
   final FileService _fileService;
   final ArbService _arbService;
+  final FileFinderService _fileFinderService;
   final ImportResolverService _importResolverService;
   final ImportService _importService;
   final ExportService _exportService;
@@ -36,12 +38,14 @@ class UiService {
     required OperationReportService reportService,
     required FileService fileService,
     required ArbService arbService,
+    required FileFinderService fileFinderService,
     required ImportResolverService importResolverService,
     required ImportService importService,
     required ExportService exportService,
   }) : _reportService = reportService,
        _fileService = fileService,
        _arbService = arbService,
+       _fileFinderService = fileFinderService,
        _importResolverService = importResolverService,
        _importService = importService,
        _exportService = exportService;
@@ -51,7 +55,10 @@ class UiService {
     required void Function(String msg) onProgress,
   }) async {
     onProgress('Inspecting model props...');
-    final props = await _getPropsFromModelFile(ui.model);
+    final props = await _getPropsFromModelFile(
+      model: ui.model,
+      modulePath: ui.modulePath,
+    );
 
     final variants = [
       UiTemplate.buildContent(ui: ui, props: props),
@@ -75,7 +82,10 @@ class UiService {
     required void Function(String msg) onProgress,
   }) async {
     onProgress('Inspecting model props...');
-    final props = await _getPropsFromModelFile(ui.model);
+    final props = await _getPropsFromModelFile(
+      model: ui.model,
+      modulePath: ui.modulePath,
+    );
 
     final variants = [
       UiLsvTemplate.buildItem(ui: ui, props: props),
@@ -102,7 +112,10 @@ class UiService {
     required void Function(String msg) onProgress,
   }) async {
     onProgress('Inspecting model props...');
-    final props = await _getPropsFromModelFile(ui.model);
+    final props = await _getPropsFromModelFile(
+      model: ui.model,
+      modulePath: ui.modulePath,
+    );
 
     final variants = [
       UiLshTemplate.buildItem(ui: ui, props: props),
@@ -129,7 +142,10 @@ class UiService {
     required void Function(String msg) onProgress,
   }) async {
     onProgress('Inspecting model props...');
-    final props = await _getPropsFromModelFile(ui.model);
+    final props = await _getPropsFromModelFile(
+      model: ui.model,
+      modulePath: ui.modulePath,
+    );
 
     final variants = [
       UiPagTemplate.buildItem(ui: ui, props: props),
@@ -155,7 +171,13 @@ class UiService {
     required UiFormParam ui,
     required void Function(String msg) onProgress,
   }) async {
-    final variants = [UiFormTemplate.build(ui)];
+    onProgress('Inspecting model props...');
+    final props = await _getPropsFromModelFile(
+      model: ui.model,
+      modulePath: ui.modulePath,
+    );
+
+    final variants = [UiFormTemplate.build(ui: ui, props: props)];
 
     onProgress('Generating UI Form widget...');
     await _generateFiles(param: ui, variants: variants);
@@ -183,7 +205,7 @@ class UiService {
         final imports = await _importResolverService.resolve(
           rawTypes: artifact.typesToImport,
           targetFilePath: path,
-          featurePath: param.featurePath,
+          modulePath: param.modulePath,
         );
         await _importService.injectImport(path: path, imports: imports);
       }
@@ -226,11 +248,19 @@ class UiService {
     }
   }
 
-  Future<List<PropModel>> _getPropsFromModelFile(String modelPath) async {
-    if (!await _fileService.exists(modelPath)) return [];
+  Future<List<PropModel>> _getPropsFromModelFile({
+    required String model,
+    required String modulePath,
+  }) async {
+    final path = await _fileFinderService.findFile(
+      rawRef: model,
+      modulePath: modulePath,
+    );
+    if (path == null) return [];
+    if (!await _fileService.exists(path)) return [];
 
     try {
-      final content = await _fileService.readAsString(modelPath);
+      final content = await _fileService.readAsString(path);
       final result = parseString(content: content);
 
       final visitor = ModelVisitor();

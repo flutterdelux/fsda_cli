@@ -7,10 +7,7 @@ abstract final class RepoBodyCommonTemplate {
     if (sequence.isReturnParam) return _buildReturnParam(sequence);
     if (sequence.isReturn) return _buildReturn(sequence);
     if (sequence.isParam) return _buildParam(sequence);
-    if (sequence.isVoid) return _buildVoid(sequence);
-    throw Exception(
-      'Model combination not valid for repo: Available combination: Return+Param, Return, Param, Void',
-    );
+    return _buildVoid(sequence);
   }
 
   static String _buildReturnParam(SequenceParam sequence) {

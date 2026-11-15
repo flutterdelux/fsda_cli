@@ -24,5 +24,5 @@ enum StateControl {
     };
   }
 
-  static String get available => values.join(', ');
+  static String get available => values.map((e) => e.value).join(', ');
 }

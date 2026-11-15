@@ -49,7 +49,7 @@ Composes and scaffolds a **retrieval** UI wrapper artifact that connects a retri
 
 1. **Validates Slices**: Verifies that both the `--logic-flow` slice and `--ui` slice directories exist in the source module.
 2. **AST Metadata Inspection**:
-   * Inspects the logic controller (`Cubit`, `Bloc`, `GetX`, `Provider`, or `Riverpod`) to extract its state control type, constructor parameters, and trigger method.
+   * Inspects the logic controller (`Cubit`, `GetX`, `Provider`, or `Riverpod`) to extract its state control type, constructor parameters, and trigger method.
    * Scans the `--ui` directory for `*_content.dart` and `*_skeleton.dart` widgets to extract their required parameters.
 3. **Scaffolds Wrapper Artifact**: Generates the wrapper file in `pages/` or `widgets/` wired with state builders handling `.initial()`, `.loading()`, `.loaded()`, and `.failure()` states.
 4. **Operation Report**: Logs the created wrapper file path.

@@ -43,7 +43,7 @@ class LogicService {
       );
       await _createFileResolveImportAndExport(
         artifact: stateArtifact,
-        featurePath: logic.featurePath,
+        modulePath: logic.modulePath,
         featureBarrelPath: logic.featureBarrelPath,
       );
     }
@@ -54,7 +54,7 @@ class LogicService {
     final logicArtifact = LogicTemplate.build(logic);
     await _createFileResolveImportAndExport(
       artifact: logicArtifact,
-      featurePath: logic.featurePath,
+      modulePath: logic.modulePath,
       featureBarrelPath: logic.featureBarrelPath,
     );
   }
@@ -70,7 +70,7 @@ class LogicService {
       );
       await _createFileResolveImportAndExport(
         artifact: stateArtifact,
-        featurePath: logic.featurePath,
+        modulePath: logic.modulePath,
         featureBarrelPath: logic.featureBarrelPath,
       );
     }
@@ -81,7 +81,7 @@ class LogicService {
     final logicArtifact = LogicTemplate.buildFlow(logic);
     await _createFileResolveImportAndExport(
       artifact: logicArtifact,
-      featurePath: logic.featurePath,
+      modulePath: logic.modulePath,
       featureBarrelPath: logic.featureBarrelPath,
     );
   }
@@ -90,7 +90,7 @@ class LogicService {
 
   Future<void> _createFileResolveImportAndExport({
     required ArtifactGenerationModel artifact,
-    required String featurePath,
+    required String modulePath,
     required String featureBarrelPath,
   }) async {
     final path = artifact.path;
@@ -102,7 +102,7 @@ class LogicService {
       final imports = await _importResolverService.resolve(
         rawTypes: artifact.typesToImport,
         targetFilePath: path,
-        featurePath: featurePath,
+        modulePath: modulePath,
       );
       await _importService.injectImport(path: path, imports: imports);
     }

@@ -115,7 +115,7 @@ class ModelService {
     final imports = await _importResolverService.resolve(
       rawTypes: rawTypes,
       targetFilePath: model.path,
-      featurePath: model.featurePath,
+      modulePath: model.modulePath,
     );
     await _importService.injectImport(path: model.path, imports: imports);
   }

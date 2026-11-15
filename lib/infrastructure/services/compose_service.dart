@@ -135,7 +135,7 @@ class ComposeService {
   ) async {
     final metadatas = <DependencyMetadata>[];
     final suffixToCheck = ['_skeleton', '_content'];
-    final paths = await _directoryService.listFilePaths(
+    final paths = await _directoryService.listPaths(
       dirPath: uiSlicePath,
       where: (fileSystem, isFile) =>
           isFile &&
@@ -164,7 +164,7 @@ class ComposeService {
 
   Future<LogicMetadata> _inspectLogicMetadata(String logicSlicePath) async {
     final logicSuffixs = StateControl.values.map((e) => e.suffix);
-    final paths = await _directoryService.listFilePaths(
+    final paths = await _directoryService.listPaths(
       dirPath: logicSlicePath,
       where: (fileSystem, isFile) {
         return isFile &&

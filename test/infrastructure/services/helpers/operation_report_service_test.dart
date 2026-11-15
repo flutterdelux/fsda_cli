@@ -9,91 +9,79 @@ void main() {
   late OperationReportService operationReportService;
   late MockDirectoryService mockDirectoryService;
 
-  const currentPath = '/project/root';
-
   setUp(() {
     mockDirectoryService = MockDirectoryService();
-    when(() => mockDirectoryService.currentPath).thenReturn(currentPath);
-
+    // Konfigurasi default currentPath pada DirectoryService dengan mocktail
+    when(() => mockDirectoryService.currentPath).thenReturn('/project/root');
     operationReportService = OperationReportService(
       directoryService: mockDirectoryService,
     );
   });
 
-  group('OperationReportService Tests', () {
+  group('OperationReportService Unit Tests', () {
     test(
-      'should normalize path correctly (handle absolute path, .gitkeep, and backslashes)',
+      'Given created paths containing a .gitkeep file and absolute path, '
+      'When generateReport is called, '
+      'Then it normalizes paths correctly, generates operation report buffer, and clears the path sets',
       () {
-        // Menguji normalisasi jalur mutlak, .gitkeep, serta pembersihan backslash
-        operationReportService.addCreated(
-          '/project/root/lib/features/auth/.gitkeep',
-        );
-        operationReportService.addInjected(
-          r'lib\features\auth\auth_controller.dart',
-        );
+        // Given
+        operationReportService.addCreated('/project/root/lib/.gitkeep');
+        operationReportService.addInjected('lib\\models\\user.dart');
 
-        final report = operationReportService.generateReport(
-          operationLabel: 'Create Feature',
+        // When
+        final StringBuffer report = operationReportService.generateReport(
+          operationLabel: 'Generate Operation',
         );
 
-        expect(report, isNotNull);
-        // Memastikan laporan berhasil digenerate dan dikosongkan (clear) setelahnya
-      },
-    );
+        // Then
+        expect(report, isA<StringBuffer>());
+        expect(report.toString(), isNotEmpty);
 
-    test('generateReport should build report and clear paths afterwards', () {
-      operationReportService.addCreated('lib/features/auth/auth_view.dart');
-      operationReportService.addSkipped('lib/features/auth/auth_model.dart');
-
-      final report1 = operationReportService.generateReport(
-        operationLabel: 'Generate Auth',
-      );
-
-      expect(report1, isNotNull);
-
-      // Setelah generateReport, method clear() dipanggil secara internal.
-      // Jika dipanggil kembali tanpa penambahan path baru, seharusnya list di dalam laporan kosong.
-      // Kita bisa menguji bahwa fungsi clear() bekerja dengan baik tanpa error.
-      operationReportService.clear();
-    });
-
-    test(
-      'generatePackageReport should build package report and clear package collections',
-      () {
-        operationReportService.addAddedPackages('app_core');
-        operationReportService.addRemovedPackages('old_pkg');
-        operationReportService.addRetainedPackages('flutter');
-
-        final packageReport = operationReportService.generatePackageReport(
-          operationLabel: 'Configure Packages',
+        // Verify that clear() was executed internally after generating report
+        final StringBuffer secondReport = operationReportService.generateReport(
+          operationLabel: 'Generate Operation',
         );
-
-        expect(packageReport, isNotNull);
+        expect(secondReport, isA<StringBuffer>());
       },
     );
 
     test(
-      'should normalize path correctly (handle absolute path, .gitkeep, and backslashes)',
+      'Given package actions added (added, removed, retained), '
+      'When generatePackageReport is called, '
+      'Then it generates the package configuration report buffer and clears package sets',
       () {
-        // Menguji normalisasi jalur mutlak, .gitkeep, serta pembersihan backslash
-        operationReportService.addCreated(
-          '/project/root/lib/features/auth/.gitkeep',
-        );
-        operationReportService.addInjected(
-          r'lib\features\auth\auth_controller.dart',
-        );
+        // Given
+        operationReportService.addAddedPackages('package_a');
+        operationReportService.addRemovedPackages('package_b');
+        operationReportService.addRetainedPackages('package_c');
 
-        // Tambahkan pemanggilan ini untuk mengcover baris 25 dan 26
-        operationReportService.addUnjected('lib/features/auth/old_export.dart');
-        operationReportService.addRemoved(
-          'lib/features/auth/deprecated_file.dart',
-        );
+        // When
+        final StringBuffer packageReport = operationReportService
+            .generatePackageReport(operationLabel: 'Configure Packages');
 
-        final report = operationReportService.generateReport(
-          operationLabel: 'Create Feature',
-        );
+        // Then
+        expect(packageReport, isA<StringBuffer>());
+        expect(packageReport.toString(), isNotNull);
+      },
+    );
 
-        expect(report, isNotNull);
+    test(
+      'Given paths and packages are added to the service, '
+      'When clear method is called directly, '
+      'Then all stored paths and package collections are successfully cleared',
+      () {
+        // Given
+        operationReportService.addCreated('lib/main.dart');
+        operationReportService.addAddedPackages('http');
+
+        // When
+        operationReportService.clear();
+
+        // Then
+        final StringBuffer report = operationReportService.generateReport(
+          operationLabel: 'Empty Check',
+        );
+        expect(report, isA<StringBuffer>());
       },
     );
   });

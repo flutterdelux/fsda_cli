@@ -20,7 +20,7 @@ abstract final class UiLshTemplate {
     final background = backgroundProp != null
         ? '''
             AppNetworkImage(
-              url: 'item.${backgroundProp.name.camelCase}',
+              url: item.${backgroundProp.name.camelCase},
               fit: BoxFit.cover,
               borderRadius: borderRadius,
             ),
@@ -88,7 +88,7 @@ class $className extends StatelessWidget {
           fit: StackFit.expand,
           alignment: Alignment.bottomLeft,
           children: [
-            $background,
+            ${background.trim()}
             Positioned(
               left: AppSpacing.md,
               right: AppSpacing.md,

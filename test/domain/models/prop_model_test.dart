@@ -1,20 +1,30 @@
-import 'package:fsda_cli/domain/models/prop_model.dart';
+import 'package:fsda_cli/domain/models/prop_model.dart'; // Sesuaikan path import dengan project Anda
 import 'package:test/test.dart';
 
 void main() {
-  group('PropModel Tests', () {
-    test('should initialize PropModel properties correctly', () {
+  group('PropModel', () {
+    test('Given valid type, name, defaultValue, and converter, '
+        'When PropModel is instantiated, '
+        'Then it correctly holds all provided properties', () {
+      // Arrange (Given)
+      const type = 'String';
+      const name = 'title';
+      const defaultValue = "''";
+      const converter = 'IdConverter';
+
+      // Act (When)
       const propModel = PropModel(
-        type: 'String',
-        name: 'username',
-        defaultValue: "''",
-        converter: 'toString()',
+        type: type,
+        name: name,
+        defaultValue: defaultValue,
+        converter: converter,
       );
 
-      expect(propModel.type, 'String');
-      expect(propModel.name, 'username');
-      expect(propModel.defaultValue, "''");
-      expect(propModel.converter, 'toString()');
+      // Assert (Then)
+      expect(propModel.type, equals(type));
+      expect(propModel.name, equals(name));
+      expect(propModel.defaultValue, equals(defaultValue));
+      expect(propModel.converter, equals(converter));
     });
   });
 }

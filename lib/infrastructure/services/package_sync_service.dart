@@ -132,17 +132,12 @@ class PackageSyncService {
       await _fileService.writeAsString(path: path, content: decodedContent);
     }
 
-    // Jalankan penambahan dependencies, dev_dependencies, dan post_hooks
-    if (dependencies.isNotEmpty ||
-        devDependencies.isNotEmpty ||
-        postHooks.isNotEmpty) {
-      await _executePackageHooks(
-        pkgPath,
-        dependencies,
-        devDependencies,
-        postHooks,
-      );
-    }
+    await _executePackageHooks(
+      pkgPath,
+      dependencies,
+      devDependencies,
+      postHooks,
+    );
   }
 
   Future<void> _executePackageHooks(

@@ -9,5 +9,4 @@ extension StateControlX on StateControl {
     .riverpod => 'provider',
   };
   String get suffixPascal => suffix.pascalCase;
-  String get suffixTitle => suffix.titleCase;
 }

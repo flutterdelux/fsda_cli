@@ -2,6 +2,7 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 
 import '../../domain/models/prop_model.dart';
+import '../text_modifiers/string_extension.dart';
 
 class ModelVisitor extends RecursiveAstVisitor<void> {
   final List<PropModel> props = [];
@@ -11,7 +12,9 @@ class ModelVisitor extends RecursiveAstVisitor<void> {
     super.visitConstructorDeclaration(node);
 
     // Menangkap parameter dari constructor utama/factory Freezed
-    if (node.parameters.parameters.isEmpty) return;
+    if (node.parameters.parameters.isEmpty) {
+      return;
+    }
 
     for (final param in node.parameters.parameters) {
       FormalParameter actualParam = param;
@@ -33,7 +36,7 @@ class ModelVisitor extends RecursiveAstVisitor<void> {
 
       final identifier = actualParam.name;
       if (identifier != null) {
-        final snakeCaseName = _toSnakeCase(identifier.lexeme);
+        final snakeCaseName = identifier.lexeme.snakeCase;
 
         props.add(
           PropModel(
@@ -45,14 +48,5 @@ class ModelVisitor extends RecursiveAstVisitor<void> {
         );
       }
     }
-  }
-
-  String _toSnakeCase(String input) {
-    return input
-        .replaceAllMapped(
-          RegExp(r'(?<=[a-z])[A-Z]'),
-          (Match m) => '_${m.group(0)}',
-        )
-        .toLowerCase();
   }
 }

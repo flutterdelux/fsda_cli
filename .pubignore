@@ -5,6 +5,9 @@ docs/
 # Generated local binary artifacts
 build/
 
+# Coverage testing reports
+coverage/
+
 # Maintainer/dev-only scaffolding sources
 bricks/
 templates/
@@ -15,3 +18,5 @@ tool/
 
 # Local/temporary editor files
 .DS_Store
+.vscode/
+.idea/

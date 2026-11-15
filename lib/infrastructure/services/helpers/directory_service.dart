@@ -26,7 +26,7 @@ class DirectoryService {
     return dir.listSync(recursive: recursive);
   }
 
-  Future<List<String>> listFilePaths({
+  Future<List<String>> listPaths({
     required String dirPath,
     required bool Function(FileSystemEntity fileSystem, bool isFile) where,
   }) async {

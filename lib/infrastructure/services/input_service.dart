@@ -93,7 +93,7 @@ class InputService {
     final imports = await _importResolverService.resolve(
       rawTypes: {input.type},
       targetFilePath: input.widgetPath,
-      featurePath: input.featurePath,
+      modulePath: input.modulePath,
     );
     if (imports.isNotEmpty) {
       await _importService.injectImport(
@@ -175,7 +175,7 @@ class InputService {
     final imports = await _importResolverService.resolve(
       rawTypes: {input.type},
       targetFilePath: input.widgetPath,
-      featurePath: input.featurePath,
+      modulePath: input.modulePath,
     );
     if (imports.isNotEmpty) {
       await _importService.injectImport(
@@ -206,7 +206,7 @@ class InputService {
     final imports = await _importResolverService.resolve(
       rawTypes: {input.type},
       targetFilePath: input.widgetPath,
-      featurePath: input.featurePath,
+      modulePath: input.modulePath,
     );
     if (imports.isNotEmpty) {
       await _importService.injectImport(
@@ -237,7 +237,7 @@ class InputService {
     final imports = await _importResolverService.resolve(
       rawTypes: {input.type},
       targetFilePath: input.widgetPath,
-      featurePath: input.featurePath,
+      modulePath: input.modulePath,
     );
     if (imports.isNotEmpty) {
       await _importService.injectImport(
@@ -271,7 +271,7 @@ class InputService {
     final imports = await _importResolverService.resolve(
       rawTypes: {input.valueType},
       targetFilePath: input.widgetPath,
-      featurePath: input.featurePath,
+      modulePath: input.modulePath,
     );
     if (imports.isNotEmpty) {
       await _importService.injectImport(

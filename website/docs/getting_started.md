@@ -39,6 +39,8 @@ Use chain worflow command below to your terminal.
 fsda create travel_kan
 cd travel_kan
 
+set -e; exec > >(tee -a travel_kan_workflow.log) 2>&1
+
 fsda pkg get
 fsda pkg add infra_dio infra_shared_preferences infra_logging
 
@@ -51,7 +53,15 @@ fsda gen-model destination_entity \
     -m location -f destination \
     --with-dto \
     --l10n \
-    -p "int:id,String:name,String:description,String:image_url,double:rating,int:review_count,bool:is_popular,DateTime:created_at::UtcDateTimeConverter,DateTime:updated_at::UtcDateTimeConverter" 
+    -p "int:id" \
+    -p "String:name" \
+    -p "String:description" \
+    -p "String:image_url" \
+    -p "double:rating" \
+    -p "int:review_count" \
+    -p "bool:is_popular" \
+    -p "DateTime:created_at::UtcDateTimeConverter" \
+    -p "DateTime:updated_at::UtcDateTimeConverter" 
 
 fsda gen-sequence get \
     -m location -f destination \
@@ -68,6 +78,7 @@ fsda gen-ui-lsh \
     --model destination_entity
 
 fsda rebuild -m location
+fsda fix-import -m location
 
 fsda gen-app travelkan \
     --org com.fdelux \
@@ -84,3 +95,29 @@ fsda compose-r \
 ```
 
 After that, perform a manual check and make adjustments—including invoking the sections on the home page, since the generated Compose code consists of section widgets—and then test it.
+
+```dart title="home_page.dart" {2,7}
+...
+import '../../../modules/location/features/destination/widgets/destination_popular_section.dart';
+...
+      body: ListView(
+        padding: const EdgeInsets.all(AppSpacing.screen),
+        children: [
+          const DestinationPopularSection(),
+        ],
+      ),
+...
+```
+
+```dart title="destination_remote_data_source_impl.dart" {5}
+import 'package:app_core/app_core.dart';
+...
+  @override
+  Future<List<DestinationDto>> getDestinationPopular() async {
+    final path = '$_basePath/popular';
+    ...
+  }
+...
+```
+
+<img src="/fsda_cli/images/travelkan.png" alt="TravelKan" width="30%" />

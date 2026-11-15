@@ -11,10 +11,12 @@ import '../../infrastructure/services/helpers/arb_service.dart';
 import '../../infrastructure/services/helpers/config_service.dart';
 import '../../infrastructure/services/helpers/directory_service.dart';
 import '../../infrastructure/services/helpers/export_service.dart';
+import '../../infrastructure/services/helpers/file_finder_service.dart';
 import '../../infrastructure/services/helpers/file_service.dart';
 import '../../infrastructure/services/helpers/import_resolver_service.dart';
 import '../../infrastructure/services/helpers/import_service.dart';
 import '../../infrastructure/services/helpers/logic_uc_service.dart';
+import '../../infrastructure/services/helpers/mason_generator_service.dart';
 import '../../infrastructure/services/helpers/method_service.dart';
 import '../../infrastructure/services/helpers/operation_report_service.dart';
 import '../../infrastructure/services/helpers/process_service.dart';
@@ -64,8 +66,14 @@ void configureDependencies() {
   sl.registerLazySingleton<LogicUcService>(
     () => LogicUcService(fileService: sl()),
   );
+  sl.registerLazySingleton<FileFinderService>(
+    () => FileFinderService(fileService: sl(), directoryService: sl()),
+  );
   sl.registerLazySingleton<ImportResolverService>(
-    () => ImportResolverService(fileService: sl()),
+    () => ImportResolverService(fileService: sl(), fileFinderService: sl()),
+  );
+  sl.registerLazySingleton<MasonGeneratorService>(
+    () => MasonGeneratorService(directoryService: sl(), reportService: sl()),
   );
 
   // Maintenance
@@ -110,6 +118,7 @@ void configureDependencies() {
       reportService: sl<OperationReportService>(),
       directoryService: sl(),
       fileService: sl(),
+      generatorService: sl(),
     ),
   );
   sl.registerLazySingleton<ConfigureAppService>(
@@ -129,6 +138,9 @@ void configureDependencies() {
       processService: sl<ProcessService>(),
       reportService: sl<OperationReportService>(),
       directoryService: sl(),
+      buildRunnerService: sl(),
+      l10nService: sl(),
+      masonGeneratorService: sl(),
     ),
   );
   sl.registerLazySingleton<FeatureService>(
@@ -225,6 +237,7 @@ void configureDependencies() {
       importResolverService: sl(),
       importService: sl(),
       exportService: sl(),
+      fileFinderService: sl(),
     ),
   );
 
@@ -233,6 +246,7 @@ void configureDependencies() {
       fileService: sl(),
       reportService: sl(),
       importService: sl(),
+      refreshService: sl(),
     ),
   );
   sl.registerLazySingleton<RegFeatureService>(

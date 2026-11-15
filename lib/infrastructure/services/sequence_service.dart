@@ -141,7 +141,7 @@ class SequenceService {
         ?sequence.flow.returnType,
       },
       targetFilePath: path,
-      featurePath: sequence.featurePath,
+      modulePath: sequence.modulePath,
     );
 
     await _importService.injectImport(path: path, imports: imports);
@@ -175,7 +175,7 @@ class SequenceService {
         '${sequence.modulePascal}Exception',
       },
       targetFilePath: path,
-      featurePath: sequence.featurePath,
+      modulePath: sequence.modulePath,
     );
 
     await _importService.injectImport(path: path, imports: imports);
@@ -199,7 +199,7 @@ class SequenceService {
         sequence.flow.resultType,
       },
       targetFilePath: path,
-      featurePath: sequence.featurePath,
+      modulePath: sequence.modulePath,
     );
 
     await _importService.injectImport(path: path, imports: imports);
@@ -230,7 +230,7 @@ class SequenceService {
         sequence.flow.resultType,
       },
       targetFilePath: path,
-      featurePath: sequence.featurePath,
+      modulePath: sequence.modulePath,
     );
 
     await _importService.injectImport(path: path, imports: imports);
@@ -260,7 +260,7 @@ class SequenceService {
     final imports = await _importResolverService.resolve(
       rawTypes: {?sequence.entityPascal, ?sequence.paramPascal},
       targetFilePath: path,
-      featurePath: sequence.featurePath,
+      modulePath: sequence.modulePath,
     );
 
     await _importService.injectImport(path: path, imports: imports);

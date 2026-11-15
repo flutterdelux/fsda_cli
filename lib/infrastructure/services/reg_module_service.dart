@@ -14,19 +14,23 @@ import '../visitors/localization_delegates_visitor.dart';
 import 'helpers/file_service.dart';
 import 'helpers/import_service.dart';
 import 'helpers/operation_report_service.dart';
+import 'maintenance/refresh_service.dart';
 
 class RegModuleService {
   final OperationReportService _reportService;
   final FileService _fileService;
   final ImportService _importService;
+  final RefreshService _refreshService;
 
   const RegModuleService({
     required OperationReportService reportService,
     required FileService fileService,
     required ImportService importService,
+    required RefreshService refreshService,
   }) : _reportService = reportService,
        _fileService = fileService,
-       _importService = importService;
+       _importService = importService,
+       _refreshService = refreshService;
 
   Future<void> registerModule({
     required RegModuleParam param,
@@ -66,6 +70,9 @@ class RegModuleService {
 
     onProgress('Injecting module route into app_router.dart...');
     await _injectAppRouter(param);
+
+    onProgress('refreshing app...');
+    await _refreshService.refresh(param.appPath, onProgress: onProgress);
   }
 
   // ================= Helpers =================

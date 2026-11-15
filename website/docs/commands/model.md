@@ -3,11 +3,10 @@ id: commands-model
 title: Model
 ---
 
-
 ## gen-model
 
 ```bash
-fsda gen-model <name_type> --props "<props>" -f <feature> -m <module> [--l10n] [--with-dto] [--with-request]
+fsda gen-model <name_type> -p "<type>:<name>[:default[:converter]]" -f <feature> -m <module> [--l10n] [--with-dto] [--with-request]
 ```
 
 Generates a Freezed-backed data model class tailored to its architectural layer. The model type is automatically detected from the suffix of the model name (e.g., `_entity`, `_dto`, `_request`, `_param`, `_response`). It automatically handles property annotations, default values, JSON serialization, auto-importing local/global dependencies, barrel file exports, optional paired model creation, and localization entries.
@@ -27,12 +26,12 @@ Generates a Freezed-backed data model class tailored to its architectural layer.
 * **Format**: Must follow strict `snake_case` combining a base name and a valid type suffix (e.g., `task_entity`, `user_profile_dto`, `payment_transaction_response`).
 * **Validation**: Names without a valid type suffix or single-word names (like `entity` or `task`) will be rejected immediately with an error.
 
-### Properties Syntax (`--props`)
+### Properties Syntax (`--prop`)
 
-Properties are passed as a comma-separated string using colon (`:`) delimiters:
+Properties are passed using the multi-flag `--prop` option. Each property follows a colon-delimited structure:
 
 ```bash
---props "<type_1>:<name_1>:<default_1>:<Converter1>,<type_2>:<name_2>..."
+--prop "<type>:<name>[:default[:converter]]"
 ```
 
 * **`<type>`**: Dart type (e.g., `String`, `int`, `DateTime`, `Uint8List`, `TaskStatus`). Append `?` for nullable types.
@@ -45,16 +44,25 @@ Properties are passed as a comma-separated string using colon (`:`) delimiters:
 #### Examples
 
 ```bash
-# Simple Entity with L10n
-fsda gen-model task_entity --props "String:id,String:title,bool:is_completed:false" -f task -m todo --l10n
+# Simple Entity with L10n using multi-flag --prop
+fsda gen-model task_entity \
+  --prop "String:id" \
+  --prop "String:title" \
+  --prop "bool:is_completed:false" \
+  -f task -m todo --l10n
 
-# Generate Paired Entity & DTO simultaneously
-fsda gen-model task_entity --with-dto --props "String:id,TaskStatus:status:TaskStatus.pending,DateTime:created_at::UtcDateTimeConverter" -f task -m todo
+# Generate Paired Entity & DTO simultaneously with complex properties & converters
+fsda gen-model task_entity \
+  --prop "String:id" \
+  --prop "TaskStatus:status:TaskStatus.pending" \
+  --prop "DateTime:created_at::UtcDateTimeConverter" \
+  --with-dto \
+  -f task -m todo
 ```
 
 ### Options
 
-* `-p`, `--props "<props>"`: **(Required)** Comma-separated property specifications.
+* `-p`, `--prop <property>`: **(Required)** Defines a property specification (supports multi-flag usage for clean multi-line commands).
 * `-f`, `--feature <name>`: **(Required)** Target feature name under `lib/src/features/`.
 * `-m`, `--module <name>`: **(Required)** Target module name under `modules/`.
 * `--l10n`: *(Optional)* Injects localization keys for the model and its properties into module ARB files. Only supported for `_entity` models.
@@ -67,13 +75,13 @@ Must be executed inside an FSDA workspace root directory where `fsda.yaml` is pr
 
 ### What Happens
 
-1. **Validates Inputs & Options**: Checks whether required options (`--props`, `--module`, `--feature`) are provided, validates model name suffixes, and verifies paired flag rules (`--with-dto` only for entities, `--with-request` only for params).
+1. **Validates Inputs & Options**: Checks whether required options (`--prop`, `--module`, `--feature`) are provided, validates model name suffixes, and verifies paired flag rules (`--with-dto` only for entities, `--with-request` only for params).
 2. **Directory & Fail-Fast Existence Checks**: Verifies that the target module and feature exist physically on disk, and ensures that neither the primary model nor the paired model file already exists.
 3. **Smart Auto-Import Resolution**: Automatically resolves and organizes required imports without manual intervention for both primary and paired models:
-    * **Dart Built-ins**: Ignores `dart:core` types; automatically adds `import 'dart:typed_data';` or `import 'dart:io';` for special types.
-    * **Global Dependencies**: Resolves shared classes defined in `fsda.yaml` under `import_types_related_to.app_core`.
-    * **Local Dependencies**: Automatically scans local `enums`, `entities`, `params`, `dtos`, `requests`, `responses`, and `converters` directories within the feature and resolves relative import paths.
-    * **Import Ordering**: Sorts imports systematically into 3 distinct tiers (`dart:*` $\rightarrow$ `package:*` $\rightarrow$ relative paths `../`).
+* **Dart Built-ins**: Ignores `dart:core` types; automatically adds `import 'dart:typed_data';` or `import 'dart:io';` for special types.
+* **Global Dependencies**: Resolves shared classes defined in `fsda.yaml` under `import_types_related_to.app_core`.
+* **Local Dependencies**: Automatically scans local `enums`, `entities`, `params`, `dtos`, `requests`, `responses`, and `converters` directories within the feature and resolves relative import paths.
+* **Import Ordering**: Sorts imports systematically into 3 distinct tiers (`dart:*` $\rightarrow$ `package:*` $\rightarrow$ relative paths `../`).
 4. **Scaffolds Model Files**: Generates Freezed class structures for specified target models.
 5. **Automatic Barrel Export**: Automatically injects export statements into the feature barrel file (`<feature>_feature.dart`) under the `// domain` checkpoint (for `_entity` and `_param` models).
 6. **Automatic ARB Injection** *(when `--l10n` is enabled)*: Inserts model title and property localization entries into the module's ARB files right before the feature's end divider key (`<feature>EndDivider`).

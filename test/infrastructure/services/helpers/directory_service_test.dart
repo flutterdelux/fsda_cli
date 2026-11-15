@@ -94,7 +94,7 @@ void main() {
         await File(filePath).create();
         await File(txtPath).create();
 
-        final filePaths = await directoryService.listFilePaths(
+        final filePaths = await directoryService.listPaths(
           dirPath: tempDir.path,
           where: (fileSystem, isFile) =>
               isFile && fileSystem.path.endsWith('.arb'),
@@ -108,7 +108,7 @@ void main() {
     test(
       'listFilePaths should return empty list if dirPath does not exist',
       () async {
-        final result = await directoryService.listFilePaths(
+        final result = await directoryService.listPaths(
           dirPath: '${tempDir.path}/invalid_path',
           where: (_, _) => true,
         );

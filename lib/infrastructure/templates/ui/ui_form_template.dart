@@ -1,16 +1,22 @@
+import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 
+import '../../../core/constants/default_value.dart';
 import '../../../core/extensions/feature_gate_param_x.dart';
 import '../../../core/extensions/module_gate_param_x.dart';
 import '../../../core/extensions/slice_gate_param_x.dart';
 import '../../../core/extensions/ui_gate_param_x.dart';
 import '../../../domain/models/artifact_generation_model.dart';
+import '../../../domain/models/prop_model.dart';
 import '../../../domain/params/ui/ui_form_param.dart';
 import '../../text_modifiers/string_extension.dart';
 import 'ui_compose_field_template.dart';
 
 abstract final class UiFormTemplate {
-  static ArtifactGenerationModel build(UiFormParam ui) {
+  static ArtifactGenerationModel build({
+    required UiFormParam ui,
+    required List<PropModel> props,
+  }) {
     final className = '${ui.featurePascal}${ui.slicePascal}';
     final hasInitial = ui.hasInitial;
 
@@ -47,13 +53,24 @@ abstract final class UiFormTemplate {
         )
         .join('\n');
 
-    final initializeDataListen = [
-      if (hasInitial) '      id: widget.initialData.id,',
-      ...ui.fields.map((e) {
-        final fieldCamel = e.fieldName.camelCase;
-        return '      $fieldCamel: $fieldCamel,';
-      }),
-    ].join('\n');
+    // final initializeDataListen = [
+    //   if (hasInitial) '      id: widget.initialData.id,',
+    //   ...ui.fields.map((e) {
+    //     final fieldCamel = e.fieldName.camelCase;
+    //     return '      $fieldCamel: $fieldCamel,';
+    //   }),
+    // ].join('\n');
+    final initializeDataListen = props
+        .map((prop) {
+          final propName = prop.name.camelCase;
+          final value =
+              ui.fields
+                  .firstWhereOrNull((field) => field.fieldName == prop.name)
+                  ?.fieldName ??
+              prop.defaultValue;
+          return '      $propName: ${value.isNotEmpty ? value : DefaultValue.fromType(prop.type)},';
+        })
+        .join('\n');
 
     final composeFieldInitStates = ui.fields
         .map(

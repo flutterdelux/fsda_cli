@@ -1,6 +1,6 @@
 ---
 id: commands-index
-title: CLI Commands Overview
+title: CLI Commands
 ---
 
 # FSDA CLI Commands
@@ -25,7 +25,7 @@ Commands in FSDA CLI are organized according to the architectural development li
 * **[Sequence](./sequence.md)** (`gen-sequence`, `rm-sequence`) — Wires complete Data-to-Domain operation flows (*Use Case*, *Repository*, *Data Source*).
 
 ### 3. State Management & Presentation (Module Level)
-* **[Logic](./logic.md)** (`gen-logic`, `gen-logic-flow`) — Generates property-based or Use Case-driven state management components (`Cubit`, `Bloc`, `Provider`, `Riverpod`, `GetX`).
+* **[Logic](./logic.md)** (`gen-logic`, `gen-logic-flow`) — Generates property-based or Use Case-driven state management components (`Cubit`, `Provider`, `Riverpod`, `GetX`).
 * **[Input](./input.md)** (`input-*`) — Scaffolds atomic input field UI widgets (*text, number, dropdown, selector*, etc.).
 * **[UI](./ui.md)** (`gen-ui`, `gen-ui-form`, `gen-ui-lsh`, `gen-ui-lsv`, `gen-ui-pag`) — Generates slice presentation components (*content, skeleton, form, list, pagination*).
 

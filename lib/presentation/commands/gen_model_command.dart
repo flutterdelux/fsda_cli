@@ -22,10 +22,11 @@ class GenModelCommand extends FeatureGateCommand {
     required super.directoryService,
   }) : _modelService = modelService,
        _fileService = fileService {
-    argParser.addOption(
-      'props',
+    argParser.addMultiOption(
+      'prop',
       abbr: 'p',
-      help: 'Comma-separated properties (e.g., "String:id,String:name").',
+      help:
+          'Define model property (e.g., --prop "String:id" --prop "TaskStatus:status::TaskStatusConverter").',
     );
     argParser.addFlag(
       'l10n',
@@ -53,7 +54,7 @@ class GenModelCommand extends FeatureGateCommand {
 
   @override
   String get invocation =>
-      'fsda gen-model <name_type> --props "<props>" -f <feature> -m <module> [--l10n]';
+      'fsda gen-model <name_type> -p "<type>:<name>[:default[:converter]]" -f <feature> -m <module> [--l10n]';
 
   @override
   Future<int> handleFeatureGate(FeatureGateParam featureGateParam) async {
@@ -101,10 +102,8 @@ class GenModelCommand extends FeatureGateCommand {
       return errorUsage;
     }
 
-    // Gabungkan kembali bagian sebelumnya sebagai nama dasar model (support multi-underscore seperti user_profile)
     final modelName = parts.sublist(0, parts.length - 1).join('_');
 
-    // Validasi ulang nama dasar setelah dipotong untuk memastikan tetap sesuai aturan model
     if (!Rules.modelRegExp.hasMatch(modelName)) {
       logger.error('Invalid base model name: "$modelName".');
       logger.log(Rules.modelDescription);
@@ -112,17 +111,26 @@ class GenModelCommand extends FeatureGateCommand {
       return errorUsage;
     }
 
-    final propsArg = argResults?['props'] as String?;
+    // Mengambil argumen multi-option 'prop'
+    final propArgs = argResults?['prop'] as List<String>?;
     final isInjectL10n = argResults?['l10n'] as bool? ?? false;
 
-    if (propsArg == null) {
-      logger.error('Missing required options (--props).');
+    if (propArgs == null || propArgs.isEmpty) {
+      logger.error(
+        'Missing required options (--prop). At least one property is required.',
+      );
       logger.log('Usage: $invocation');
       return errorUsage;
     }
 
     // Parsing Props
-    final propsList = _parseProps(propsArg);
+    final propsList = _parseProps(
+      rawProps: propArgs,
+      withConverter: switch (modelType) {
+        .dto || .request || .response => true,
+        _ => false,
+      },
+    );
     if (propsList == null) return errorUsage;
 
     if (isInjectL10n && modelType != ModelType.entity) {
@@ -134,7 +142,6 @@ class GenModelCommand extends FeatureGateCommand {
     final isWithDto = argResults?['with-dto'] as bool? ?? false;
     final isWithRequest = argResults?['with-request'] as bool? ?? false;
 
-    // Validasi aturan pasangan flag
     if (isWithDto && modelType != ModelType.entity) {
       logger.error(
         'Invalid option --with-dto: Only allowed for entity model type.',
@@ -164,18 +171,7 @@ class GenModelCommand extends FeatureGateCommand {
         name: modelName,
         path: modelPath,
         type: modelType,
-        props: modelType == .entity || modelType == .param
-            ? propsList
-                  .map(
-                    (e) => PropModel(
-                      type: e.type,
-                      name: e.name,
-                      defaultValue: e.defaultValue,
-                      converter: '', // agar tidak dicetak untuk entity/param
-                    ),
-                  )
-                  .toList(growable: false)
-            : propsList,
+        props: propsList,
         isInjectL10n: isInjectL10n,
         featureGate: featureGateParam,
       ),
@@ -200,13 +196,12 @@ class GenModelCommand extends FeatureGateCommand {
           path: pairedPath,
           type: pairedModelType,
           props: propsList,
-          isInjectL10n: false, // Pair tidak perlu injeksi l10n
+          isInjectL10n: false,
           featureGate: featureGateParam,
         ),
       );
     }
 
-    // Cek eksistensi SEMUA file di awal sebelum proses apapun dimulai (Fail-fast)
     for (final model in modelsToGenerate) {
       if (await _fileService.exists(model.path)) {
         logger.error('Model file already exists at ${model.path}');
@@ -214,11 +209,10 @@ class GenModelCommand extends FeatureGateCommand {
       }
     }
 
-    // Eksekusi perulangan pembuatan melalui service
+    final progress = logger.progress(
+      'Generating models in feature "${featureGateParam.featureName}"...',
+    );
     for (final model in modelsToGenerate) {
-      final progress = logger.progress(
-        'Generating models in feature "${model.featureName}" (${model.moduleName})...',
-      );
       try {
         progress.update('Generating ${model.type.value} model...');
         await _modelService.generateModel(
@@ -246,9 +240,12 @@ class GenModelCommand extends FeatureGateCommand {
     return successCode;
   }
 
-  List<PropModel>? _parseProps(String propsArg) {
+  // Parser disesuaikan menerima List<String> langsung dari multi-flag --prop
+  List<PropModel>? _parseProps({
+    required List<String> rawProps,
+    required bool withConverter,
+  }) {
     final propsList = <PropModel>[];
-    final rawProps = propsArg.split(',');
     for (final raw in rawProps) {
       final parts = raw.split(':');
       final type = parts.isNotEmpty ? parts[0].trim() : '';
@@ -257,13 +254,13 @@ class GenModelCommand extends FeatureGateCommand {
       final converter = parts.length > 3 ? parts[3].trim() : '';
 
       if (type.isEmpty) {
-        logger.error('Invalid property type: type is empty.');
+        logger.error('Invalid property type in "$raw": type is empty.');
         logger.log('Usage: $invocation');
         return null;
       }
 
       if (propName.isEmpty) {
-        logger.error('Invalid property name: name is empty.');
+        logger.error('Invalid property name in "$raw": name is empty.');
         logger.log('Usage: $invocation');
         return null;
       }
@@ -275,7 +272,7 @@ class GenModelCommand extends FeatureGateCommand {
         return null;
       }
 
-      if (converter.isNotEmpty) {
+      if (withConverter && converter.isNotEmpty) {
         if (!Rules.propConverterRegExp.hasMatch(converter)) {
           logger.error('Invalid converter name: "$converter".');
           logger.log(Rules.propConverterDescription);

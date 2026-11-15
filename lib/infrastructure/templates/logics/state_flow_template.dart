@@ -59,8 +59,7 @@ sealed class ${logic.statePascal} with _\$${logic.statePascal} {
   const factory ${logic.statePascal}.initial() = _Initial;
   const factory ${logic.statePascal}.loading() = _Loading;
   const factory ${logic.statePascal}.success(${_propState(logic)}) = _Success;
-  const factory ${logic.statePascal}.failure({required Failure failure}) =
-      _Failure;
+  const factory ${logic.statePascal}.failure({required Failure failure}) = _Failure;
 }
 ''';
 }
@@ -77,8 +76,7 @@ sealed class ${logic.statePascal} with _\$${logic.statePascal} {
   const factory ${logic.statePascal}.initial() = _Initial;
   const factory ${logic.statePascal}.loading() = _Loading;
   const factory ${logic.statePascal}.loaded(${_propState(logic)}) = _Loaded;
-  const factory ${logic.statePascal}.failure({required Failure failure}) =
-      _Failure;
+  const factory ${logic.statePascal}.failure({required Failure failure}) = _Failure;
 }
 ''';
 }

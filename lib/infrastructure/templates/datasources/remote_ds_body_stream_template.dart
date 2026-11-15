@@ -33,7 +33,7 @@ ${(sequence.isList ? streamList : streamMap).trimRight()}
     } catch (e, st) {
       if (e is AppException) {
         if (e.message.contains('404')) {
-          throw ${sequence.modulePascal}Exception.${sequence.featurePascal}NotFound(msg: e.message, st: st);
+          throw ${sequence.modulePascal}Exception.${sequence.featureCamel}NotFound(msg: e.message, st: st);
         }
       }
       throw ${sequence.modulePascal}Exception.fromException(e, st: st);
@@ -61,7 +61,7 @@ ${(sequence.isList ? streamList : streamMap).trimRight()}
     } catch (e, st) {
       if (e is AppException) {
         if (e.message.contains('404')) {
-          throw ${sequence.modulePascal}Exception.${sequence.featurePascal}NotFound(msg: e.message, st: st);
+          throw ${sequence.modulePascal}Exception.${sequence.featureCamel}NotFound(msg: e.message, st: st);
         }
       }
       throw ${sequence.modulePascal}Exception.fromException(e, st: st);

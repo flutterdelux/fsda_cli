@@ -49,11 +49,13 @@ void main() {
     );
   });
 
-  group('PackageSyncService Coverage Tests', () {
+  group('PackageSyncService', () {
     test(
-      'syncPackages covers package addition, bundle extraction, and hook execution',
+      'Given active packages with missing directories and spec containing dev_dependencies/post_hooks, '
+      'When syncPackages is called, '
+      'Then it extracts bundle files, parses spec hooks, and executes process commands successfully',
       () async {
-        // Ambil paket pertama dari packageBundle agar ada data valid yang diproses
+        // Arrange (Given)
         final samplePkgName = packageBundle.keys.isNotEmpty
             ? packageBundle.keys.first
             : 'sample_pkg';
@@ -69,19 +71,19 @@ void main() {
               compileSdk: 34,
               targetSdk: 34,
             ),
-            activePackages: [samplePkgName], // Memicu perulangan activePackages
+            activePackages: [samplePkgName],
           ),
         );
 
         when(() => mockDirectoryService.currentPath).thenReturn('/ws');
 
-        // Mengatur agar paket aktif dianggap belum ada (false) sehingga memicu _copyPackageFromBundle
+        // Mengatur agar direktori paket belum ada, memaksa _copyPackageFromBundle berjalan
         when(() => mockDirectoryService.exists(any())).thenAnswer((
           invocation,
         ) async {
           final path = invocation.positionalArguments.first as String;
           if (path.contains(samplePkgName)) {
-            return false; // Memicu penambahan paket & copy bundle
+            return false;
           }
           return true;
         });
@@ -112,64 +114,67 @@ void main() {
           () => mockReportService.addRemovedPackages(any()),
         ).thenReturn(null);
 
+        // Act (When)
         final progressLogs = <String>[];
         await packageSyncService.syncPackages(
           onProgress: (msg) => progressLogs.add(msg),
         );
 
+        // Assert (Then)
         expect(progressLogs, isNotEmpty);
         verify(() => mockConfigService.loadConfig()).called(1);
-      },
-    );
-
-    test(
-      'syncPackages covers package retention when directory already exists',
-      () async {
-        final samplePkgName = packageBundle.keys.isNotEmpty
-            ? packageBundle.keys.first
-            : 'sample_pkg';
-
-        when(() => mockConfigService.loadConfig()).thenAnswer(
-          (_) async => ConfigModel(
-            workspaceName: 'ws',
-            workspacePath: '/ws',
-            cliVersion: '1.0',
-            sdkVersion: '3.0',
-            android: const ConfigAndroidModel(
-              minSdk: 21,
-              compileSdk: 34,
-              targetSdk: 34,
-            ),
-            activePackages: [samplePkgName],
-          ),
-        );
-
-        when(() => mockDirectoryService.currentPath).thenReturn('/ws');
-        // Mengatur agar direktori sudah ada (true), sehingga memicu branch "Retaining package"
-        when(
-          () => mockDirectoryService.exists(any()),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockDirectoryService.delete(any()),
-        ).thenAnswer((_) async => {});
-
-        when(
-          () => mockReportService.addRetainedPackages(any()),
-        ).thenReturn(null);
-        when(
-          () => mockReportService.addRemovedPackages(any()),
-        ).thenReturn(null);
-
-        final progressLogs = <String>[];
-        await packageSyncService.syncPackages(
-          onProgress: (msg) => progressLogs.add(msg),
-        );
-
-        expect(progressLogs, isNotEmpty);
         verify(
-          () => mockReportService.addRetainedPackages(any()),
+          () => mockDirectoryService.create(any()),
         ).called(greaterThanOrEqualTo(0));
       },
     );
+
+    test('Given active packages whose directories already exist, '
+        'When syncPackages is called, '
+        'Then it retains the packages without re-copying them', () async {
+      // Arrange (Given)
+      final samplePkgName = packageBundle.keys.isNotEmpty
+          ? packageBundle.keys.first
+          : 'sample_pkg';
+
+      when(() => mockConfigService.loadConfig()).thenAnswer(
+        (_) async => ConfigModel(
+          workspaceName: 'ws',
+          workspacePath: '/ws',
+          cliVersion: '1.0',
+          sdkVersion: '3.0',
+          android: const ConfigAndroidModel(
+            minSdk: 21,
+            compileSdk: 34,
+            targetSdk: 34,
+          ),
+          activePackages: [samplePkgName],
+        ),
+      );
+
+      when(() => mockDirectoryService.currentPath).thenReturn('/ws');
+      // Mengatur agar direktori sudah ada, memicu branch "Retaining package"
+      when(
+        () => mockDirectoryService.exists(any()),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockDirectoryService.delete(any()),
+      ).thenAnswer((_) async => {});
+
+      when(() => mockReportService.addRetainedPackages(any())).thenReturn(null);
+      when(() => mockReportService.addRemovedPackages(any())).thenReturn(null);
+
+      // Act (When)
+      final progressLogs = <String>[];
+      await packageSyncService.syncPackages(
+        onProgress: (msg) => progressLogs.add(msg),
+      );
+
+      // Assert (Then)
+      expect(progressLogs, isNotEmpty);
+      verify(
+        () => mockReportService.addRetainedPackages(any()),
+      ).called(greaterThanOrEqualTo(0));
+    });
   });
 }

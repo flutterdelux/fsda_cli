@@ -35,17 +35,17 @@ fsda gen-ui -s detail -f product -m catalog --model product_entity
 ## gen-ui-form
 
 ```bash
-fsda gen-ui-form -s <slice> -f <feature> -m <module> --model <model> --fields "<fields>" [--initial]
+fsda gen-ui-form -s <slice> -f <feature> -m <module> --model <model> --field "<input_type>:<value_type>:<field_name>[:default]" [--initial]
 ```
 
 Generates an interactive form widget for a feature slice complete with adaptive input controllers, value notifiers, validation logic, and localization injections.
 
-### Properties Syntax (`--fields`)
+### Field Syntax (`--field`)
 
-Form fields are passed as a comma-separated string using colon (`:`) delimiters:
+Form fields are passed using the multi-flag `--field` option. Each field follows a colon-delimited structure:
 
 ```bash
---fields "<input_type_1>:<value_type_1>:<field_name_1>:<default_value_1>,<input_type_2>:<value_type_2>..."
+--field "<input_type>:<value_type>:<field_name>[:default_value]"
 ```
 
 * **`<input_type>`**: **(Required)** Input control type (e.g., `text`, `number`, `password`, `dropdown`, `dropdown_enum`, `selector`, `selectorList`, `swich`, `image`, `qty`, `textArea`).
@@ -59,13 +59,17 @@ Form fields are passed as a comma-separated string using colon (`:`) delimiters:
 * `-f`, `--feature <name>`: **(Required)** Target feature name.
 * `-m`, `--module <name>`: **(Required)** Target module name.
 * `--model <model>`: **(Required)** Model name in strict `snake_case` ending with `_entity` or `_param` representing the form result model (e.g., `product_entity`, `user_input_param`).
-* `--fields "<fields>"`: **(Required)** Comma-separated input fields specifications.
+* `--field "<field>"`: **(Required)** Defines an input field specification (supports multi-flag usage for clean multi-line commands).
 * `--initial`: *(Optional)* Flag indicating whether the generated form accepts an initial data state.
 
 ### Examples
 
 ```bash
-fsda gen-ui-form -s create -f catalog -m store --model product_entity --fields "text:String:title,number:double:price:0.0,dropdown_enum:TaxType:tax_type" --initial
+fsda gen-ui-form -s create -f catalog -m store --model product_entity \
+  --field "text:String:title" \
+  --field "number:double:price:0.0" \
+  --field "dropdown_enum:TaxType:tax_type" \
+  --initial
 ```
 
 ---
@@ -149,9 +153,10 @@ Must be executed inside an FSDA workspace root directory where `fsda.yaml` is pr
 
 * If any of the target UI artifact files already exist inside the destination directory, the command halts execution immediately with an error (fail-fast) and leaves existing files untouched to prevent unintended overwrites.
 
+
 ### What Happens
 
-1. **Validates Inputs & Options**: Checks whether required options (`--model`, `--fields`, `--module`, `--feature`) are provided, validates `--model` against strict `snake_case` rules and `_entity`/`_param` suffixes, and parses field strings immediately using fail-fast validation.
+1. **Validates Inputs & Options**: Checks whether required options (`--model`, `--field`, `--module`, `--feature`) are provided, validates `--model` against strict `snake_case` rules and `_entity`/`_param` suffixes, and parses each `--field` entry immediately using fail-fast validation.
 2. **Smart Auto-Import Resolution**: Resolves and organizes required imports automatically for built-ins, local dependencies, and shared packages (`app_core`, `app_ui`, `app_l10n`).
 3. **Scaffolds UI Artifacts**: Generates widget content, parts, skeletons, and feedback files under the `ui/<slice>/widgets/` directory structure.
 4. **Automatic Barrel Export**: Automatically injects export statements for primary variant files into the feature barrel file (`<feature>_feature.dart`) under the `// ui` checkpoint.

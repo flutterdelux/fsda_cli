@@ -32,7 +32,7 @@ abstract final class ComposeHelperTemplate {
         '''
         return Scaffold(
           appBar: AppBar(
-            title: Text(${param.moduleCamel}L10n.${featureUiSlice.camelCase}Title),
+            title: Text(${param.moduleCamel}L10n.${featureUiSlice.camelCase}Title),            
           ),
           body: _buildContent(context),
         );
@@ -40,7 +40,10 @@ abstract final class ComposeHelperTemplate {
       .section =>
         '''
         return AppSection(
-          header: AppSectionHeader(titleText: ${param.moduleCamel}L10n.${featureUiSlice.camelCase}Title),
+          header: AppSectionHeader(
+            titleText: ${param.moduleCamel}L10n.${featureUiSlice.camelCase}Title,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
+          ),
           child: _buildContent(context),
         );
 ''',
@@ -107,7 +110,10 @@ abstract final class ComposeHelperTemplate {
         return Stack(
           children: [
             AppSection(
-              header: AppSectionHeader(titleText: ${param.moduleCamel}L10n.${featureUiSlice.camelCase}Title),
+              header: AppSectionHeader(
+                titleText: ${param.moduleCamel}L10n.${featureUiSlice.camelCase}Title,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
+              ),
               child: _buildContent(context),
             ),
             _buildOverlay(context),
@@ -169,9 +175,7 @@ abstract final class ComposeHelperTemplate {
         '''
         return Stack(
           children: [
-            AppSection(
-              child: _buildContent(context),
-            ),
+            _buildContent(context),
             _buildOverlay(context),
           ],
         );

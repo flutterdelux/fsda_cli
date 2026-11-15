@@ -10,24 +10,37 @@ These commands manage and generate feature slice state management components usi
 ## gen-logic
 
 ```bash
-fsda gen-logic -s <slice> -p "<props>" -f <feature> -m <module>
+fsda gen-logic -s <slice> -p "<type>:<name>[:default]" -f <feature> -m <module> [-c <control>]
 ```
 
-Generates a simple, property-based Cubit and Freezed State pair. This command is designed for basic state management where state is primarily updated via state properties without needing direct Use Case flow integrations.
+Generates a simple, property-based state management component (Cubit by default or specified state control) and Freezed State pair. This command is designed for basic state management where state is primarily updated via state properties without needing direct Use Case flow integrations.
 
 ### Options
 
 * `-s`, `--slice <name>`: **(Required)** Feature slice name in `snake_case` (e.g., `filter`, `form_input`).
-* `-p`, `--props <properties>`: **(Required)** Comma-separated properties formatted as `Type:name[:defaultValue]` (e.g., `"String:search_query,bool:is_filter_active:false"`).
+* `-p`, `--prop <property>`: **(Required)** Defines a property using the format `Type:name[:defaultValue]`. This is a multi-flag option (`--prop`), meaning you can call it multiple times to add several properties cleanly (e.g., `--prop "String:search_query" --prop "bool:is_active:false"`).
 * `-f`, `--feature <name>`: **(Required)** Target feature name under `lib/src/features/`.
 * `-m`, `--module <name>`: **(Required)** Target module name under `modules/`.
+* `-c`, `--control <control>`: *(Optional)* State control / state management approach (`cubit`, `bloc`, `getx`, `provider`, `riverpod`). Defaults to `cubit`.
+
+### Examples
+
+```bash
+# Generate a property-based Cubit using multi-flag --prop
+fsda gen-logic -s filter -f task -m todo \
+  --prop "String:search_query" \
+  --prop "bool:is_active:false" \
+  -c cubit
+```
 
 ### What Happens
 
-1. **Validates Inputs & Options**: Ensures mandatory parameters (`--slice`, `--props`) are provided and formatted properly.
+1. **Validates Inputs & Options**: Ensures mandatory parameters (`--slice`, `--prop`) are provided and formatted properly.
 2. **State & Cubit Scaffolding**: Generates:
-   * Freezed State file with declared properties and default values (`<feature>_<slice>_state.dart`).
-   * Cubit class with individual update methods for each property (`<feature>_<slice>_cubit.dart`).
+* Freezed State file with declared properties and default values (`<feature>_<slice>_state.dart`).
+* Cubit/Controller class with individual update methods for each property (`<feature>_<slice>_<control_suffix>.dart`).
+
+
 3. **Barrel Export Injection**: Automatically exports both files in the feature barrel (`<feature>_feature.dart`) under the `// logic` checkpoint.
 
 ### Workspace Guard
@@ -36,7 +49,7 @@ Must be executed inside an FSDA workspace root directory where `fsda.yaml` is pr
 
 ### Rerun Behavior
 
-* If logic file (`<feature>_<slice>_cubit.dart`) already exists in the target feature slice directory, commands halt execution immediately to prevent accidental overwrites.
+* If the logic file already exists in the target feature slice directory, commands halt execution immediately to prevent accidental overwrites.
 
 ---
 
@@ -51,7 +64,7 @@ Generates a flow-driven logic component (Cubit by default or specified state con
 ### Supported Logic Flow Types (`<type>`)
 
 * **`m`** (*mutation*): Used for state-modifying actions (e.g., create, update, delete). Generates `.initial()`, `.loading()`, `.success()`, and `.failure()` state variants.
-* **`r`** (*retrieval*): Used for fetching single-source data. Stores parameters internally within the Cubit for easy retry/refresh operations. Generates `.initial()`, `.loading()`, `.loaded()`, and `.failure()` state variants.
+* **`r`** (*retrieval*): Used for fetching single-source data. Stores parameters internally within the component for easy retry/refresh operations. Generates `.initial()`, `.loading()`, `.loaded()`, and `.failure()` state variants.
 * **`pag`** (*pagination*): Tailored for paginated list retrieval. Generates `init()`, `refresh()`, `loadMore()`, automatic page incrementing, and `hasReachedMax` checks.
 
 ### Use Case Adaptation
@@ -90,4 +103,4 @@ Must be executed inside an FSDA workspace root directory where `fsda.yaml` is pr
 
 ### Rerun Behavior
 
-* If logic file (`<feature>_<slice>_cubit.dart` or corresponding controller name) already exists in the target feature slice directory, commands halt execution immediately to prevent accidental overwrites.
+* If the logic file already exists in the target feature slice directory, commands halt execution immediately to prevent accidental overwrites.

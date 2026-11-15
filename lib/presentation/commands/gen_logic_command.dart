@@ -21,10 +21,10 @@ class GenLogicCommand extends SliceGateCommand {
     required super.directoryService,
   }) : _logicService = logicService,
        _fileService = fileService {
-    argParser.addOption(
-      'props',
+    argParser.addMultiOption(
+      'prop',
       abbr: 'p',
-      help: 'Comma-separated properties (e.g., "String:id,String:name").',
+      help: 'Define property (e.g., --prop "String:id" --prop "String:name").',
     );
     argParser.addOption(
       'control',
@@ -46,7 +46,7 @@ class GenLogicCommand extends SliceGateCommand {
 
   @override
   String get invocation =>
-      'fsda gen-logic -s <slice> -p "<props>" -f <feature> -m <module>';
+      'fsda gen-logic -s <slice> -p "<type>:<name>[:default]" -f <feature> -m <module>';
 
   @override
   Future<int> handleSliceGate(SliceGateParam sliceGateParam) async {
@@ -57,14 +57,14 @@ class GenLogicCommand extends SliceGateCommand {
       return errorUsage;
     }
 
-    final propsArg = argResults?['props'] as String?;
-    if (propsArg == null || propsArg.isEmpty) {
-      logger.error('props required.');
+    final propArgs = argResults?['prop'] as List<String>?;
+    if (propArgs == null || propArgs.isEmpty) {
+      logger.error('At least one --prop is required.');
       logger.log('Usage: $invocation');
       return errorUsage;
     }
 
-    final parsedProps = _parseProps(propsArg);
+    final parsedProps = _parseProps(propArgs);
     if (parsedProps == null) return errorUsage;
 
     final controlArg = argResults?['control'] as String;
@@ -114,9 +114,8 @@ class GenLogicCommand extends SliceGateCommand {
     }
   }
 
-  List<PropModel>? _parseProps(String propsArg) {
+  List<PropModel>? _parseProps(List<String> rawProps) {
     final propsList = <PropModel>[];
-    final rawProps = propsArg.split(',');
     for (final raw in rawProps) {
       final parts = raw.split(':');
       final type = parts.isNotEmpty ? parts[0].trim() : '';
@@ -124,13 +123,13 @@ class GenLogicCommand extends SliceGateCommand {
       final defaultValue = parts.length > 2 ? parts[2].trim() : '';
 
       if (type.isEmpty) {
-        logger.error('Invalid property type: type is empty.');
+        logger.error('Invalid property type: type is empty in "$raw".');
         logger.log('Usage: $invocation');
         return null;
       }
 
       if (propName.isEmpty) {
-        logger.error('Invalid property name: name is empty.');
+        logger.error('Invalid property name: name is empty in "$raw".');
         logger.log('Usage: $invocation');
         return null;
       }
