@@ -1,3 +1,10 @@
+## 2.0.0-dev.3
+
+### Fix
+
+- Allow top-level CLI flags such as `--version`, `-h`, and `--help` to bypass unknown-command validation in `main`.
+
+
 ## 2.0.0-dev.2
 
 ### Fix

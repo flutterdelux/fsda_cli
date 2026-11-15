@@ -18,7 +18,8 @@ void main(List<String> arguments) async {
       final commandName = arguments.first;
 
       final registeredCommands = runner.commands.keys;
-      if (!registeredCommands.contains(commandName)) {
+      if (!commandName.startsWith('-') &&
+          !registeredCommands.contains(commandName)) {
         logger.error('Command "$commandName" is not recognized.');
         logger.log('Run "fsda --help" to see a list of available commands.');
         exitCode = 64;
