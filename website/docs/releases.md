@@ -15,9 +15,36 @@ This page summarizes documentation channels and behavior changes that matter for
 | `1.0.16` | Historical snapshot for CLI v1.0.16. |
 
 Use the version dropdown in the top-right navbar to switch channels.
-Until a dedicated docs version is cut, v2.0.0 behavior is documented under `latest`.
+The current v2 prerelease (`2.0.0-dev.4`) is documented under `latest`. These notes describe prerelease behavior and may change before stable `2.0.0`.
 
 ## Migration Notes
+
+### Upgrading from v1.1.0 to v2.0.0 (prerelease)
+
+> v2.0.0 is a prerelease. Verify these changes against the CLI version you install before updating production workflows.
+
+The command surface was redesigned. Existing v1.1.0 scripts need migration:
+
+| v1.1.0 | v2 prerelease |
+| --- | --- |
+| `gen-slice` | Use `gen-sequence` for data-to-domain operations, `gen-logic` / `gen-logic-flow` for logic, and `gen-ui*` for UI. |
+| `regen-feature` | Removed; no direct replacement. |
+| `ui-main`, `ui-dialog`, `ui-form`, `ui-form-dialog`, `ui-lsh`, `ui-lsv`, `ui-pag`, `ui-pmi`, `ui-action`, `ui-sec` | Use the available `gen-ui`, `gen-ui-form`, `gen-ui-lsh`, `gen-ui-lsv`, or `gen-ui-pag` commands. Not every v1 UI variant has a direct v2 equivalent. |
+| `gen-ui ... -u <ui_code>` | `gen-ui` is now the standard UI generator and takes `--model`; form/list variants have their own commands. |
+| `compose-main`, `compose-pmi`, `compose-sec`, `compose-action`, `compose-form-dialog` | Removed; review whether `compose-r`, `compose-m`, `compose-pag`, or `compose-form` fits the intended output. |
+| `compose-*` positional/legacy options | Use `--logic-flow` and `--target`; the command may also require `--ui` or `--logic`. See the current [composition command guide](./commands/compose.md). |
+| `reg` | `reg-module`; use `reg-feature` for feature registration. |
+| `di`, `rm-reg` | Removed from the current command surface. |
+| `list-pckg`, `add-pckg` | `pkg list`, `pkg add`; `pkg get` synchronizes configured packages and `pkg rm` removes them. |
+| `configure` (workspace package sync) | `pkg get`. |
+
+Additional migration details:
+
+- Form UI generation now requires `--model` and one or more repeatable `--field "input_type:value_type:field_name[:default]"` options. Update scripts using the v1 `--fields` format.
+- Compose commands generate the app-side artifact but do not synchronize module routes. Add or update route wiring in the app separately.
+- New modeling and sequence workflows are available through `gen-model` / `rm-model` and `gen-sequence` / `rm-sequence`.
+- Maintenance operations are available as `drb`, `l10n`, `rebuild`, `refresh`, and `fix-import`, targeting modules, apps, or both where supported.
+- The v2 generated templates still use Flutter's SDK Material imports. Migration to the standalone `material_ui` / `cupertino_ui` packages is not part of this prerelease; check the migration notes for the release that introduces it before changing generated projects.
 
 ### Upgrading from v1.0.x to v1.1.0
 
