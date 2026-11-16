@@ -126,7 +126,6 @@ class $className extends StatelessWidget {
       content:
           '''
 import 'package:app_ui/app_ui.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import 'parts/${ui.featureSnake}_${ui.sliceSnake}_item.dart';
@@ -144,33 +143,23 @@ class $className extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final padding = MediaQuery.paddingOf(context);
-    return ScrollConfiguration(
-      behavior: const ScrollBehavior().copyWith(
-        dragDevices: {
-          PointerDeviceKind.touch,
-          PointerDeviceKind.mouse,
-          PointerDeviceKind.trackpad,
-          PointerDeviceKind.stylus,
-        },
+    return ListView.separated(
+      padding: EdgeInsets.fromLTRB(
+        0,
+        0,
+        0,
+        AppSpacing.screen + padding.bottom,
       ),
-      child: ListView.separated(
-        padding: EdgeInsets.fromLTRB(
-          0,
-          0,
-          0,
-          AppSpacing.screen + padding.bottom,
-        ),
-        itemCount: data.length,
-        separatorBuilder: (context, index) => const Divider(),
-        itemBuilder: (context, index) {
-          final item = data[index];
-          return $itemClassName(
-            index: index,
-            item: item,
-            onTap: () => onItemTap(item),
-          );
-        },
-      ),
+      itemCount: data.length,
+      separatorBuilder: (context, index) => const Divider(),
+      itemBuilder: (context, index) {
+        final item = data[index];
+        return $itemClassName(
+          index: index,
+          item: item,
+          onTap: () => onItemTap(item),
+        );
+      },    
     );
   }
 }

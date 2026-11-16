@@ -1,3 +1,10 @@
+## 2.0.0-dev.4
+
+### Refactor
+
+- Centralize `ScrollConfiguration` globally in `MainApp` with `scrollbars: false` and multi-device drag support, removing redundant per-widget `ScrollConfiguration` wrappers from UI templates.
+
+
 ## 2.0.0-dev.3
 
 ### Fix
