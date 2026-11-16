@@ -15,7 +15,7 @@ This page summarizes documentation channels and behavior changes that matter for
 | `1.0.16` | Historical snapshot for CLI v1.0.16. |
 
 Use the version dropdown in the top-right navbar to switch channels.
-The current v2 prerelease (`2.0.0-dev.4`) is documented under `latest`. These notes describe prerelease behavior and may change before stable `2.0.0`.
+The current v2 prerelease (`2.0.0-dev.5`) is documented under `latest`. These notes describe prerelease behavior and may change before stable `2.0.0`.
 
 ## Migration Notes
 

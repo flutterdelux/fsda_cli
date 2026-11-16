@@ -18,8 +18,8 @@ class ModuleService {
   final MasonGeneratorService _generatorService;
 
   static const _dependencies = [
-    'freezed_annotation',
-    'json_annotation',
+    'freezed_annotation:"^3.1.0"',
+    'json_annotation:"^4.12.0"',
     'bloc', // Default
     // 'get',
     // 'provider',
@@ -27,10 +27,10 @@ class ModuleService {
   ];
 
   static const _devDependencies = [
-    'flutter_lints',
-    'build_runner',
-    'freezed',
-    'json_serializable',
+    'dev:flutter_lints',
+    'dev:build_runner:"^2.15.1"',
+    'dev:freezed:"^3.2.5"',
+    'dev:json_serializable:"^6.14.1"',
   ];
 
   const ModuleService({
@@ -99,7 +99,6 @@ class ModuleService {
       await _processService.run('dart', [
         'pub',
         'add',
-        '--dev',
         ..._devDependencies,
       ], module.path);
     }

@@ -1,3 +1,10 @@
+## 2.0.0-dev.5
+
+### Fix
+
+- Pin compatible version constraints for code-generation dependencies (`freezed_annotation`, `json_annotation`, `build_runner`, `freezed`, and `json_serializable`) in `ModuleService` to prevent version resolution conflicts when generating new modules.
+
+
 ## 2.0.0-dev.4
 
 ### Refactor
