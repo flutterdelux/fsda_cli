@@ -86,6 +86,7 @@ void main() {
         expect(progressLogs, [
           'Creating directory structures...',
           'Generating ${CliInfo.fsdaDirName}/${CliInfo.configFileName} configuration...',
+          'Creating run file...',
         ]);
 
         for (final dirPath in expectedDirs) {
