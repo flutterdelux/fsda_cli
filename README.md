@@ -18,7 +18,7 @@ Before installing FSDA CLI, make sure your environment has:
 ## Install Globally
 
 ```bash
-dart pub global activate fsda_cli 2.0.0-dev.7
+dart pub global activate fsda_cli 2.0.0-dev.8
 ```
 
 Verify installation:

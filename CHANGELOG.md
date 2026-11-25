@@ -1,3 +1,10 @@
+## 2.0.0-dev.8
+
+### Improved
+
+- Stream real-time terminal output directly when executing `.fsda/run.sh` via `fsda run`.
+- Improve cross-platform support on Windows by automatically detecting Git Bash executables and providing a clear error message if `bash` is unavailable.
+
 ## 2.0.0-dev.7
 
 ### Added

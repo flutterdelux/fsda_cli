@@ -3,6 +3,10 @@ import 'dart:io';
 class FileService {
   String get currentPath => Directory.current.path;
 
+  bool existsSync(String path) {
+    return File(path).existsSync();
+  }
+
   Future<bool> exists(String path) async {
     return await File(path).exists();
   }
