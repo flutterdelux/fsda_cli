@@ -1,5 +1,6 @@
 import '../../core/constants/app_config.dart';
 import '../../core/constants/cli_info.dart';
+import '../../domain/params/workspace_param.dart';
 
 abstract final class ConfigTemplate {
   static const mandatoryPackages = [
@@ -38,5 +39,14 @@ packages:''');
     }
 
     return buffer.toString();
+  }
+
+  static String buildRun(WorkspaceParam workspace) {
+    return '''
+#!/bin/bash
+set -e
+
+# fsda pkg add infra_dio infra_logging
+''';
   }
 }

@@ -38,6 +38,7 @@ import 'rm_enum_command.dart';
 import 'rm_feature_command.dart';
 import 'rm_model_command.dart';
 import 'rm_sequence_command.dart';
+import 'run_command.dart';
 
 bool checkVersionFlag(ArgResults parsedArgs, CliLogger logger) {
   if (parsedArgs.flag('version')) {
@@ -367,6 +368,17 @@ void registerCommands(CommandRunner<int> runner) {
       reportService: sl(),
       applyService: sl(),
       fileService: sl(),
+    ),
+  );
+
+  // Run
+  runner.addCommand(
+    RunCommand(
+      runService: sl(),
+      configService: sl(),
+      logger: sl(),
+      reportService: sl(),
+      directoryService: sl(),
     ),
   );
 }

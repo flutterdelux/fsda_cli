@@ -13,6 +13,7 @@ const sidebars: SidebarsConfig = {
       },
       items: [
         'commands/commands-workspace',
+        'commands/commands-run',
         'commands/commands-package',
         'commands/commands-module',
         'commands/commands-feature',

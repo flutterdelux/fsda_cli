@@ -34,6 +34,7 @@ import '../../infrastructure/services/package_sync_service.dart';
 import '../../infrastructure/services/plan_service.dart';
 import '../../infrastructure/services/reg_feature_service.dart';
 import '../../infrastructure/services/reg_module_service.dart';
+import '../../infrastructure/services/run_service.dart';
 import '../../infrastructure/services/sequence_service.dart';
 import '../../infrastructure/services/ui_service.dart';
 import '../../infrastructure/services/workspace_service.dart';
@@ -293,5 +294,9 @@ void configureDependencies() {
       appService: sl(),
       configureAppService: sl(),
     ),
+  );
+
+  sl.registerLazySingleton(
+    () => RunService(processService: sl(), fileService: sl()),
   );
 }

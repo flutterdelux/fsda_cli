@@ -15,7 +15,7 @@ This page summarizes documentation channels and behavior changes that matter for
 | `1.0.16` | Historical snapshot for CLI v1.0.16. |
 
 Use the version dropdown in the top-right navbar to switch channels.
-The current v2 prerelease (`2.0.0-dev.6`) is documented under `latest`. These notes describe prerelease behavior and may change before stable `2.0.0`.
+The current v2 prerelease (`2.0.0-dev.7`) is documented under `latest`. These notes describe prerelease behavior and may change before stable `2.0.0`.
 
 ## Migration Notes
 
@@ -52,6 +52,8 @@ Additional migration details:
 - New modeling and sequence workflows are available through `gen-model` / `rm-model` and `gen-sequence` / `rm-sequence`.
 - Maintenance operations are available as `drb`, `l10n`, `rebuild`, `refresh`, and `fix-import`, targeting modules, apps, or both where supported.
 - `gen-app` now requires app names in `snake_case`; use `--title` for the display name (`--name` is no longer the option).
+- Workspace automation scripts can now be executed from the root directory via `fsda run`, which runs `.fsda/run.sh` using `bash`. See the [run guide](./commands/run.md).
+
 
 ### Upgrading from v1.0.x to v1.1.0
 

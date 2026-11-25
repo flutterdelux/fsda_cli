@@ -1,6 +1,7 @@
 import 'package:path/path.dart' as p;
 
 import '../../core/constants/cli_info.dart';
+import '../../core/extensions/workspace_param_x.dart';
 import '../../domain/params/workspace_param.dart';
 import '../bundles/package_bundle.dart';
 import '../templates/config_template.dart';
@@ -28,10 +29,11 @@ class WorkspaceService {
     onProgress('Creating directory structures...');
     await _createDirectoryStructure(workspace);
 
-    onProgress(
-      'Generating ${CliInfo.fsdaDirName}/${CliInfo.configFileName} configuration...',
-    );
+    onProgress('Generating ${workspace.relativeConfigPath} configuration...');
     await _createConfigYaml(workspace);
+
+    onProgress('Creating run file...');
+    await _createRunFile(workspace);
   }
 
   Future<void> _createDirectoryStructure(WorkspaceParam workspace) async {
@@ -50,17 +52,22 @@ class WorkspaceService {
   }
 
   Future<void> _createConfigYaml(WorkspaceParam workspace) async {
-    final path = p.join(
-      workspace.workspacePath,
-      CliInfo.fsdaDirName,
-      CliInfo.configFileName,
-    );
+    final path = workspace.configPath;
     final packages = packageBundle.keys.toList();
 
     final content = ConfigTemplate.buildConfig(
       workspaceName: workspace.workspaceName,
       packages: packages,
     );
+
+    await _fileService.writeAsString(path: path, content: content);
+    _reportService.addCreated(path);
+  }
+
+  Future<void> _createRunFile(WorkspaceParam workspace) async {
+    final path = workspace.runPath;
+
+    final content = ConfigTemplate.buildRun(workspace);
 
     await _fileService.writeAsString(path: path, content: content);
     _reportService.addCreated(path);

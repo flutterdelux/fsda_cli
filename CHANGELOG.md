@@ -1,3 +1,10 @@
+## 2.0.0-dev.7
+
+### Added
+
+- Add `fsda run` command to execute workspace shell scripts located at `.fsda/run.sh`.
+
+
 ## 2.0.0-dev.6
 
 ### Added
