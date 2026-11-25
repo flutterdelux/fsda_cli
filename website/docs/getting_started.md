@@ -6,53 +6,34 @@ slug: /getting-started
 
 ## Prerequisites
 
-Before installing FSDA CLI, make sure your environment has:
-
-- Dart SDK
-- Flutter SDK
-
-## Install Globally
+Install the Dart SDK and Flutter SDK required by your projects, then install FSDA CLI:
 
 ```bash
 dart pub global activate fsda_cli
-```
-
-Verify installation:
-
-```bash
 fsda --version
 ```
 
-## Quick Worflow
+## Quick workflow: direct CLI
 
-Build worskpace include 1 module, 1 feature, 1 slice for popular destination and 1 travel app.
-
-If you want to stop the command sequence immediately in the event of a failure midway through the chain also track log output, you can add the following command after entering the workspace directory. (after `cd travel_kan`)
-
-```bash
-set -e; exec > >(tee -a travel_kan_workflow.log) 2>&1
-```
-
-Use chain worflow command below to your terminal.
+This example creates a workspace, generates a location module and destination feature, then composes a section into an app. Run commands from the workspace root unless noted otherwise.
 
 ```bash
 fsda create travel_kan
 cd travel_kan
 
-set -e; exec > >(tee -a travel_kan_workflow.log) 2>&1
-
 fsda pkg get
-fsda pkg add infra_dio infra_shared_preferences infra_logging
+fsda pkg add infra_dio infra_logging
 
-fsda gen-module location
-
-fsda gen-feature destination -m location
-fsda ds-remote "/destinations" \
-    -m location -f destination
-fsda gen-model destination_entity \
+fsda gen -m location
+fsda gen -m location -f destination
+fsda ds-remote \
     -m location -f destination \
-    --with-dto \
-    --l10n \
+    --base-path "/destinations"
+
+fsda gen-model \
+    -n destination_entity \
+    -m location -f destination \
+    --with-dto --l10n \
     -p "int:id" \
     -p "String:name" \
     -p "String:description" \
@@ -61,40 +42,55 @@ fsda gen-model destination_entity \
     -p "int:review_count" \
     -p "bool:is_popular" \
     -p "DateTime:created_at::UtcDateTimeConverter" \
-    -p "DateTime:updated_at::UtcDateTimeConverter" 
+    -p "DateTime:updated_at::UtcDateTimeConverter"
 
-fsda gen-sequence get \
-    -m location -f destination \
-    --uc destination_popular_use_case \
-    -d get_destination_popular \
-    --list \
-    --models destination_dto,destination_entity
-fsda gen-logic-flow r \
-    -m location -f destination -s popular \
-    -c cubit \
-    --uc destination_popular_use_case
-fsda gen-ui-lsh \
-    -m location -f destination -s popular \
-    --model destination_entity
-
+fsda gen-sequence -m location -f destination --act get \
+  --uc destination_popular_use_case -d get_destination_popular \
+  --list --model destination_dto --model destination_entity
+fsda gen-logic-flow -m location -f destination -s popular \
+  -t r --uc destination_popular_use_case -c cubit
+fsda gen-ui -m location -f destination -s popular \
+  -t lsh --model destination_entity
 fsda rebuild -m location
-fsda fix-import -m location
 
-fsda gen-app travelkan \
-    --org com.fdelux \
-    --name "Travel Kan" \
-    --org-name "Flutter Delux"
-fsda configure-app travelkan
-fsda reg-module -a travelkan -m location
-fsda reg-feature -a travelkan -m location -f destination
-
-fsda compose-r \
-    -a travelkan \
-    -m location -f destination --logic-flow popular --ui popular \
-    -t destination_popular_section
+fsda gen -a travelkan --org com.fdelux --title "Travel Kan" \
+  --org-name "Flutter Delux"
+fsda configure -a travelkan
+fsda reg -a travelkan -m location
+fsda reg -a travelkan -m location -f destination
+fsda compose -a travelkan -m location -f destination \
+  -t r --target destination_popular_section \
+  --logic-flow popular --ui popular
 ```
 
-After that, perform a manual check and make adjustments—including invoking the sections on the home page, since the generated Compose code consists of section widgets—and then test it.
+The `compose` command creates a wrapper; add that section to the desired app page yourself. It does not update routes. Use `fsda help <command>` for exact options. For example, `fsda gen -h`, `fsda reg -h`, or `fsda plan -h`.
+
+## Quick workflow: declarative YAML
+
+The declarative workflow stores workspace settings and plans under `.fsda/`. Scaffold an example slice plan:
+
+```bash
+fsda plan -m location -f destination -s popular --example
+fsda plan -a travel_kan --example
+```
+
+The file is created at `.fsda/plans/modules/location/features/destination/popular.yaml`. Edit it to describe the generation operations, then apply it:
+
+```bash
+fsda apply .fsda/plans/modules/location/features/destination/popular.yaml
+fsda rebuild -m location
+fsda apply .fsda/plans/apps/travel_kan.yaml
+```
+
+A plan can include data sources, enums, models, sequences, logic, logic flows, input widgets, and UI. Feature and slice plans create missing parent module/feature structures before applying sections. An app plan (`fsda plan -a travelkan`) describes app-side `compose` artifacts; the app, module/feature registration, and source logic/UI must already exist.
+
+See the [Declarative YAML Plans](./declarative.md) guide for schema details and execution behavior.
+
+## Finish and verify
+
+Review the generated operation summary and inspect generated artifacts. For a section compose, import and place the generated widget in a page, then run/analyze the app. Update the remote data source implementation with the actual endpoint behavior as needed.
+
+Perform a manual check and make adjustments—including invoking the sections on the home page, since the generated Compose code consists of section widgets—and then test it.
 
 ```dart title="home_page.dart" {2,7}
 ...

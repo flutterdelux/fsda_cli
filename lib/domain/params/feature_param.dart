@@ -1,26 +1,24 @@
-import 'module_gate_param.dart';
+import 'module_param.dart';
 
-class FeatureParam extends ModuleGateParam {
-  final String name;
-  final String path;
+class FeatureParam extends ModuleParam {
+  final String featureName;
 
   const FeatureParam({
-    required this.name,
-    required this.path,
+    required this.featureName,
     required super.moduleName,
-    required super.modulePath,
+    required super.workspaceName,
+    required super.workspacePath,
   });
 
-  factory FeatureParam.fromModuleGate({
-    required ModuleGateParam moduleGate,
-    required String name,
-    required String path,
+  factory FeatureParam.fromModule({
+    required ModuleParam module,
+    required String featureName,
   }) {
     return FeatureParam(
-      name: name,
-      path: path,
-      moduleName: moduleGate.moduleName,
-      modulePath: moduleGate.modulePath,
+      featureName: featureName,
+      moduleName: module.moduleName,
+      workspaceName: module.workspaceName,
+      workspacePath: module.workspacePath,
     );
   }
 }

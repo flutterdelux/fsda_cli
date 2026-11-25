@@ -1,13 +1,13 @@
-import '../../../domain/params/inputs/input_dropdown_param.dart';
+import '../../../domain/params/input_param.dart';
 import '../../text_modifiers/string_extension.dart';
 
 abstract final class InputDropdownTemplate {
-  static String build(InputDropdownParam input) {
+  static String build(InputParam input) {
     final featurePascal = input.featureName.pascalCase;
     final fieldPascal = input.field.pascalCase;
     final l10nKey = '${input.featureName.camelCase}Field$fieldPascal';
     final className = '$featurePascal${fieldPascal}Field';
-    final typeName = input.type;
+    final typeName = input.dataType ?? '';
     final selectionType = typeName.endsWith('?') ? typeName : '$typeName?';
 
     return '''import 'package:app_ui/app_ui.dart';
@@ -55,7 +55,7 @@ class $className extends StatelessWidget {
 ''';
   }
 
-  static Map<String, dynamic> buildArbEntries(InputDropdownParam input) {
+  static Map<String, dynamic> buildArbEntries(InputParam input) {
     final entries = <String, dynamic>{};
     final featureCamel = input.featureName.camelCase;
     final fieldPascal = input.field.pascalCase;

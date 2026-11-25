@@ -1,11 +1,10 @@
 import '../enums/logic_flow_type.dart';
 import '../enums/state_control.dart';
-import '../models/logic_uc_model.dart';
-import 'slice_gate_param.dart';
+import 'slice_param.dart';
 
-class LogicFlowParam extends SliceGateParam {
+class LogicFlowParam extends SliceParam {
   final LogicFlowType type;
-  final LogicUcModel uc;
+  final String uc;
   final StateControl control;
 
   const LogicFlowParam({
@@ -13,27 +12,27 @@ class LogicFlowParam extends SliceGateParam {
     required this.uc,
     this.control = .cubit,
     required super.featureName,
-    required super.featurePath,
     required super.moduleName,
-    required super.modulePath,
-    required super.slice,
+    required super.sliceName,
+    required super.workspaceName,
+    required super.workspacePath,
   });
 
-  factory LogicFlowParam.fromSliceGate({
-    required SliceGateParam sliceGate,
+  factory LogicFlowParam.fromSlice({
+    required SliceParam slice,
     required LogicFlowType type,
-    required LogicUcModel uc,
-    StateControl control = StateControl.cubit,
+    required String uc,
+    required StateControl control,
   }) {
     return LogicFlowParam(
       type: type,
       uc: uc,
       control: control,
-      featureName: sliceGate.featureName,
-      featurePath: sliceGate.featurePath,
-      moduleName: sliceGate.moduleName,
-      modulePath: sliceGate.modulePath,
-      slice: sliceGate.slice,
+      featureName: slice.featureName,
+      moduleName: slice.moduleName,
+      sliceName: slice.sliceName,
+      workspaceName: slice.workspaceName,
+      workspacePath: slice.workspacePath,
     );
   }
 }

@@ -1,5 +1,5 @@
 import '../../core/extensions/failure_param_x.dart';
-import '../../core/extensions/module_gate_param_x.dart';
+import '../../core/extensions/module_param_x.dart';
 import '../../domain/params/failure_param.dart';
 
 abstract final class FailureTemplate {
@@ -25,7 +25,7 @@ abstract final class FailureTemplate {
 
   static String buildCodeResponse(FailureParam failure) {
     return '''
-        '${failure.nameCode}' => ${failure.modulePascal}Exception.${failure.nameCamel}(
+        '${failure.nameScreaming}' => ${failure.modulePascal}Exception.${failure.nameCamel}(
           msg: message,
           st: st,
         ),

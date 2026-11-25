@@ -10,7 +10,7 @@ void main(List<String> arguments) async {
   configureDependencies();
   final logger = sl<CliLogger>();
 
-  final runner = CommandRunner(CliInfo.name, CliInfo.description);
+  final runner = CommandRunner<int>(CliInfo.name, CliInfo.description);
   registerCommands(runner);
 
   try {

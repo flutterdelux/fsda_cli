@@ -1,38 +1,37 @@
-import 'feature_gate_param.dart';
+import 'feature_param.dart';
 
-class EnumParam extends FeatureGateParam {
-  final String name;
-  final String path;
+class EnumParam extends FeatureParam {
+  /// e.g. task_status
+  final String enumName;
+
+  /// e.g. todo, in_progress, completed
   final List<String> values;
   final bool isLower;
 
   const EnumParam({
-    required this.name,
-    required this.path,
-    required this.isLower,
+    required this.enumName,
     required this.values,
+    required this.isLower,
     required super.featureName,
-    required super.featurePath,
     required super.moduleName,
-    required super.modulePath,
+    required super.workspaceName,
+    required super.workspacePath,
   });
 
-  factory EnumParam.fromFeatureGate({
-    required FeatureGateParam featureGate,
-    required String name,
-    required String path,
+  factory EnumParam.fromFeature({
+    required FeatureParam feature,
+    required String enumName,
     required List<String> values,
     required bool isLower,
   }) {
     return EnumParam(
-      name: name,
-      path: path,
+      enumName: enumName,
       values: values,
-      featureName: featureGate.featureName,
-      featurePath: featureGate.featurePath,
-      moduleName: featureGate.moduleName,
-      modulePath: featureGate.modulePath,
       isLower: isLower,
+      featureName: feature.featureName,
+      moduleName: feature.moduleName,
+      workspaceName: feature.workspaceName,
+      workspacePath: feature.workspacePath,
     );
   }
 }

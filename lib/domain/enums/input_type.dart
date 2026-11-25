@@ -7,7 +7,6 @@ enum InputType {
   number('number'),
   password('password'),
   qty('qty'),
-  selectorList('selector_list'),
   selector('selector'),
   swich('switch'),
   textArea('text_area'),
@@ -20,4 +19,6 @@ enum InputType {
   static InputType? tryParse(String raw) {
     return values.firstWhereOrNull((e) => e.code == raw);
   }
+
+  static String get available => values.map((e) => e.code).join(', ');
 }

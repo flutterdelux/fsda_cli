@@ -3,7 +3,7 @@ import '../text_modifiers/string_extension.dart';
 
 abstract final class EnumTemplate {
   static String buildEnum(EnumParam enumParam) {
-    final enumPascal = enumParam.name.pascalCase;
+    final enumPascal = enumParam.enumName.pascalCase;
     final valueLines = enumParam.values
         .map((v) => '  ${v.camelCase},')
         .join('\n');
@@ -16,8 +16,8 @@ $valueLines
   }
 
   static String buildConverter(EnumParam enumParam) {
-    final enumSnake = enumParam.name;
-    final enumPascal = enumParam.name.pascalCase;
+    final enumSnake = enumParam.enumName;
+    final enumPascal = enumSnake.pascalCase;
 
     final values = enumParam.values;
 
@@ -65,7 +65,7 @@ $toJsonCases
   }
 
   static String buildExtension(EnumParam enumParam) {
-    final enumSnake = enumParam.name;
+    final enumSnake = enumParam.enumName;
     final enumCamel = enumSnake.camelCase;
     final enumPascal = enumSnake.pascalCase;
 
@@ -127,7 +127,7 @@ $boolGetters
   }
 
   static Map<String, dynamic> buildArbEntries(EnumParam enumParam) {
-    final enumSnake = enumParam.name;
+    final enumSnake = enumParam.enumName;
     final enumCamel = enumSnake.camelCase;
 
     final entries = <String, dynamic>{};

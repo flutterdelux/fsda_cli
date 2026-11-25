@@ -2,102 +2,133 @@ import 'package:fsda_cli/domain/enums/state_control.dart';
 import 'package:fsda_cli/domain/models/prop_model.dart';
 import 'package:fsda_cli/domain/params/logic_param.dart';
 import 'package:fsda_cli/infrastructure/templates/logics/getx_template.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
+  LogicParam createLogic({
+    List<PropModel> props = const [],
+    String featureName = 'task',
+    String slice = 'filter',
+  }) {
+    return LogicParam(
+      props: props,
+      control: StateControl.getx,
+      featureName: featureName,
+      moduleName: 'project_management',
+      sliceName: slice,
+      workspaceName: 'my_workspace',
+      workspacePath: '/projects/my_workspace',
+    );
+  }
+
   group('GetxTemplate', () {
     test(
-      'Given logic param with properties and GetX control, '
-      'When build is called, '
-      'Then it generates GetX controller content with private observable state, updateState method, and workspace path',
+      'GIVEN a LogicParam with multiple props including duplicate types '
+      'WHEN build is called '
+      'THEN returns ArtifactGenerationModel with accurate metadata, deduplicated typesToImport, and GetxController content',
       () {
-        // Arrange (Given)
-        const logicParam = LogicParam(
-          featureName: 'user_profile',
-          featurePath: 'modules/auth/lib/src/features/user_profile',
-          moduleName: 'auth',
-          modulePath: 'modules/auth',
-          slice: 'edit',
-          control: StateControl.getx,
-          props: [
-            PropModel(
-              name: 'first_name',
-              type: 'String',
-              defaultValue: '',
-              converter: '',
-            ),
-            PropModel(
-              name: 'age',
-              type: 'int',
-              defaultValue: '',
-              converter: '',
-            ),
-          ],
-        );
+        // Given
+        const props = [
+          PropModel(
+            type: 'String',
+            name: 'search_query',
+            defaultValue: "''",
+            converter: '',
+          ),
+          PropModel(
+            type: 'TaskStatus',
+            name: 'selected_status',
+            defaultValue: 'TaskStatus.todo',
+            converter: '',
+          ),
+          PropModel(
+            type: 'String',
+            name: 'sort_by',
+            defaultValue: "'created_at'",
+            converter: '',
+          ),
+        ];
+        final logic = createLogic(props: props, slice: 'filter');
 
-        // Act (When)
-        final artifact = GetxTemplate.build(logicParam);
+        // When
+        final artifact = GetxTemplate.build(logic);
 
-        // Assert (Then)
-        expect(artifact.name, equals('UserProfileEditController'));
-        expect(artifact.needToExport, isTrue);
-        expect(artifact.typesToImport, containsAll(['String', 'int']));
+        // Then
+        expect(artifact.name, 'TaskFilterController');
         expect(
           artifact.path,
-          contains('modules/auth/lib/src/features/user_profile'),
-        );
-
-        expect(
-          artifact.content,
-          contains('class UserProfileEditController extends GetxController'),
-        );
-        expect(
-          artifact.content,
-          contains(
-            'final Rx<UserProfileEditState> _state = const UserProfileEditState().obs;',
+          p.join(
+            '/projects/my_workspace',
+            'modules',
+            'project_management',
+            'lib',
+            'src',
+            'features',
+            'task',
+            'logic',
+            'filter',
+            'task_filter_controller.dart',
           ),
         );
-        expect(artifact.content, contains('void updateState({'));
-        expect(artifact.content, contains('String firstName,'));
-        expect(artifact.content, contains('int age,'));
-        expect(
-          artifact.content,
-          contains('_state.value = UserProfileEditState('),
-        );
-        expect(artifact.content, contains('firstName: firstName,'));
-        expect(artifact.content, contains('age: age,'));
+        expect(artifact.typesToImport, {'String', 'TaskStatus'});
+        expect(artifact.needToExport, isTrue);
+        expect(artifact.content, '''
+import 'package:get/get.dart';
+import 'task_filter_state.dart';
+
+class TaskFilterController extends GetxController {
+  final Rx<TaskFilterState> _state = const TaskFilterState().obs;
+  TaskFilterState get state => _state.value;
+
+  void updateState({
+    String searchQuery,
+    TaskStatus selectedStatus,
+    String sortBy,
+  }) {
+    _state.value = TaskFilterState(
+      searchQuery: searchQuery,
+      selectedStatus: selectedStatus,
+      sortBy: sortBy,
+    );
+  }
+}
+''');
       },
     );
 
     test(
-      'Given logic param without properties and GetX control, '
-      'When build is called, '
-      'Then it generates GetX controller content with empty updateState parameters',
+      'GIVEN a LogicParam with empty props '
+      'WHEN build is called '
+      'THEN returns empty typesToImport and GetxController with empty updateState parameters',
       () {
-        // Arrange (Given)
-        const logicParam = LogicParam(
-          featureName: 'settings',
-          featurePath: 'modules/app/lib/src/features/settings',
-          moduleName: 'app',
-          modulePath: 'modules/app',
-          slice: 'general',
-          control: StateControl.getx,
-          props: [],
-        );
+        // Given
+        final logic = createLogic(props: const [], slice: 'empty_state');
 
-        // Act (When)
-        final artifact = GetxTemplate.build(logicParam);
+        // When
+        final artifact = GetxTemplate.build(logic);
 
-        // Assert (Then)
-        expect(artifact.name, equals('SettingsGeneralController'));
-        expect(artifact.needToExport, isTrue);
+        // Then
+        expect(artifact.name, 'TaskEmptyStateController');
         expect(artifact.typesToImport, isEmpty);
+        expect(artifact.needToExport, isTrue);
+        expect(artifact.content, '''
+import 'package:get/get.dart';
+import 'task_empty_state_state.dart';
 
-        expect(
-          artifact.content,
-          contains('class SettingsGeneralController extends GetxController'),
-        );
-        expect(artifact.content, contains('void updateState({\n    \n  })'));
+class TaskEmptyStateController extends GetxController {
+  final Rx<TaskEmptyStateState> _state = const TaskEmptyStateState().obs;
+  TaskEmptyStateState get state => _state.value;
+
+  void updateState({
+    
+  }) {
+    _state.value = TaskEmptyStateState(
+      
+    );
+  }
+}
+''');
       },
     );
   });

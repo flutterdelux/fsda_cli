@@ -1,3 +1,4 @@
+import '../../../domain/params/workspace_param.dart';
 import '../../../infrastructure/bundles/package_bundle.dart';
 import '../../../infrastructure/services/package_sync_service.dart';
 import '../wrapper/workspace_guard_command.dart';
@@ -24,7 +25,7 @@ class PkgAddCommand extends WorkspaceGuardCommand {
   String get invocation => 'fsda pkg add <pkg_1> <pkg_2> ...';
 
   @override
-  Future<int> handle() async {
+  Future<int> handle(WorkspaceParam workspace) async {
     final rest = argResults?.rest ?? [];
     if (rest.isEmpty) {
       logger.error('Please specify at least one package to add.');

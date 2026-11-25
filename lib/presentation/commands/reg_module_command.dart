@@ -1,9 +1,8 @@
-import '../../domain/params/app_integration/app_integration_param.dart';
 import '../../domain/params/app_integration/reg_module_param.dart';
 import '../../infrastructure/services/reg_module_service.dart';
-import 'wrapper/app_integration_command.dart';
+import 'wrapper/reg_module_gate_command.dart';
 
-class RegModuleCommand extends AppIntegrationCommand {
+class RegModuleCommand extends RegModuleGateCommand {
   final RegModuleService _regModuleService;
 
   RegModuleCommand({
@@ -15,19 +14,18 @@ class RegModuleCommand extends AppIntegrationCommand {
   }) : _regModuleService = regModuleService;
 
   @override
-  String get name => 'reg-module';
+  String get name => 'module';
 
   @override
   String get description =>
       'Registers and injects a module configuration (DI, Router, Localizations, FailureX) into a target application.';
 
   @override
-  String get invocation => 'fsda reg-module -m <module> -a <app>';
+  String get invocation => 'fsda reg -m <module> -a <app>';
 
   @override
-  Future<int> handleAppIntegration(AppIntegrationParam appIntegration) async {
-    final param = RegModuleParam.fromAppIntegration(appIntegration);
-
+  Future<int> handleRegModule(RegModuleParam regModule) async {
+    final param = regModule;
     final progress = logger.progress(
       'Registering module "${param.moduleName}" into target app "${param.appName}"...',
     );

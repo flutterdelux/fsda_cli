@@ -1,5 +1,6 @@
 import 'package:path/path.dart' as p;
 
+import '../../core/constants/cli_info.dart';
 import '../../domain/params/workspace_param.dart';
 import '../bundles/package_bundle.dart';
 import '../templates/config_template.dart';
@@ -27,15 +28,20 @@ class WorkspaceService {
     onProgress('Creating directory structures...');
     await _createDirectoryStructure(workspace);
 
-    onProgress('Generating fsda.yaml configuration...');
-    await _createFsdaYaml(workspace);
+    onProgress(
+      'Generating ${CliInfo.fsdaDirName}/${CliInfo.configFileName} configuration...',
+    );
+    await _createConfigYaml(workspace);
   }
 
   Future<void> _createDirectoryStructure(WorkspaceParam workspace) async {
+    final fsdaDir = p.join(workspace.workspacePath, CliInfo.fsdaDirName);
     final dirToCreate = [
-      p.join(workspace.path, 'apps'),
-      p.join(workspace.path, 'modules'),
-      p.join(workspace.path, 'packages'),
+      fsdaDir,
+      p.join(fsdaDir, CliInfo.plansDirName),
+      p.join(workspace.workspacePath, 'apps'),
+      p.join(workspace.workspacePath, 'modules'),
+      p.join(workspace.workspacePath, 'packages'),
     ];
     for (final path in dirToCreate) {
       await _directoryService.create(path);
@@ -43,12 +49,16 @@ class WorkspaceService {
     }
   }
 
-  Future<void> _createFsdaYaml(WorkspaceParam workspace) async {
-    final path = '${workspace.path}/fsda.yaml';
+  Future<void> _createConfigYaml(WorkspaceParam workspace) async {
+    final path = p.join(
+      workspace.workspacePath,
+      CliInfo.fsdaDirName,
+      CliInfo.configFileName,
+    );
     final packages = packageBundle.keys.toList();
 
-    final content = ConfigTemplate.buildFsda(
-      workspaceName: workspace.name,
+    final content = ConfigTemplate.buildConfig(
+      workspaceName: workspace.workspaceName,
       packages: packages,
     );
 

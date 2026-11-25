@@ -1,12 +1,12 @@
 import 'package:path/path.dart' as p;
 
-import '../../../core/extensions/feature_gate_param_x.dart';
-import '../../../core/extensions/module_gate_param_x.dart';
-import '../../../core/extensions/slice_gate_param_x.dart';
+import '../../../core/extensions/feature_param_x.dart';
+import '../../../core/extensions/module_param_x.dart';
+import '../../../core/extensions/slice_param_x.dart';
 import '../../../core/extensions/ui_gate_param_x.dart';
 import '../../../domain/models/artifact_generation_model.dart';
 import '../../../domain/models/prop_model.dart';
-import '../../../domain/params/ui/ui_param.dart';
+import '../../../domain/params/ui_param.dart';
 import '../../text_modifiers/string_extension.dart';
 
 abstract final class UiTemplate {
@@ -19,7 +19,7 @@ abstract final class UiTemplate {
         .map((e) {
           return '''
             AppInfoTile(
-              title: l10n.${ui.featureCamel}${ui.slicePascal}${e.name.pascalCase}, 
+              title: l10n.${ui.featureCamel}${e.name.pascalCase}, 
               data: data.${e.name.camelCase}.toString(),
             ),
 ''';
@@ -53,6 +53,7 @@ class $className extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         AppCard(
+          margin: const EdgeInsets.all(AppSpacing.screen),
           children: [
             ${propContent.trim()}
           ],
@@ -73,10 +74,7 @@ class $className extends StatelessWidget {
     final propSkeleton = props
         .map((e) {
           return '''
-            AppInfoTile(
-              title: l10n.${ui.featureCamel}${ui.slicePascal}${e.name.pascalCase}, 
-              data: data.${e.name.camelCase}.toString(),
-            ),
+            AppInfoTileSkeleton(),
 ''';
         })
         .join('\n');
@@ -102,7 +100,7 @@ class $className extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = ${ui.modulePascal}Localizations.of(context)!;
-    return Column(
+    return const Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         AppCard(

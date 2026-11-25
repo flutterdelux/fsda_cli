@@ -2,10 +2,9 @@ abstract final class Rules {
   static final _snakeCaseRegExp = RegExp(r'^[a-z]+(_[a-z0-9]+)*$');
   static final _pascalCaseRegExp = RegExp(r'^[A-Z][a-zA-Z0-9]*$');
 
-  // === Rule untuk Nama Proyek (Strict Lowercase) ===
-  static final appProjectNameRegExp = RegExp(r'^[a-z][a-z0-9]+$');
-  static const appProjectNameDescription =
-      'App project name must be in strict lowercase without any separators (e.g., ruviti, ruvitiapp).';
+  static final appNameRegExp = _snakeCaseRegExp;
+  static const appNameDescription =
+      'App name must be in strict snake_case (e.g., ruviti, ruviti_app).';
 
   // === Rule untuk --org (Reverse Domain) ===
   // Memastikan format seperti 'com.example' atau 'id.co.ruviti'
@@ -36,6 +35,10 @@ abstract final class Rules {
   static const enumDescription =
       'Enum name must be in strict snake_case (e.g., payment_method, role).';
 
+  static final enumValueRegExp = _snakeCaseRegExp;
+  static const enumValueDescription =
+      'Enum value must be in strict snake_case (e.g., todo, in_progress).';
+
   static final modelRegExp = _snakeCaseRegExp;
   static const modelDescription =
       'Model name must be in strict snake_case (e.g., payment_entity, payment_setting_dto, task_response).';
@@ -50,7 +53,7 @@ abstract final class Rules {
 
   static final usecaseRegExp = _snakeCaseRegExp;
   static const usecaseDescription =
-      'Use case class must be in strict snake_case (e.g., task_list, task_update).';
+      'Use case class must be in strict snake_case (e.g., task_list_use_case, task_update_use_case).';
 
   static final methodRegExp = _snakeCaseRegExp;
   static const methodDescription =

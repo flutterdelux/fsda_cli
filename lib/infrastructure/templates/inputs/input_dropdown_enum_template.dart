@@ -1,13 +1,13 @@
-import '../../../domain/params/inputs/input_dropdown_enum_param.dart';
+import '../../../domain/params/input_param.dart';
 import '../../text_modifiers/string_extension.dart';
 
 abstract final class InputDropdownEnumTemplate {
-  static String build(InputDropdownEnumParam input) {
+  static String build(InputParam input) {
     final featurePascal = input.featureName.pascalCase;
     final fieldPascal = input.field.pascalCase;
     final l10nKey = '${input.featureName.camelCase}Field$fieldPascal';
     final className = '$featurePascal${fieldPascal}Field';
-    final enumType = input.type;
+    final enumType = input.dataType ?? '';
     final enumTypeSnake = enumType.snakeCase;
 
     return '''import 'package:app_ui/app_ui.dart';
@@ -48,7 +48,7 @@ class $className extends StatelessWidget {
 ''';
   }
 
-  static Map<String, dynamic> buildArbEntries(InputDropdownEnumParam input) {
+  static Map<String, dynamic> buildArbEntries(InputParam input) {
     final entries = <String, dynamic>{};
     final featureCamel = input.featureName.camelCase;
     final fieldPascal = input.field.pascalCase;

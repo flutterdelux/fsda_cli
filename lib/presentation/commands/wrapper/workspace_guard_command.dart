@@ -1,3 +1,4 @@
+import '../../../domain/params/workspace_param.dart';
 import '../../../infrastructure/services/helpers/config_service.dart';
 import '../../../infrastructure/services/helpers/directory_service.dart';
 import '../../../infrastructure/services/helpers/operation_report_service.dart';
@@ -20,16 +21,17 @@ abstract class WorkspaceGuardCommand extends BaseCommand {
   @override
   Future<int> run() async {
     // Workspace Guard terpusat
-    if (!await configService.validateWorkspaceRoot) {
+    final workspace = await configService.fsdaWorkspace;
+    if (workspace == null) {
       logger.error(
         'This command must be run inside an FSDA workspace root (where "fsda.yaml" is located).',
       );
       return errorUsage;
     }
 
-    return await handle();
+    return await handle(workspace);
   }
 
   /// Metode pengganti `run()` untuk command turunan yang memerlukan workspace root.
-  Future<int> handle();
+  Future<int> handle(WorkspaceParam workspace);
 }

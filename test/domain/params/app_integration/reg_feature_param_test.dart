@@ -1,81 +1,45 @@
-import 'package:fsda_cli/domain/params/app_integration/app_integration_param.dart';
 import 'package:fsda_cli/domain/params/app_integration/reg_feature_param.dart';
+import 'package:fsda_cli/domain/params/app_integration/reg_module_param.dart';
+import 'package:fsda_cli/domain/params/app_param.dart';
+import 'package:fsda_cli/domain/params/feature_param.dart';
+import 'package:fsda_cli/domain/params/module_param.dart';
+import 'package:fsda_cli/domain/params/workspace_param.dart';
 import 'package:test/test.dart';
 
 void main() {
   group('RegFeatureParam', () {
     test(
-      'Given app name, app path, module name, module path, feature name, and feature path, '
-      'When RegFeatureParam is instantiated directly via constructor, '
-      'Then it correctly holds all provided properties',
+      'GIVEN valid featureName, moduleName, appName, and workspace parameters '
+      'WHEN RegFeatureParam constructor is called '
+      'THEN stores all properties accurately and satisfies RegModuleParam, FeatureParam, ModuleParam, AppParam, and WorkspaceParam types',
       () {
-        // Arrange (Given)
-        const appName = 'my_app';
-        const appPath = '/workspace/apps/my_app';
-        const moduleName = 'todo';
-        const modulePath = '/workspace/modules/todo';
-        const featureName = 'task';
-        const featurePath = '/workspace/modules/todo/lib/src/features/task';
+        // Given
+        const featureName = 'login';
+        const moduleName = 'authentication';
+        const appName = 'portal_app';
+        const workspaceName = 'my_workspace';
+        const workspacePath = '/projects/my_workspace';
 
-        // Act (When)
-        const regFeatureParam = RegFeatureParam(
-          appName: appName,
-          appPath: appPath,
-          moduleName: moduleName,
-          modulePath: modulePath,
+        // When
+        const param = RegFeatureParam(
           featureName: featureName,
-          featurePath: featurePath,
+          moduleName: moduleName,
+          appName: appName,
+          workspaceName: workspaceName,
+          workspacePath: workspacePath,
         );
 
-        // Assert (Then)
-        expect(regFeatureParam.appName, equals(appName));
-        expect(regFeatureParam.appPath, equals(appPath));
-        expect(regFeatureParam.moduleName, equals(moduleName));
-        expect(regFeatureParam.modulePath, equals(modulePath));
-        expect(regFeatureParam.featureName, equals(featureName));
-        expect(regFeatureParam.featurePath, equals(featurePath));
-      },
-    );
-
-    test(
-      'Given an AppIntegrationParam instance, '
-      'When RegFeatureParam.fromAppIntegration factory is called, '
-      'Then it correctly maps all properties from the base integration parameter',
-      () {
-        // Arrange (Given)
-        const appIntegrationParam = AppIntegrationParam(
-          appName: 'shop_app',
-          appPath: '/workspace/apps/shop_app',
-          moduleName: 'cart',
-          modulePath: '/workspace/modules/cart',
-          featureName: 'checkout',
-          featurePath: '/workspace/modules/cart/lib/src/features/checkout',
-        );
-
-        // Act (When)
-        final regFeatureParam = RegFeatureParam.fromAppIntegration(
-          appIntegrationParam,
-        );
-
-        // Assert (Then)
-        expect(regFeatureParam.appName, equals(appIntegrationParam.appName));
-        expect(regFeatureParam.appPath, equals(appIntegrationParam.appPath));
-        expect(
-          regFeatureParam.moduleName,
-          equals(appIntegrationParam.moduleName),
-        );
-        expect(
-          regFeatureParam.modulePath,
-          equals(appIntegrationParam.modulePath),
-        );
-        expect(
-          regFeatureParam.featureName,
-          equals(appIntegrationParam.featureName),
-        );
-        expect(
-          regFeatureParam.featurePath,
-          equals(appIntegrationParam.featurePath),
-        );
+        // Then
+        expect(param, isA<RegModuleParam>());
+        expect(param, isA<FeatureParam>());
+        expect(param, isA<ModuleParam>());
+        expect(param, isA<AppParam>());
+        expect(param, isA<WorkspaceParam>());
+        expect(param.featureName, featureName);
+        expect(param.moduleName, moduleName);
+        expect(param.appName, appName);
+        expect(param.workspaceName, workspaceName);
+        expect(param.workspacePath, workspacePath);
       },
     );
   });

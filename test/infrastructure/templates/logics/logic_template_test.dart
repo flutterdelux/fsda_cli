@@ -5,229 +5,117 @@ import 'package:fsda_cli/domain/models/logic_uc_model.dart';
 import 'package:fsda_cli/domain/models/prop_model.dart';
 import 'package:fsda_cli/domain/params/logic_flow_param.dart';
 import 'package:fsda_cli/domain/params/logic_param.dart';
+import 'package:fsda_cli/infrastructure/templates/logics/cubit_flow_template.dart';
+import 'package:fsda_cli/infrastructure/templates/logics/cubit_template.dart';
+import 'package:fsda_cli/infrastructure/templates/logics/getx_flow_template.dart';
+import 'package:fsda_cli/infrastructure/templates/logics/getx_template.dart';
 import 'package:fsda_cli/infrastructure/templates/logics/logic_template.dart';
+import 'package:fsda_cli/infrastructure/templates/logics/provider_flow_template.dart';
+import 'package:fsda_cli/infrastructure/templates/logics/provider_template.dart';
+import 'package:fsda_cli/infrastructure/templates/logics/riverpod_flow_template.dart';
+import 'package:fsda_cli/infrastructure/templates/logics/riverpod_template.dart';
 import 'package:test/test.dart';
 
 void main() {
+  LogicParam createLogic(StateControl control) {
+    return LogicParam(
+      props: const [
+        PropModel(
+          type: 'String',
+          name: 'search_query',
+          defaultValue: "''",
+          converter: '',
+        ),
+      ],
+      control: control,
+      featureName: 'task',
+      moduleName: 'project_management',
+      sliceName: 'filter',
+      workspaceName: 'my_workspace',
+      workspacePath: '/projects/my_workspace',
+    );
+  }
+
+  const sampleUc = LogicUcModel(
+    name: 'task_list_get_use_case',
+    path: 'domain/usecases/task_list_get_use_case.dart',
+    type: UcType.returnUc,
+    repoMethod: 'getTaskList',
+    returnType: 'List<TaskEntity>',
+  );
+
+  LogicFlowParam createLogicFlow(StateControl control) {
+    return LogicFlowParam(
+      type: LogicFlowType.retrieval,
+      uc: '${sampleUc.name}.dart',
+      control: control,
+      featureName: 'task',
+      moduleName: 'project_management',
+      sliceName: 'list',
+      workspaceName: 'my_workspace',
+      workspacePath: '/projects/my_workspace',
+    );
+  }
+
   group('LogicTemplate', () {
-    group('build (LogicParam)', () {
+    group('build', () {
       test(
-        'Given logic param with Cubit control, '
-        'When build is called, '
-        'Then it delegates and builds Cubit simple logic artifact correctly',
+        'GIVEN LogicParam across all StateControl variants '
+        'WHEN build is called '
+        'THEN delegates artifact generation to the corresponding state control template',
         () {
-          // Arrange (Given)
-          const logicParam = LogicParam(
-            control: StateControl.cubit,
-            props: [
-              PropModel(
-                name: 'title',
-                type: 'String',
-                defaultValue: '',
-                converter: '',
-              ),
-            ],
-            featureName: 'counter',
-            featurePath: 'modules/app/lib/src/features/counter',
-            moduleName: 'app',
-            modulePath: 'modules/app',
-            slice: 'main',
-          );
+          // Given
+          final cases = {
+            StateControl.cubit: CubitTemplate.build,
+            StateControl.getx: GetxTemplate.build,
+            StateControl.provider: ProviderTemplate.build,
+            StateControl.riverpod: RiverpodTemplate.build,
+          };
 
-          // Act (When)
-          final artifact = LogicTemplate.build(logicParam);
+          // When & Then
+          cases.forEach((control, expectedBuilder) {
+            final param = createLogic(control);
+            final result = LogicTemplate.build(param);
+            final expected = expectedBuilder(param);
 
-          // Assert (Then)
-          expect(artifact.name, equals('CounterMainCubit'));
-          expect(artifact.needToExport, isTrue);
-          expect(
-            artifact.content,
-            contains('class CounterMainCubit extends Cubit<CounterMainState>'),
-          );
-        },
-      );
-
-      test(
-        'Given logic param with GetX control, '
-        'When build is called, '
-        'Then it delegates and builds GetX simple logic artifact correctly',
-        () {
-          // Arrange (Given)
-          const logicParam = LogicParam(
-            control: StateControl.getx,
-            props: [
-              PropModel(
-                name: 'title',
-                type: 'String',
-                defaultValue: '',
-                converter: '',
-              ),
-            ],
-            featureName: 'counter',
-            featurePath: 'modules/app/lib/src/features/counter',
-            moduleName: 'app',
-            modulePath: 'modules/app',
-            slice: 'main',
-          );
-
-          // Act (When)
-          final artifact = LogicTemplate.build(logicParam);
-
-          // Assert (Then)
-          expect(artifact.name, equals('CounterMainController'));
-          expect(artifact.needToExport, isTrue);
-          expect(
-            artifact.content,
-            contains('class CounterMainController extends GetxController'),
-          );
-        },
-      );
-
-      test(
-        'Given logic param with Provider control, '
-        'When build is called, '
-        'Then it delegates and builds Provider simple logic artifact correctly',
-        () {
-          // Arrange (Given)
-          const logicParam = LogicParam(
-            control: StateControl.provider,
-            props: [
-              PropModel(
-                name: 'title',
-                type: 'String',
-                defaultValue: '',
-                converter: '',
-              ),
-            ],
-            featureName: 'counter',
-            featurePath: 'modules/app/lib/src/features/counter',
-            moduleName: 'app',
-            modulePath: 'modules/app',
-            slice: 'main',
-          );
-
-          // Act (When)
-          final artifact = LogicTemplate.build(logicParam);
-
-          // Assert (Then)
-          expect(artifact.name, equals('CounterMainProvider'));
-          expect(artifact.needToExport, isTrue);
-          expect(
-            artifact.content,
-            contains('class CounterMainProvider extends ChangeNotifier'),
-          );
-        },
-      );
-
-      test(
-        'Given logic param with Riverpod control, '
-        'When build is called, '
-        'Then it delegates and builds Riverpod simple logic artifact correctly',
-        () {
-          // Arrange (Given)
-          const logicParam = LogicParam(
-            control: StateControl.riverpod,
-            props: [
-              PropModel(
-                name: 'title',
-                type: 'String',
-                converter: '',
-                defaultValue: '',
-              ),
-            ],
-            featureName: 'counter',
-            featurePath: 'modules/app/lib/src/features/counter',
-            moduleName: 'app',
-            modulePath: 'modules/app',
-            slice: 'main',
-          );
-
-          // Act (When)
-          final artifact = LogicTemplate.build(logicParam);
-
-          // Assert (Then)
-          expect(artifact.name, equals('CounterMainProvider'));
-          expect(artifact.needToExport, isTrue);
-          expect(
-            artifact.content,
-            contains(
-              'class CounterMainProvider extends Notifier<CounterMainState>',
-            ),
-          );
+            expect(result.name, expected.name);
+            expect(result.path, expected.path);
+            expect(result.content, expected.content);
+            expect(result.typesToImport, expected.typesToImport);
+            expect(result.needToExport, expected.needToExport);
+          });
         },
       );
     });
 
-    group('buildFlow (LogicFlowParam)', () {
-      test('Given logic flow param with GetX control and retrieval type, '
-          'When buildFlow is called, '
-          'Then it delegates and builds GetX flow artifact correctly', () {
-        // Arrange (Given)
-        const logicFlowParam = LogicFlowParam(
-          type: LogicFlowType.retrieval,
-          control: StateControl.getx,
-          uc: LogicUcModel(
-            name: 'user_detail_use_case',
-            path:
-                'modules/auth/lib/src/domain/usecases/user_detail_use_case.dart',
-            type: UcType.returnUc,
-            method: 'call',
-            returnType: 'UserEntity',
-          ),
-          featureName: 'user',
-          featurePath: 'modules/auth/lib/src/features/user',
-          moduleName: 'auth',
-          modulePath: 'modules/auth',
-          slice: 'detail',
-        );
+    group('buildFlow', () {
+      test(
+        'GIVEN LogicFlowParam and LogicUcModel across all StateControl variants '
+        'WHEN buildFlow is called '
+        'THEN delegates flow artifact generation to the corresponding state control flow template',
+        () {
+          // Given
+          final cases = {
+            StateControl.cubit: CubitFlowTemplate.build,
+            StateControl.getx: GetxFlowTemplate.build,
+            StateControl.provider: ProviderFlowTemplate.build,
+            StateControl.riverpod: RiverpodFlowTemplate.build,
+          };
 
-        // Act (When)
-        final artifact = LogicTemplate.buildFlow(logicFlowParam);
+          // When & Then
+          cases.forEach((control, expectedBuilder) {
+            final param = createLogicFlow(control);
+            final result = LogicTemplate.buildFlow(logic: param, uc: sampleUc);
+            final expected = expectedBuilder(logic: param, uc: sampleUc);
 
-        // Assert (Then)
-        expect(artifact.name, equals('UserDetailController'));
-        expect(artifact.needToExport, isTrue);
-        expect(
-          artifact.content,
-          contains('class UserDetailController extends GetxController'),
-        );
-      });
-
-      test('Given logic flow param with Riverpod control and retrieval type, '
-          'When buildFlow is called, '
-          'Then it delegates and builds Riverpod flow artifact correctly', () {
-        // Arrange (Given)
-        const logicFlowParam = LogicFlowParam(
-          type: LogicFlowType.retrieval,
-          control: StateControl.riverpod,
-          uc: LogicUcModel(
-            name: 'user_detail_use_case',
-            path:
-                'modules/auth/lib/src/domain/usecases/user_detail_use_case.dart',
-            type: UcType.returnUc,
-            method: 'call',
-            returnType: 'UserEntity',
-          ),
-          featureName: 'user',
-          featurePath: 'modules/auth/lib/src/features/user',
-          moduleName: 'auth',
-          modulePath: 'modules/auth',
-          slice: 'detail',
-        );
-
-        // Act (When)
-        final artifact = LogicTemplate.buildFlow(logicFlowParam);
-
-        // Assert (Then)
-        expect(artifact.name, equals('UserDetailProvider'));
-        expect(artifact.needToExport, isTrue);
-        expect(
-          artifact.content,
-          contains(
-            'class UserDetailProvider extends Notifier<UserDetailState>',
-          ),
-        );
-      });
+            expect(result.name, expected.name);
+            expect(result.path, expected.path);
+            expect(result.content, expected.content);
+            expect(result.typesToImport, expected.typesToImport);
+            expect(result.needToExport, expected.needToExport);
+          });
+        },
+      );
     });
   });
 }

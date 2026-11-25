@@ -2,25 +2,26 @@ import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../core/constants/default_value.dart';
-import '../../../core/extensions/feature_gate_param_x.dart';
-import '../../../core/extensions/module_gate_param_x.dart';
-import '../../../core/extensions/slice_gate_param_x.dart';
+import '../../../core/extensions/feature_param_x.dart';
+import '../../../core/extensions/module_param_x.dart';
+import '../../../core/extensions/slice_param_x.dart';
 import '../../../core/extensions/ui_gate_param_x.dart';
 import '../../../domain/models/artifact_generation_model.dart';
 import '../../../domain/models/prop_model.dart';
-import '../../../domain/params/ui/ui_form_param.dart';
+import '../../../domain/params/ui_param.dart';
 import '../../text_modifiers/string_extension.dart';
 import 'ui_compose_field_template.dart';
 
 abstract final class UiFormTemplate {
   static ArtifactGenerationModel build({
-    required UiFormParam ui,
+    required UiParam ui,
     required List<PropModel> props,
   }) {
     final className = '${ui.featurePascal}${ui.slicePascal}';
     final hasInitial = ui.hasInitial;
+    final fields = ui.fields!;
 
-    final composeFieldImports = ui.fields
+    final composeFieldImports = fields
         .map(
           (e) =>
               "import '../../shared/widgets/${ui.featureName}_${e.fieldName}_field.dart';",
@@ -30,20 +31,20 @@ abstract final class UiFormTemplate {
     final initialDataProp = hasInitial
         ? 'final ${ui.modelPascal} initialData;'
         : '';
-    final composeFieldProps = ui.fields
+    final composeFieldProps = fields
         .map((e) => UiComposeFieldTemplate.prop(e))
         .join('\n');
 
     final initialDataParam = hasInitial ? 'required this.initialData,' : '';
-    final composeFieldParams = ui.fields
+    final composeFieldParams = fields
         .map((e) => UiComposeFieldTemplate.param(e))
         .join('\n');
 
-    final composeFieldVariables = ui.fields
+    final composeFieldVariables = fields
         .map((e) => UiComposeFieldTemplate.variable(e))
         .join('\n');
 
-    final composeFieldValidations = ui.fields
+    final composeFieldValidations = fields
         .map(
           (e) => UiComposeFieldTemplate.validation(
             formField: e,
@@ -53,18 +54,14 @@ abstract final class UiFormTemplate {
         )
         .join('\n');
 
-    // final initializeDataListen = [
-    //   if (hasInitial) '      id: widget.initialData.id,',
-    //   ...ui.fields.map((e) {
-    //     final fieldCamel = e.fieldName.camelCase;
-    //     return '      $fieldCamel: $fieldCamel,';
-    //   }),
-    // ].join('\n');
     final initializeDataListen = props
         .map((prop) {
           final propName = prop.name.camelCase;
+          if (propName == 'id' && hasInitial) {
+            return '      id: widget.initialData.id,';
+          }
           final value =
-              ui.fields
+              fields
                   .firstWhereOrNull((field) => field.fieldName == prop.name)
                   ?.fieldName ??
               prop.defaultValue;
@@ -72,7 +69,7 @@ abstract final class UiFormTemplate {
         })
         .join('\n');
 
-    final composeFieldInitStates = ui.fields
+    final composeFieldInitStates = fields
         .map(
           (e) => UiComposeFieldTemplate.initState(
             formField: e,
@@ -80,11 +77,11 @@ abstract final class UiFormTemplate {
           ),
         )
         .join();
-    final composeFieldDisposes = ui.fields
+    final composeFieldDisposes = fields
         .map((e) => UiComposeFieldTemplate.dispose(e))
         .join();
 
-    final composeFieldWidgets = ui.fields
+    final composeFieldWidgets = fields
         .map(
           (e) => UiComposeFieldTemplate.widget(
             formField: e,
@@ -112,7 +109,7 @@ abstract final class UiFormTemplate {
       ),
       typesToImport: {
         ui.modelPascal,
-        ...ui.fields.map((e) => e.valueType.replaceAll('?', '')),
+        ...fields.map((e) => e.valueType.replaceAll('?', '')),
         '${ui.modulePascal}Localizations',
       },
       needToExport: true,
@@ -173,11 +170,16 @@ $initializeDataListen
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(AppSpacing.screen),
-      children: [
-        ${composeFieldWidgets.trim()}
-      ],
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.screen),
+        child: Column(
+          crossAxisAlignment: .stretch,
+          children: [
+            ${composeFieldWidgets.trim()}
+          ],
+        ),
+      ),
     );
   }
 }
@@ -185,11 +187,11 @@ $initializeDataListen
     );
   }
 
-  static Map<String, dynamic> buildArbEntries(UiFormParam ui) {
+  static Map<String, dynamic> buildArbEntries(UiParam ui) {
     final entries = <String, dynamic>{};
     final prefixKey = '${ui.featureCamel}${ui.slicePascal}';
     final message =
-        '${ui.featureName.sentenceCase} ${ui.slice.sentenceCase} must be filled';
+        '${ui.featureName.sentenceCase} ${ui.sliceName.sentenceCase} must be filled';
     entries['${prefixKey}Title'] = [
       ui.featureTitle,
       ui.sliceTitle.replaceAll('Form', '').trim(),

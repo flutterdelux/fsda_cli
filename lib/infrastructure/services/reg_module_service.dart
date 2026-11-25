@@ -3,7 +3,9 @@ import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
-import '../../core/extensions/app_integration_param_x.dart';
+import '../../core/extensions/app_param_x.dart';
+import '../../core/extensions/module_param_x.dart';
+import '../../core/extensions/reg_module_param_x.dart';
 import '../../domain/params/app_integration/reg_module_param.dart';
 import '../templates/app_integration/app_module_di_template.dart';
 import '../templates/app_integration/app_module_route_template.dart';

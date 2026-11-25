@@ -6,225 +6,202 @@ import 'package:fsda_cli/infrastructure/templates/repositories/repo_body_stream_
 import 'package:test/test.dart';
 
 void main() {
+  SequenceParam createParam({
+    String method = 'watch_task',
+    DsMode dsMode = DsMode.remote,
+    bool isList = false,
+    String? entity,
+    String? dto,
+    String? param,
+    String? request,
+  }) {
+    return SequenceParam(
+      action: Action.get,
+      usecase: 'task_watch_use_case',
+      method: method,
+      flow: FlowType.stream,
+      dsMode: dsMode,
+      isList: isList,
+      entity: entity,
+      dto: dto,
+      param: param,
+      request: request,
+      featureName: 'task',
+      moduleName: 'project_management',
+      workspaceName: 'my_workspace',
+      workspacePath: '/projects/my_workspace',
+    );
+  }
+
   group('RepoBodyStreamTemplate', () {
-    SequenceParam createTestParam({
-      Action action = Action.get,
-      String usecase = 'get_stream_user_use_case',
-      String usecasePath = 'path',
-      String method = 'get_stream_user',
-      FlowType flow = FlowType.stream,
-      DsMode dsMode = DsMode.remote,
-      bool isList = false,
-      String? entity,
-      String? entityPath,
-      String? param,
-      String? paramPath,
-      String? dto,
-      String? dtoPath,
-      String? request,
-      String? requestPath,
-      String? response,
-      String? responsePath,
-    }) {
-      return SequenceParam(
-        action: action,
-        usecase: usecase,
-        usecasePath: usecasePath,
-        method: method,
-        flow: flow,
-        dsMode: dsMode,
-        isList: isList,
-        entity: entity,
-        entityPath: entityPath,
-        param: param,
-        paramPath: paramPath,
-        dto: dto,
-        dtoPath: dtoPath,
-        request: request,
-        requestPath: requestPath,
-        response: response,
-        responsePath: responsePath,
-        featureName: 'user',
-        featurePath: 'user',
-        moduleName: 'core',
-        modulePath: 'core',
+    group('Error Cases', () {
+      test(
+        'GIVEN SequenceParam with Void or Param-only combination '
+        'WHEN build is called '
+        'THEN throws an Exception indicating unsupported model combination for stream flow',
+        () {
+          // Given
+          final voidSequence = createParam();
+          final paramOnlySequence = createParam(
+            param: 'task_filter_param',
+            request: 'task_filter_request',
+          );
+
+          // When & Then
+          for (final sequence in [voidSequence, paramOnlySequence]) {
+            expect(
+              () => RepoBodyStreamTemplate.build(sequence),
+              throwsA(
+                isA<Exception>().having(
+                  (e) => e.toString(),
+                  'message',
+                  contains(
+                    'Model combination not support for stream flow. Available combination for stream: Only Return or Return+Param',
+                  ),
+                ),
+              ),
+            );
+          }
+        },
       );
+    });
+
+    group('ReturnParam Combination (isReturnParam)', () {
+      test(
+        'GIVEN remote SequenceParam with entity, dto, param, request, and isList false '
+        'WHEN build is called '
+        'THEN converts param to request, streams single DTO to entity, and yields Result.success',
+        () {
+          // Given
+          final sequence = createParam(
+            method: 'watch_task_detail',
+            dsMode: DsMode.remote,
+            isList: false,
+            entity: 'task_entity',
+            dto: 'task_dto',
+            param: 'task_detail_param',
+            request: 'task_detail_request',
+          );
+
+          // When
+          final result = RepoBodyStreamTemplate.build(sequence);
+
+          // Then
+          expect(result, '''
+    try {
+      final request = TaskDetailRequest.fromParam(param);
+      final stream = _remoteDataSource.watchTaskDetail(request);
+      await for (final dto in stream) {
+        final entity = dto.toEntity();
+        yield Result.success(entity);
+      }
+    } catch (e, st) {
+      yield handleException('watchTaskDetail', e, st);
     }
+''');
+        },
+      );
 
-    test(
-      'Given sequence param with return and param for stream (single, isList: false), '
-      'When building repo body stream, '
-      'Then it should return correct code template with request mapping, stream iteration for single dto, and yield success',
-      () {
-        // Given
-        final sequence = createTestParam(
-          method: 'get_stream_user',
-          entity: 'user_entity',
-          dto: 'user_dto',
-          request: 'user_request',
-          param: 'user_param',
-          isList: false,
-        );
+      test(
+        'GIVEN local SequenceParam with entity, dto, param, request, and isList true '
+        'WHEN build is called '
+        'THEN converts param to request, streams DTO list to entities, and yields Result.success',
+        () {
+          // Given
+          final sequence = createParam(
+            method: 'watch_filtered_tasks',
+            dsMode: DsMode.local,
+            isList: true,
+            entity: 'task_entity',
+            dto: 'task_dto',
+            param: 'task_filter_param',
+            request: 'task_filter_request',
+          );
 
-        // When
-        final result = RepoBodyStreamTemplate.build(sequence);
+          // When
+          final result = RepoBodyStreamTemplate.build(sequence);
 
-        // Then
-        expect(
-          result,
-          contains('final request = UserRequest.fromParam(param);'),
-        );
-        expect(
-          result,
-          contains('final stream = _remoteDataSource.getStreamUser(request);'),
-        );
-        expect(result, contains('await for (final dto in stream) {'));
-        expect(result, contains('final entity = dto.toEntity();'));
-        expect(result, contains('yield Result.success(entity);'));
-        expect(
-          result,
-          contains("yield handleException('getStreamUser', e, st);"),
-        );
-      },
-    );
+          // Then
+          expect(result, '''
+    try {
+      final request = TaskFilterRequest.fromParam(param);
+      final stream = _localDataSource.watchFilteredTasks(request);
+      await for (final dtos in stream) {
+        final entities = dtos.map((e) => e.toEntity()).toList();
+        yield Result.success(entities);
+      }
+    } catch (e, st) {
+      yield handleException('watchFilteredTasks', e, st);
+    }
+''');
+        },
+      );
+    });
 
-    test(
-      'Given sequence param with return and param for stream (list, isList: true), '
-      'When building repo body stream, '
-      'Then it should return correct code template with request mapping, stream iteration for list dtos, and yield success',
-      () {
-        // Given
-        final sequence = createTestParam(
-          method: 'get_stream_users',
-          entity: 'user_entity',
-          dto: 'user_dto',
-          request: 'user_request',
-          param: 'user_param',
-          isList: true,
-        );
+    group('Return Combination (isReturn)', () {
+      test(
+        'GIVEN remote SequenceParam with entity, dto, and isList false '
+        'WHEN build is called '
+        'THEN calls parameterless stream method and yields single entity Result.success',
+        () {
+          // Given
+          final sequence = createParam(
+            method: 'watch_active_task',
+            dsMode: DsMode.remote,
+            isList: false,
+            entity: 'task_entity',
+            dto: 'task_dto',
+          );
 
-        // When
-        final result = RepoBodyStreamTemplate.build(sequence);
+          // When
+          final result = RepoBodyStreamTemplate.build(sequence);
 
-        // Then
-        expect(
-          result,
-          contains('final request = UserRequest.fromParam(param);'),
-        );
-        expect(
-          result,
-          contains('final stream = _remoteDataSource.getStreamUsers(request);'),
-        );
-        expect(result, contains('await for (final dtos in stream) {'));
-        expect(
-          result,
-          contains('final entities = dtos.map((e) => e.toEntity()).toList();'),
-        );
-        expect(result, contains('yield Result.success(entities);'));
-        expect(
-          result,
-          contains("yield handleException('getStreamUsers', e, st);"),
-        );
-      },
-    );
+          // Then
+          expect(result, '''
+    try {
+      final stream = _remoteDataSource.watchActiveTask();
+      await for (final dto in stream) {
+        final entity = dto.toEntity();
+        yield Result.success(entity);
+      }
+    } catch (e, st) {
+      yield handleException('watchActiveTask', e, st);
+    }
+''');
+        },
+      );
 
-    test(
-      'Given sequence param with return only for stream (single, isList: false), '
-      'When building repo body stream, '
-      'Then it should return template without fromParam and with single dto stream yield',
-      () {
-        // Given
-        final sequence = createTestParam(
-          method: 'get_stream_profile',
-          entity: 'profile_entity',
-          dto: 'profile_dto',
-          isList: false,
-        );
+      test(
+        'GIVEN local SequenceParam with entity, dto, and isList true '
+        'WHEN build is called '
+        'THEN calls parameterless stream method on _localDataSource and yields entity list Result.success',
+        () {
+          // Given
+          final sequence = createParam(
+            method: 'watch_task_list',
+            dsMode: DsMode.local,
+            isList: true,
+            entity: 'task_entity',
+            dto: 'task_dto',
+          );
 
-        // When
-        final result = RepoBodyStreamTemplate.build(sequence);
+          // When
+          final result = RepoBodyStreamTemplate.build(sequence);
 
-        // Then
-        expect(result, isNot(contains('fromParam')));
-        expect(
-          result,
-          contains('final stream = _remoteDataSource.getStreamProfile();'),
-        );
-        expect(result, contains('await for (final dto in stream) {'));
-        expect(result, contains('final entity = dto.toEntity();'));
-        expect(result, contains('yield Result.success(entity);'));
-      },
-    );
-
-    test(
-      'Given sequence param with return only for stream (list, isList: true), '
-      'When building repo body stream, '
-      'Then it should return template without fromParam and with list dtos stream yield',
-      () {
-        // Given
-        final sequence = createTestParam(
-          method: 'get_stream_profiles',
-          entity: 'profile_entity',
-          dto: 'profile_dto',
-          isList: true,
-        );
-
-        // When
-        final result = RepoBodyStreamTemplate.build(sequence);
-
-        // Then
-        expect(result, isNot(contains('fromParam')));
-        expect(
-          result,
-          contains('final stream = _remoteDataSource.getStreamProfiles();'),
-        );
-        expect(result, contains('await for (final dtos in stream) {'));
-        expect(
-          result,
-          contains('final entities = dtos.map((e) => e.toEntity()).toList();'),
-        );
-        expect(result, contains('yield Result.success(entities);'));
-      },
-    );
-
-    test(
-      'Given unsupported model combination for stream (e.g. param only or void), '
-      'When building repo body stream, '
-      'Then it should throw an Exception indicating stream flow only supports Return or Return+Param',
-      () {
-        // Given (Param only - bukan Return)
-        final sequenceParamOnly = createTestParam(
-          method: 'update_stream',
-          request: 'user_request',
-          param: 'user_param',
-        );
-
-        // Given (Void - tanpa return/param)
-        final sequenceVoid = createTestParam(method: 'clear_stream');
-
-        // When & Then
-        expect(
-          () => RepoBodyStreamTemplate.build(sequenceParamOnly),
-          throwsA(
-            isA<Exception>().having(
-              (e) => e.toString(),
-              'message',
-              contains('Model combination not support for stream flow'),
-            ),
-          ),
-        );
-
-        expect(
-          () => RepoBodyStreamTemplate.build(sequenceVoid),
-          throwsA(
-            isA<Exception>().having(
-              (e) => e.toString(),
-              'message',
-              contains('Model combination not support for stream flow'),
-            ),
-          ),
-        );
-      },
-    );
+          // Then
+          expect(result, '''
+    try {
+      final stream = _localDataSource.watchTaskList();
+      await for (final dtos in stream) {
+        final entities = dtos.map((e) => e.toEntity()).toList();
+        yield Result.success(entities);
+      }
+    } catch (e, st) {
+      yield handleException('watchTaskList', e, st);
+    }
+''');
+        },
+      );
+    });
   });
 }

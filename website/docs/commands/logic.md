@@ -10,7 +10,7 @@ These commands manage and generate feature slice state management components usi
 ## gen-logic
 
 ```bash
-fsda gen-logic -s <slice> -p "<type>:<name>[:default]" -f <feature> -m <module> [-c <control>]
+fsda gen-logic -m <module> -f <feature> -s <slice> -p "<type>:<name>[:default]" [-c <control>]
 ```
 
 Generates a simple, property-based state management component (Cubit by default or specified state control) and Freezed State pair. This command is designed for basic state management where state is primarily updated via state properties without needing direct Use Case flow integrations.
@@ -21,7 +21,7 @@ Generates a simple, property-based state management component (Cubit by default 
 * `-p`, `--prop <property>`: **(Required)** Defines a property using the format `Type:name[:defaultValue]`. This is a multi-flag option (`--prop`), meaning you can call it multiple times to add several properties cleanly (e.g., `--prop "String:search_query" --prop "bool:is_active:false"`).
 * `-f`, `--feature <name>`: **(Required)** Target feature name under `lib/src/features/`.
 * `-m`, `--module <name>`: **(Required)** Target module name under `modules/`.
-* `-c`, `--control <control>`: *(Optional)* State control / state management approach (`cubit`, `bloc`, `getx`, `provider`, `riverpod`). Defaults to `cubit`.
+* `-c`, `--control <control>`: *(Optional)* State control / state management approach (`cubit`, `getx`, `provider`, `riverpod`). Defaults to `cubit`.
 
 ### Examples
 
@@ -45,7 +45,7 @@ fsda gen-logic -s filter -f task -m todo \
 
 ### Workspace Guard
 
-Must be executed inside an FSDA workspace root directory where `fsda.yaml` is present.
+Must be executed inside an FSDA workspace root directory where `.fsda/config.yaml` is present.
 
 ### Rerun Behavior
 
@@ -56,7 +56,7 @@ Must be executed inside an FSDA workspace root directory where `fsda.yaml` is pr
 ## gen-logic-flow
 
 ```bash
-fsda gen-logic-flow <type> -s <slice> --uc <usecase> -f <feature> -m <module> [-c <control>]
+fsda gen-logic-flow -m <module> -f <feature> -s <slice> -t <type> --uc <usecase> [-c <control>]
 ```
 
 Generates a flow-driven logic component (Cubit by default or specified state control) and Freezed State pair integrated directly with a Use Case. It inspects the target Use Case to analyze method signature, parameters, return types, and execution model (Async, Sync, or Stream), automatically handling state mappers, lifecycle, and barrel exports.
@@ -76,30 +76,30 @@ Generates a flow-driven logic component (Cubit by default or specified state con
 
 ```bash
 # Generate a mutation Cubit for task creation (default control: cubit)
-fsda gen-logic-flow m -s create --uc task_create_use_case -f task -m todo
+fsda gen-logic-flow -t m -s create --uc task_create_use_case -f task -m todo
 
 # Generate a retrieval logic with explicit control state
-fsda gen-logic-flow r -s detail --uc task_detail_use_case -f task -m todo -c cubit
+fsda gen-logic-flow -t r -s detail --uc task_detail_use_case -f task -m todo -c cubit
 
 # Generate a pagination Cubit
-fsda gen-logic-flow pag -s list --uc task_list_use_case -f task -m todo
+fsda gen-logic-flow -t pag -s list --uc task_list_use_case -f task -m todo
 
 # Generate a stream listener Cubit (handles StreamSubscription & cleanup)
-fsda gen-logic-flow r -s status_listen --uc task_status_listen_use_case -f task -m todo
+fsda gen-logic-flow -t r -s status_listen --uc task_status_listen_use_case -f task -m todo
 ```
 
 ### Options
 
-* `<type>`: **(Required)** Primary positional argument (`m`, `r`, or `pag`).
+* `-t`, `--type`: **(Required)** Logic flow type (`m`, `r`, or `pag`).
 * `-s`, `--slice <name>`: **(Required)** Feature slice name in `snake_case` (e.g., `create`, `list`).
 * `--uc <usecase>`: **(Required)** Target Use Case name ending with `_use_case` (e.g., `task_create_use_case`).
 * `-f`, `--feature <name>`: **(Required)** Target feature name under `lib/src/features/`.
 * `-m`, `--module <name>`: **(Required)** Target module name under `modules/`.
-* `-c`, `--control <control>`: *(Optional)* State control / state management approach (`cubit`, `bloc`, `getx`, `provider`, `riverpod`). Defaults to `cubit`.
+* `-c`, `--control <control>`: *(Optional)* State control / state management approach (`cubit`, `getx`, `provider`, `riverpod`). Defaults to `cubit`.
 
 ### Workspace Guard
 
-Must be executed inside an FSDA workspace root directory where `fsda.yaml` is present.
+Must be executed inside an FSDA workspace root directory where `.fsda/config.yaml` is present.
 
 ### Rerun Behavior
 

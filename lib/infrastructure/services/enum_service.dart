@@ -3,6 +3,8 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:path/path.dart' as p;
 
 import '../../core/extensions/enum_param_x.dart';
+import '../../core/extensions/feature_param_x.dart';
+import '../../core/extensions/module_param_x.dart';
 import '../../domain/params/enum_param.dart';
 import '../templates/enum_template.dart';
 import '../templates/feature_template.dart';
@@ -31,7 +33,7 @@ class EnumService {
        _directoryService = directoryService,
        _fileService = fileService;
 
-  Future<void> generateEnum({
+  Future<void> generate({
     required EnumParam enumParam,
     required Function(String) onProgress,
   }) async {
@@ -54,7 +56,7 @@ class EnumService {
     await _injectEnumArb(enumParam);
   }
 
-  Future<void> removeEnum({
+  Future<void> remove({
     required EnumParam enumParam,
     required Function(String) onProgress,
   }) async {
@@ -111,7 +113,7 @@ class EnumService {
   // ================= Generate Helper ========================
 
   Future<void> _createEnum(EnumParam enumParam) async {
-    final path = enumParam.path;
+    final path = enumParam.enumPath;
     final content = EnumTemplate.buildEnum(enumParam);
     await _directoryService.create(p.dirname(path));
     await _fileService.writeAsString(path: path, content: content);
@@ -120,21 +122,19 @@ class EnumService {
 
   Future<void> _injectExportEnum(EnumParam enumParam) async {
     final barrelPath = enumParam.featureBarrelPath;
+    final relativePath = p
+        .relative(enumParam.enumPath, from: p.dirname(barrelPath))
+        .replaceAll(r'\', '/');
     await _exportService.inject(
       barrelPath: barrelPath,
-      exportLines: ["export 'domain/enums/${enumParam.name}.dart';"],
+      exportLines: ["export '$relativePath';"],
       checkpoint: '// domain',
     );
     _reportService.addInjected(barrelPath);
   }
 
   Future<void> _createEnumConverter(EnumParam enumParam) async {
-    final path = p.join(
-      enumParam.featurePath,
-      'data',
-      'converters',
-      '${enumParam.name}_converter.dart',
-    );
+    final path = enumParam.converterPath;
     final content = EnumTemplate.buildConverter(enumParam);
     await _directoryService.create(p.dirname(path));
     await _fileService.writeAsString(path: path, content: content);
@@ -142,13 +142,7 @@ class EnumService {
   }
 
   Future<void> _createEnumExtension(EnumParam enumParam) async {
-    final path = p.join(
-      enumParam.featurePath,
-      'ui',
-      'shared',
-      'extensions',
-      '${enumParam.name}_x.dart',
-    );
+    final path = enumParam.extensionPath;
     final content = EnumTemplate.buildExtension(enumParam);
     await _directoryService.create(p.dirname(path));
     await _fileService.writeAsString(path: path, content: content);
@@ -157,9 +151,12 @@ class EnumService {
 
   Future<void> _injectExportEnumExtension(EnumParam enumParam) async {
     final barrelPath = enumParam.featureBarrelPath;
+    final relativePath = p
+        .relative(enumParam.extensionPath, from: p.dirname(barrelPath))
+        .replaceAll(r'\', '/');
     await _exportService.inject(
       barrelPath: barrelPath,
-      exportLines: ["export 'ui/shared/extensions/${enumParam.name}_x.dart';"],
+      exportLines: ["export '$relativePath';"],
       checkpoint: '// ui',
     );
     _reportService.addInjected(barrelPath);
@@ -182,28 +179,26 @@ class EnumService {
   // ================= Remove Helper ========================
 
   Future<void> _removeEnum(EnumParam enumParam) async {
-    await _fileService.delete(enumParam.path);
-    _reportService.addRemoved(enumParam.path);
+    await _fileService.delete(enumParam.enumPath);
+    _reportService.addRemoved(enumParam.enumPath);
   }
 
   Future<void> _unjectExportEnum(EnumParam enumParam) async {
     final barrelPath = enumParam.featureBarrelPath;
+    final relativePath = p
+        .relative(enumParam.enumPath, from: p.dirname(barrelPath))
+        .replaceAll(r'\', '/');
     if (await _fileService.exists(barrelPath)) {
       await _exportService.unject(
         barrelPath: barrelPath,
-        exportLines: ["export 'domain/enums/${enumParam.name}.dart';"],
+        exportLines: ["export '$relativePath';"],
       );
       _reportService.addUnjected(barrelPath);
     }
   }
 
   Future<void> _removeEnumConverter(EnumParam enumParam) async {
-    final path = p.join(
-      enumParam.featurePath,
-      'data',
-      'converters',
-      '${enumParam.name}_converter.dart',
-    );
+    final path = enumParam.converterPath;
     if (await _fileService.exists(path)) {
       await _fileService.delete(path);
       _reportService.addRemoved(path);
@@ -211,13 +206,7 @@ class EnumService {
   }
 
   Future<void> _removeEnumExtension(EnumParam enumParam) async {
-    final path = p.join(
-      enumParam.featurePath,
-      'ui',
-      'shared',
-      'extensions',
-      '${enumParam.name}_x.dart',
-    );
+    final path = enumParam.extensionPath;
     if (await _fileService.exists(path)) {
       await _fileService.delete(path);
       _reportService.addRemoved(path);
@@ -226,12 +215,13 @@ class EnumService {
 
   Future<void> _unjectExportEnumExtension(EnumParam enumParam) async {
     final barrelPath = enumParam.featureBarrelPath;
+    final relativePath = p
+        .relative(enumParam.extensionPath, from: p.dirname(barrelPath))
+        .replaceAll(r'\', '/');
     if (await _fileService.exists(barrelPath)) {
       await _exportService.unject(
         barrelPath: barrelPath,
-        exportLines: [
-          "export 'ui/shared/extensions/${enumParam.name}_x.dart';",
-        ],
+        exportLines: ["export '$relativePath';"],
       );
       _reportService.addUnjected(barrelPath);
     }

@@ -1,4 +1,5 @@
-import '../../../core/extensions/app_integration_param_x.dart';
+import '../../../core/extensions/module_param_x.dart';
+import '../../../core/extensions/reg_module_param_x.dart';
 import '../../../domain/models/artifact_generation_model.dart';
 import '../../../domain/params/app_integration/reg_module_param.dart';
 

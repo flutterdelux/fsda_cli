@@ -1,4 +1,4 @@
-import '../../core/extensions/feature_gate_param_x.dart';
+import '../../core/extensions/feature_param_x.dart';
 import '../../core/extensions/sequence_param_x.dart';
 import '../../domain/enums/flow_type.dart';
 import '../../domain/params/sequence_param.dart';

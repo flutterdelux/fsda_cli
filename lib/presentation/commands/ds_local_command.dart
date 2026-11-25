@@ -1,9 +1,10 @@
-import '../../core/constants/rules.dart';
+import '../../core/extensions/arg_results_x.dart';
 import '../../core/extensions/ds_param_x.dart';
-import '../../domain/params/feature_gate_param.dart';
+import '../../domain/params/feature_param.dart';
 import '../../domain/params/local_ds_param.dart';
 import '../../infrastructure/services/data_source_service.dart';
 import '../../infrastructure/services/helpers/file_service.dart';
+import '../resolvers/local_ds_resolver.dart';
 import 'wrapper/feature_gate_command.dart';
 
 class DsLocalCommand extends FeatureGateCommand {
@@ -18,7 +19,12 @@ class DsLocalCommand extends FeatureGateCommand {
     required super.reportService,
     required super.directoryService,
   }) : _dsService = dataSourceService,
-       _fileService = fileService;
+       _fileService = fileService {
+    argParser.addOption(
+      LocalDsResolverKeys.cacheKey,
+      help: 'The local storage cache key (e.g., "cached_tasks").',
+    );
+  }
 
   @override
   String get name => 'ds-local';
@@ -28,61 +34,47 @@ class DsLocalCommand extends FeatureGateCommand {
       'Generates a local data source interface and implementation for a feature.';
 
   @override
-  String get invocation => 'fsda $name <cache_key> -f <feature> -m <module>';
+  String get invocation =>
+      'fsda $name --cache-key <cache_key> -f <feature> -m <module>';
 
   @override
-  Future<int> handleFeatureGate(FeatureGateParam param) async {
-    final rest = argResults?.rest;
-    if (rest == null || rest.isEmpty) {
-      logger.error('Cache key argument is required.');
+  bool get featureShouldExists => true;
+
+  @override
+  Future<int> handleFeatureGate(FeatureParam feature) async {
+    LocalDsParam localDs;
+    try {
+      localDs = LocalDsResolver.resolve(
+        feature: feature,
+        data: argResults?.toMap() ?? {},
+      );
+    } catch (e) {
+      logger.error(e is FormatException ? e.message : e.toString());
       logger.log('Usage: $invocation');
       return errorUsage;
     }
 
-    if (rest.length > 1) {
-      logger.error('Invalid cache key: "$rest".');
-      logger.log('Usage: $invocation');
-      return errorUsage;
-    }
-
-    final cacheKey = rest.first;
-
-    if (!Rules.cacheKeyRegExp.hasMatch(cacheKey)) {
-      logger.error('Invalid cache key format: "$cacheKey".');
-      logger.log(Rules.cacheKeyDescription);
-      logger.log('Usage: $invocation');
-      return errorUsage;
-    }
-
-    final dsParam = LocalDsParam(
-      featureName: param.featureName,
-      featurePath: param.featurePath,
-      moduleName: param.moduleName,
-      modulePath: param.modulePath,
-      cacheKey: cacheKey,
-    );
-
-    if (await _fileService.exists(dsParam.interfacePath)) {
+    if (await _fileService.exists(localDs.interfacePath)) {
       logger.error(
-        'Local data source interface already exists at ${dsParam.interfacePath}',
+        'Local data source interface already exists at ${localDs.interfacePath}',
       );
       return errorUsage;
     }
 
-    if (await _fileService.exists(dsParam.implPath)) {
+    if (await _fileService.exists(localDs.implPath)) {
       logger.error(
-        'Local data source implementation already exists at ${dsParam.implPath}',
+        'Local data source implementation already exists at ${localDs.implPath}',
       );
       return errorUsage;
     }
 
     final progress = logger.progress(
-      'Generating local data source for feature "${param.featureName}" (${param.moduleName})...',
+      'Generating local data source for "${localDs.moduleName}/${localDs.featureName}"...',
     );
 
     try {
       await _dsService.generateLocalDataSource(
-        localDs: dsParam,
+        localDs: localDs,
         onProgress: (msg) => progress.update(msg),
       );
 
@@ -91,7 +83,7 @@ class DsLocalCommand extends FeatureGateCommand {
       );
 
       progress.complete(
-        'Local data source successfully generated for feature "${param.featureName}" (${param.moduleName})!',
+        'Local data source successfully generated for "${localDs.moduleName}/${localDs.featureName}"!',
       );
 
       logger.log(reportBuffer.toString());

@@ -1,22 +1,24 @@
-class AppParam {
-  /// e.g. portalapp
-  final String projectName;
-  final String projectPath;
+import 'workspace_param.dart';
 
-  /// e.g. com.fdelux
-  final String org;
-
-  /// e.g. Portal App
+class AppParam extends WorkspaceParam {
+  /// e.g. portal_app
   final String appName;
 
-  /// e.g. Flutter Delux
-  final String orgName;
-
   const AppParam({
-    required this.projectName,
-    required this.projectPath,
-    required this.org,
     required this.appName,
-    required this.orgName,
+
+    required super.workspaceName,
+    required super.workspacePath,
   });
+
+  factory AppParam.fromWorkspace({
+    required WorkspaceParam workspace,
+    required String appName,
+  }) {
+    return AppParam(
+      workspaceName: workspace.workspaceName,
+      workspacePath: workspace.workspacePath,
+      appName: appName,
+    );
+  }
 }

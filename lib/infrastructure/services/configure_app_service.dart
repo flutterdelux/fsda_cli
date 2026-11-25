@@ -5,8 +5,9 @@ import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
+import '../../core/extensions/app_param_x.dart';
 import '../../domain/models/infra_spec.dart';
-import '../../domain/params/configure_app_param.dart';
+import '../../domain/params/app_param.dart';
 import '../bundles/package_bundle.dart';
 import '../visitors/di_function_visitor.dart';
 import 'helpers/config_service.dart';
@@ -39,7 +40,7 @@ class ConfigureAppService {
        _importService = importService;
 
   Future<void> configure({
-    required ConfigureAppParam app,
+    required AppParam app,
     required Function(String) onProgress,
   }) async {
     onProgress('Reading FSDA configuration...');
@@ -64,7 +65,7 @@ class ConfigureAppService {
   // ================= Configure App Helper ========================
 
   Future<List<InfraSpec>> _getInfraSpecs({
-    required ConfigureAppParam app,
+    required AppParam app,
     required List<String> infraList,
   }) async {
     final specs = <InfraSpec>[];
@@ -106,10 +107,10 @@ class ConfigureAppService {
   }
 
   Future<void> _injectInfraToPubspec({
-    required ConfigureAppParam app,
+    required AppParam app,
     required List<InfraSpec> specs,
   }) async {
-    final pubspecPath = p.join(app.projectPath, 'pubspec.yaml');
+    final pubspecPath = p.join(app.appPath, 'pubspec.yaml');
     if (!await _fileService.exists(pubspecPath)) return;
 
     // Gunakan variabel mutable agar konten YAML terus diperbarui setiap ada penambahan package
@@ -129,7 +130,7 @@ class ConfigureAppService {
 
       final relativeModulePath = p.relative(
         p.join(_directoryService.currentPath, 'packages', infraName),
-        from: app.projectPath,
+        from: app.appPath,
       );
 
       // Gunakan YamlEditor pada konten terbaru
@@ -156,21 +157,15 @@ class ConfigureAppService {
         'pub',
         'add',
         ...externalDependencies,
-      ], app.projectPath);
+      ], app.appPath);
     }
   }
 
   Future<void> _injectExternalDi({
-    required ConfigureAppParam app,
+    required AppParam app,
     required List<InfraSpec> specs,
   }) async {
-    final path = p.join(
-      app.projectPath,
-      'lib',
-      'core',
-      'di',
-      'external_di.dart',
-    );
+    final path = p.join(app.appPath, 'lib', 'core', 'di', 'external_di.dart');
 
     final imports = {
       ...specs.expand((e) => e.externalDiImports).toSet(),
@@ -194,10 +189,10 @@ class ConfigureAppService {
   }
 
   Future<void> _injectCoreDi({
-    required ConfigureAppParam app,
+    required AppParam app,
     required List<InfraSpec> specs,
   }) async {
-    final path = p.join(app.projectPath, 'lib', 'core', 'di', 'core_di.dart');
+    final path = p.join(app.appPath, 'lib', 'core', 'di', 'core_di.dart');
     if (!await _fileService.exists(path)) return;
 
     final imports = {

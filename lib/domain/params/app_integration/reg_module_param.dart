@@ -1,23 +1,14 @@
-import 'app_integration_param.dart';
+import '../app_param.dart';
+import '../module_param.dart';
 
-class RegModuleParam extends AppIntegrationParam {
+class RegModuleParam extends ModuleParam implements AppParam {
   const RegModuleParam({
-    required super.appName,
-    required super.appPath,
+    required this.appName,
     required super.moduleName,
-    required super.modulePath,
-    required super.featureName,
-    required super.featurePath,
+    required super.workspaceName,
+    required super.workspacePath,
   });
 
-  factory RegModuleParam.fromAppIntegration(AppIntegrationParam param) {
-    return RegModuleParam(
-      appName: param.appName,
-      appPath: param.appPath,
-      moduleName: param.moduleName,
-      modulePath: param.modulePath,
-      featureName: param.featureName,
-      featurePath: param.featurePath,
-    );
-  }
+  @override
+  final String appName;
 }

@@ -120,7 +120,7 @@ class PackageSyncService {
         final lines = decodedContent.split('\n');
         for (int i = 0; i < lines.length; i++) {
           if (lines[i].trim().startsWith('sdk:')) {
-            lines[i] = '  sdk: ${config.sdkVersion}';
+            lines[i] = '  sdk: ${config.dartSdk}';
             break;
           }
         }

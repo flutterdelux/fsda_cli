@@ -1,14 +1,7 @@
-import '../../core/extensions/input_gate_param_x.dart';
-import '../../domain/params/inputs/input_dropdown_enum_param.dart';
-import '../../domain/params/inputs/input_dropdown_param.dart';
-import '../../domain/params/inputs/input_image_param.dart';
-import '../../domain/params/inputs/input_number_param.dart';
-import '../../domain/params/inputs/input_password_param.dart';
-import '../../domain/params/inputs/input_qty_param.dart';
-import '../../domain/params/inputs/input_selector_param.dart';
-import '../../domain/params/inputs/input_switch_param.dart';
-import '../../domain/params/inputs/input_text_area_param.dart';
-import '../../domain/params/inputs/input_text_param.dart';
+import '../../core/extensions/input_param_x.dart';
+import '../../core/extensions/module_param_x.dart';
+import '../../domain/enums/input_type.dart';
+import '../../domain/params/input_param.dart';
 import '../templates/feature_template.dart';
 import '../templates/inputs/input_dropdown_enum_template.dart';
 import '../templates/inputs/input_dropdown_template.dart';
@@ -46,245 +39,66 @@ class InputService {
        _importResolverService = importResolverService,
        _importService = importService;
 
-  Future<void> generateText({
-    required InputTextParam input,
+  Future<void> generate({
+    required InputParam input,
     required void Function(String msg) onProgress,
   }) async {
-    onProgress('Creating widget...');
-    final content = InputTextTemplate.build(input);
+    onProgress('Creating ${input.type.code} input widget...');
+
+    final content = switch (input.type) {
+      InputType.text => InputTextTemplate.build(input),
+      InputType.textArea => InputTextAreaTemplate.build(input),
+      InputType.number => InputNumberTemplate.build(input),
+      InputType.swich => InputSwitchTemplate.build(input),
+      InputType.password => InputPasswordTemplate.build(input),
+      InputType.qty => InputQtyTemplate.build(input),
+      InputType.image => InputImageTemplate.build(input),
+      InputType.dropdown => InputDropdownTemplate.build(input),
+      InputType.dropdownEnum => InputDropdownEnumTemplate.build(input),
+      InputType.selector =>
+        input.isList
+            ? InputSelectorListTemplate.build(input)
+            : InputSelectorTemplate.build(input),
+    };
+
     await _fileService.writeAsString(path: input.widgetPath, content: content);
     _reportService.addCreated(input.widgetPath);
 
-    onProgress('Injecting localization entries...');
-    await _injectArb(
-      modulePath: input.modulePath,
-      featureName: input.featureName,
-      arbEntries: InputTextTemplate.buildArbEntries(input),
-    );
-  }
-
-  Future<void> generateTextArea({
-    required InputTextAreaParam input,
-    required void Function(String msg) onProgress,
-  }) async {
-    onProgress('Creating text area widget...');
-    final content = InputTextAreaTemplate.build(input);
-    await _fileService.writeAsString(path: input.widgetPath, content: content);
-    _reportService.addCreated(input.widgetPath);
-
-    onProgress('Injecting localization entries...');
-    await _injectArb(
-      modulePath: input.modulePath,
-      featureName: input.featureName,
-      arbEntries: InputTextAreaTemplate.buildArbEntries(input),
-    );
-  }
-
-  Future<void> generateNumber({
-    required InputNumberParam input,
-    required void Function(String msg) onProgress,
-  }) async {
-    onProgress('Creating widget...');
-    final content = InputNumberTemplate.build(input);
-    await _fileService.writeAsString(path: input.widgetPath, content: content);
-    _reportService.addCreated(input.widgetPath);
-
-    onProgress('Resolving and injecting import references to widget file...');
-    final imports = await _importResolverService.resolve(
-      rawTypes: {input.type},
-      targetFilePath: input.widgetPath,
-      modulePath: input.modulePath,
-    );
-    if (imports.isNotEmpty) {
-      await _importService.injectImport(
-        path: input.widgetPath,
-        imports: imports,
+    final dataType = input.dataType;
+    if (dataType != null && dataType.isNotEmpty) {
+      onProgress('Resolving and injecting import references to widget file...');
+      final imports = await _importResolverService.resolve(
+        rawTypes: {dataType},
+        targetFilePath: input.widgetPath,
+        modulePath: input.modulePath,
       );
-      _reportService.addInjected(input.widgetPath);
+      if (imports.isNotEmpty) {
+        await _importService.injectImport(
+          path: input.widgetPath,
+          imports: imports,
+        );
+        _reportService.addInjected(input.widgetPath);
+      }
     }
 
     onProgress('Injecting localization entries...');
-    await _injectArb(
-      modulePath: input.modulePath,
-      featureName: input.featureName,
-      arbEntries: InputNumberTemplate.buildArbEntries(input),
-    );
-  }
-
-  Future<void> generateSwitch({
-    required InputSwitchParam input,
-    required void Function(String msg) onProgress,
-  }) async {
-    onProgress('Creating switch widget...');
-    final content = InputSwitchTemplate.build(input);
-    await _fileService.writeAsString(path: input.widgetPath, content: content);
-    _reportService.addCreated(input.widgetPath);
-
-    onProgress('Injecting localization entries...');
-    await _injectArb(
-      modulePath: input.modulePath,
-      featureName: input.featureName,
-      arbEntries: InputSwitchTemplate.buildArbEntries(input),
-    );
-  }
-
-  Future<void> generatePassword({
-    required InputPasswordParam input,
-    required void Function(String msg) onProgress,
-  }) async {
-    onProgress('Creating widget...');
-    final content = InputPasswordTemplate.build(input);
-    await _fileService.writeAsString(path: input.widgetPath, content: content);
-    _reportService.addCreated(input.widgetPath);
-
-    onProgress('Injecting localization entries...');
-    await _injectArb(
-      modulePath: input.modulePath,
-      featureName: input.featureName,
-      arbEntries: InputPasswordTemplate.buildArbEntries(input),
-    );
-  }
-
-  Future<void> generateQty({
-    required InputQtyParam input,
-    required void Function(String msg) onProgress,
-  }) async {
-    onProgress('Creating widget...');
-    final content = InputQtyTemplate.build(input);
-    await _fileService.writeAsString(path: input.widgetPath, content: content);
-    _reportService.addCreated(input.widgetPath);
-
-    onProgress('Injecting localization entries...');
-    await _injectArb(
-      modulePath: input.modulePath,
-      featureName: input.featureName,
-      arbEntries: InputQtyTemplate.buildArbEntries(input),
-    );
-  }
-
-  Future<void> generateImage({
-    required InputImageParam input,
-    required void Function(String msg) onProgress,
-  }) async {
-    onProgress('Creating widget...');
-    final content = InputImageTemplate.build(input);
-    await _fileService.writeAsString(path: input.widgetPath, content: content);
-    _reportService.addCreated(input.widgetPath);
-
-    onProgress('Resolving and injecting import references to widget file...');
-    final imports = await _importResolverService.resolve(
-      rawTypes: {input.type},
-      targetFilePath: input.widgetPath,
-      modulePath: input.modulePath,
-    );
-    if (imports.isNotEmpty) {
-      await _importService.injectImport(
-        path: input.widgetPath,
-        imports: imports,
-      );
-      _reportService.addInjected(input.widgetPath);
-    }
-
-    onProgress('Injecting localization entries...');
-    await _injectArb(
-      modulePath: input.modulePath,
-      featureName: input.featureName,
-      arbEntries: InputImageTemplate.buildArbEntries(input),
-    );
-  }
-
-  Future<void> generateDropdown({
-    required InputDropdownParam input,
-    required void Function(String msg) onProgress,
-  }) async {
-    onProgress('Creating widget...');
-    final content = InputDropdownTemplate.build(input);
-    await _fileService.writeAsString(path: input.widgetPath, content: content);
-    _reportService.addCreated(input.widgetPath);
-
-    onProgress('Resolving and injecting import references to widget file...');
-    final imports = await _importResolverService.resolve(
-      rawTypes: {input.type},
-      targetFilePath: input.widgetPath,
-      modulePath: input.modulePath,
-    );
-    if (imports.isNotEmpty) {
-      await _importService.injectImport(
-        path: input.widgetPath,
-        imports: imports,
-      );
-      _reportService.addInjected(input.widgetPath);
-    }
-
-    onProgress('Injecting localization entries...');
-    await _injectArb(
-      modulePath: input.modulePath,
-      featureName: input.featureName,
-      arbEntries: InputDropdownTemplate.buildArbEntries(input),
-    );
-  }
-
-  Future<void> generateDropdownEnum({
-    required InputDropdownEnumParam input,
-    required void Function(String msg) onProgress,
-  }) async {
-    onProgress('Creating widget...');
-    final content = InputDropdownEnumTemplate.build(input);
-    await _fileService.writeAsString(path: input.widgetPath, content: content);
-    _reportService.addCreated(input.widgetPath);
-
-    onProgress('Resolving and injecting import references to widget file...');
-    final imports = await _importResolverService.resolve(
-      rawTypes: {input.type},
-      targetFilePath: input.widgetPath,
-      modulePath: input.modulePath,
-    );
-    if (imports.isNotEmpty) {
-      await _importService.injectImport(
-        path: input.widgetPath,
-        imports: imports,
-      );
-      _reportService.addInjected(input.widgetPath);
-    }
-
-    onProgress('Injecting localization entries...');
-    await _injectArb(
-      modulePath: input.modulePath,
-      featureName: input.featureName,
-      arbEntries: InputDropdownEnumTemplate.buildArbEntries(input),
-    );
-  }
-
-  Future<void> generateSelector({
-    required InputSelectorParam input,
-    required void Function(String msg) onProgress,
-  }) async {
-    onProgress('Creating widget...');
-    final content = input.isList
-        ? InputSelectorListTemplate.build(input)
-        : InputSelectorTemplate.build(input);
-
-    await _fileService.writeAsString(path: input.widgetPath, content: content);
-    _reportService.addCreated(input.widgetPath);
-
-    onProgress('Resolving and injecting import references to widget file...');
-    final imports = await _importResolverService.resolve(
-      rawTypes: {input.valueType},
-      targetFilePath: input.widgetPath,
-      modulePath: input.modulePath,
-    );
-    if (imports.isNotEmpty) {
-      await _importService.injectImport(
-        path: input.widgetPath,
-        imports: imports,
-      );
-      _reportService.addInjected(input.widgetPath);
-    }
-
-    onProgress('Injecting localization entries...');
-    final arbEntries = input.isList
-        ? InputSelectorListTemplate.buildArbEntries(input)
-        : InputSelectorTemplate.buildArbEntries(input);
+    final arbEntries = switch (input.type) {
+      InputType.text => InputTextTemplate.buildArbEntries(input),
+      InputType.textArea => InputTextAreaTemplate.buildArbEntries(input),
+      InputType.number => InputNumberTemplate.buildArbEntries(input),
+      InputType.swich => InputSwitchTemplate.buildArbEntries(input),
+      InputType.password => InputPasswordTemplate.buildArbEntries(input),
+      InputType.qty => InputQtyTemplate.buildArbEntries(input),
+      InputType.image => InputImageTemplate.buildArbEntries(input),
+      InputType.dropdown => InputDropdownTemplate.buildArbEntries(input),
+      InputType.dropdownEnum => InputDropdownEnumTemplate.buildArbEntries(
+        input,
+      ),
+      InputType.selector =>
+        input.isList
+            ? InputSelectorListTemplate.buildArbEntries(input)
+            : InputSelectorTemplate.buildArbEntries(input),
+    };
 
     await _injectArb(
       modulePath: input.modulePath,

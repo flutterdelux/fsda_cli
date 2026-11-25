@@ -1,6 +1,8 @@
 import 'package:analyzer/dart/analysis/utilities.dart';
+import 'package:path/path.dart' as p;
 
 import '../../../domain/models/logic_uc_model.dart';
+import '../../text_modifiers/string_extension.dart';
 import '../../visitors/use_case_visitor.dart';
 import 'file_service.dart';
 
@@ -10,10 +12,7 @@ class LogicUcService {
   const LogicUcService({required FileService fileService})
     : _fileService = fileService;
 
-  Future<LogicUcModel> inspectUseCase({
-    required String usecaseName,
-    required String usecasePath,
-  }) async {
+  Future<LogicUcModel> inspectUseCase(String usecasePath) async {
     if (!await _fileService.exists(usecasePath)) {
       throw Exception('Use case file not found at $usecasePath');
     }
@@ -35,10 +34,12 @@ class LogicUcService {
     }
 
     return LogicUcModel(
-      name: usecaseName,
+      name:
+          visitor.className?.snakeCase ??
+          p.basenameWithoutExtension(usecasePath),
       path: usecasePath,
       type: visitor.detectedUcType!,
-      method: visitor.detectedMethod ?? 'call',
+      repoMethod: visitor.detectedMethod ?? 'call',
       returnType: visitor.returnType,
       paramType: visitor.paramType,
     );

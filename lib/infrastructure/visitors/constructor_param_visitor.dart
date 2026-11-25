@@ -12,7 +12,12 @@ class ConstructorParamVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitClassDeclaration(ClassDeclaration node) {
-    className = node.namePart.typeName.lexeme;
+    final name = node.namePart.typeName.lexeme;
+    if (className != null || name.startsWith('_')) {
+      return;
+    }
+
+    className = name;
     _fieldTypes.clear();
 
     final body = node.body;
@@ -39,7 +44,6 @@ class ConstructorParamVisitor extends RecursiveAstVisitor<void> {
         String? defaultValue;
         FormalParameter param = formalParam;
 
-        // Perbaikan 1: Gunakan if biasa, jangan Dart Record
         if (formalParam is DefaultFormalParameter) {
           defaultValue = formalParam.defaultValue?.toSource();
           param = formalParam.parameter;
@@ -51,8 +55,6 @@ class ConstructorParamVisitor extends RecursiveAstVisitor<void> {
 
         if (param is FieldFormalParameter) {
           name = param.name.lexeme;
-          // Perbaikan 2: Ambil dari param.type jika ditulis eksplisit,
-          // jika null ambil dari _fieldTypes milik class
           type = param.type?.toSource() ?? _fieldTypes[name] ?? 'dynamic';
         } else if (param is SuperFormalParameter) {
           name = param.name.lexeme;

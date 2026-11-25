@@ -1,7 +1,8 @@
 import 'package:path/path.dart' as p;
 
+import '../../core/extensions/feature_param_x.dart';
 import '../../core/extensions/flow_type_x.dart';
-import '../../core/extensions/module_gate_param_x.dart';
+import '../../core/extensions/module_param_x.dart';
 import '../../core/extensions/sequence_param_x.dart';
 import '../../domain/enums/ds_mode.dart';
 import '../../domain/params/sequence_param.dart';
@@ -239,7 +240,7 @@ class SequenceService {
 
   // --- Use Case ---
   Future<void> _createUseCaseAndExport(SequenceParam sequence) async {
-    final path = sequence.usecasePath;
+    final path = sequence.ucPath;
 
     final content = UseCaseTemplate.build(sequence: sequence);
     await _fileService.writeAsString(path: path, content: content);
@@ -256,7 +257,7 @@ class SequenceService {
   }
 
   Future<void> _injectImportToUseCase(SequenceParam sequence) async {
-    final path = sequence.usecasePath;
+    final path = sequence.ucPath;
     final imports = await _importResolverService.resolve(
       rawTypes: {?sequence.entityPascal, ?sequence.paramPascal},
       targetFilePath: path,
@@ -284,7 +285,7 @@ class SequenceService {
   // =========== Remove Helper =================
 
   Future<void> _removeUseCaseAndUnjectExport(SequenceParam sequence) async {
-    final path = sequence.usecasePath;
+    final path = sequence.ucPath;
     if (await _fileService.exists(path)) {
       await _fileService.delete(path);
       _reportService.addRemoved(path);

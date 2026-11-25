@@ -1,50 +1,70 @@
 import 'package:fsda_cli/core/extensions/feature_param_x.dart';
 import 'package:fsda_cli/domain/params/feature_param.dart';
-import 'package:fsda_cli/domain/params/module_gate_param.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
-  group('FeatureParamX & FeatureParam Tests', () {
-    test('should generate correct barrel and repository paths', () {
-      const param = FeatureParam(
-        name: 'user_profile',
-        path: '/modules/auth/lib/src/features/user_profile',
-        moduleName: 'auth',
-        modulePath: '/modules/auth',
-      );
-
-      expect(
-        param.featureBarrelPath,
-        '/modules/auth/lib/src/features/user_profile/user_profile_feature.dart',
-      );
-      expect(
-        param.repoInterfacePath,
-        '/modules/auth/lib/src/features/user_profile/domain/repositories/user_profile_repository.dart',
-      );
-      expect(
-        param.repoImplPath,
-        '/modules/auth/lib/src/features/user_profile/data/repositories/user_profile_repository_impl.dart',
-      );
-    });
+  group('FeatureParamX', () {
+    const param = FeatureParam(
+      featureName: 'order_history',
+      moduleName: 'transaction',
+      workspaceName: 'my_workspace',
+      workspacePath: '/projects/my_workspace',
+    );
 
     test(
-      'should create FeatureParam correctly using fromModuleGate factory',
+      'GIVEN a FeatureParam instance with snake_case featureName '
+      'WHEN case-conversion getters are accessed '
+      'THEN returns snake_case, camelCase, PascalCase, and Title Case variants accurately',
       () {
-        const moduleGate = ModuleGateParam(
-          moduleName: 'settings',
-          modulePath: '/modules/settings',
+        // When & Then
+        expect(param.featureSnake, 'order_history');
+        expect(param.featureCamel, 'orderHistory');
+        expect(param.featurePascal, 'OrderHistory');
+        expect(param.featureTitle, 'Order History');
+      },
+    );
+
+    test(
+      'GIVEN a FeatureParam instance '
+      'WHEN path getters are accessed '
+      'THEN returns accurate feature, barrel, repository interface, and repository implementation paths',
+      () {
+        // Given
+        final expectedFeaturePath = p.join(
+          '/projects/my_workspace',
+          'modules',
+          'transaction',
+          'lib',
+          'src',
+          'features',
+          'order_history',
         );
 
-        final featureParam = FeatureParam.fromModuleGate(
-          moduleGate: moduleGate,
-          name: 'account',
-          path: '/modules/settings/lib/src/features/account',
+        // When & Then
+        expect(param.featurePath, expectedFeaturePath);
+        expect(
+          param.featureBarrelPath,
+          p.join(expectedFeaturePath, 'order_history_feature.dart'),
         );
-
-        expect(featureParam.name, 'account');
-        expect(featureParam.path, '/modules/settings/lib/src/features/account');
-        expect(featureParam.moduleName, 'settings');
-        expect(featureParam.modulePath, '/modules/settings');
+        expect(
+          param.repoInterfacePath,
+          p.join(
+            expectedFeaturePath,
+            'domain',
+            'repositories',
+            'order_history_repository.dart',
+          ),
+        );
+        expect(
+          param.repoImplPath,
+          p.join(
+            expectedFeaturePath,
+            'data',
+            'repositories',
+            'order_history_repository_impl.dart',
+          ),
+        );
       },
     );
   });

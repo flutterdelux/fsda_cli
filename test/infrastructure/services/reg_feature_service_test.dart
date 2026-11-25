@@ -1,11 +1,14 @@
 import 'dart:io';
 
+import 'package:fsda_cli/core/extensions/feature_param_x.dart';
+import 'package:fsda_cli/core/extensions/reg_module_param_x.dart';
 import 'package:fsda_cli/domain/params/app_integration/reg_feature_param.dart';
 import 'package:fsda_cli/infrastructure/services/helpers/directory_service.dart';
 import 'package:fsda_cli/infrastructure/services/helpers/file_service.dart';
 import 'package:fsda_cli/infrastructure/services/helpers/operation_report_service.dart';
 import 'package:fsda_cli/infrastructure/services/reg_feature_service.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 class MockOperationReportService extends Mock
@@ -15,23 +18,41 @@ class MockFileService extends Mock implements FileService {}
 
 class MockDirectoryService extends Mock implements DirectoryService {}
 
-class FakeFileSystemEntity extends Mock implements FileSystemEntity {
-  final String _path;
-  FakeFileSystemEntity(this._path);
-
-  @override
-  String get path => _path;
-}
-
 void main() {
-  late RegFeatureService regFeatureService;
   late MockOperationReportService mockReportService;
   late MockFileService mockFileService;
   late MockDirectoryService mockDirectoryService;
+  late RegFeatureService regFeatureService;
 
-  setUpAll(() {
-    registerFallbackValue('');
-  });
+  const workspacePath = '/projects/my_workspace';
+  const sampleParam = RegFeatureParam(
+    featureName: 'task',
+    moduleName: 'project_management',
+    appName: 'portal_app',
+    workspaceName: 'my_workspace',
+    workspacePath: workspacePath,
+  );
+
+  final expectedPagesPath = p.join(
+    sampleParam.appModulePath,
+    'features',
+    'task',
+    'pages',
+  );
+  final expectedWidgetsPath = p.join(
+    sampleParam.appModulePath,
+    'features',
+    'task',
+    'widgets',
+  );
+
+  final dsDirPath = p.join(sampleParam.featurePath, 'data', 'datasources');
+  final repoDirPath = p.join(sampleParam.featurePath, 'data', 'repositories');
+  final ucDirPath = p.join(sampleParam.featurePath, 'domain', 'usecases');
+  final logicDirPath = p.join(sampleParam.featurePath, 'logic');
+
+  final diPath = sampleParam.appModuleDiPath;
+  final routePath = sampleParam.appModuleRoutePath;
 
   setUp(() {
     mockReportService = MockOperationReportService();
@@ -43,311 +64,374 @@ void main() {
       fileService: mockFileService,
       directoryService: mockDirectoryService,
     );
+
+    when(() => mockDirectoryService.create(any())).thenAnswer((_) async {});
+    when(
+      () => mockFileService.writeAsString(
+        path: any(named: 'path'),
+        content: any(named: 'content'),
+      ),
+    ).thenAnswer((_) async {});
   });
 
-  group('RegFeatureService Full 100% Coverage Tests', () {
-    const regParam = RegFeatureParam(
-      appName: 'my_app',
-      appPath: '/app',
-      moduleName: 'auth',
-      modulePath: '/modules/auth',
-      featureName: 'auth',
-      featurePath: '/modules/auth/lib/src/features/auth',
-    );
-
+  group('RegFeatureService.registerFeature', () {
     test(
-      'registerFeature executes fully covering all metadata inspectors, filters, cubit parameters, and app router visitor',
+      'GIVEN valid RegFeatureParam with feature files, DI class, and Route class '
+      'WHEN registerFeature is called '
+      'THEN scaffolds folders, inspects AST metadata, injects DI and Route definitions, and reports progress',
       () async {
-        // 1. Stub directory exists untuk folder fitur
-        when(() => mockDirectoryService.exists(any())).thenAnswer((
-          invocation,
-        ) async {
-          final path = invocation.positionalArguments.first as String;
-          if (path.contains('pages')) {
-            return true;
-          }
-          return false;
-        });
+        // Given
+        final progressLogs = <String>[];
 
+        // 1. Scaffold folders don't exist yet
         when(
-          () => mockDirectoryService.create(any()),
-        ).thenAnswer((_) async => {});
+          () => mockDirectoryService.exists(expectedPagesPath),
+        ).thenAnswer((_) async => false);
+        when(
+          () => mockDirectoryService.exists(expectedWidgetsPath),
+        ).thenAnswer((_) async => false);
 
-        // 2. Stub listFilePaths dengan mengeksekusi parameter 'where' secara eksplisit
+        // 2. Feature subdirectories exist
+        when(
+          () => mockDirectoryService.exists(dsDirPath),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockDirectoryService.exists(repoDirPath),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockDirectoryService.exists(ucDirPath),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockDirectoryService.exists(logicDirPath),
+        ).thenAnswer((_) async => true);
+
+        // Datasources: 1 interface (ignored) + 1 Impl (included)
+        final dsInterfaceFile = p.join(
+          dsDirPath,
+          'task_remote_data_source.dart',
+        );
+        final dsImplFile = p.join(
+          dsDirPath,
+          'task_remote_data_source_impl.dart',
+        );
         when(
           () => mockDirectoryService.listPaths(
-            dirPath: any(named: 'dirPath'),
+            dirPath: dsDirPath,
             where: any(named: 'where'),
           ),
-        ).thenAnswer((invocation) async {
-          final dirPath =
-              invocation.namedArguments[const Symbol('dirPath')] as String;
-          final whereFilter =
-              invocation.namedArguments[const Symbol('where')]
-                  as bool Function(FakeFileSystemEntity, bool)?;
-
-          List<String> rawPaths = [];
-          if (dirPath.contains('datasources')) {
-            rawPaths = [
-              '/modules/auth/lib/src/features/auth/data/datasources/auth_ds.dart',
-              '/modules/auth/lib/src/features/auth/data/datasources/auth_ds_impl.dart', // Diuji agar terfilter oleh !_impl.dart
-            ];
-          } else if (dirPath.contains('repositories')) {
-            rawPaths = [
-              '/modules/auth/lib/src/features/auth/domain/repositories/auth_repo.dart',
-            ];
-          } else if (dirPath.contains('usecases')) {
-            rawPaths = [
-              '/modules/auth/lib/src/features/auth/domain/usecases/login_usecase.dart',
-            ];
-          } else if (dirPath.contains('logic')) {
-            rawPaths = [
-              '/modules/auth/lib/src/features/auth/logic/auth_cubit.dart',
-            ];
-          }
-
-          if (whereFilter != null) {
-            return rawPaths
-                .where(
-                  (path) =>
-                      whereFilter(FakeFileSystemEntity(path), true) == true,
-                )
-                .toList();
-          }
-          return rawPaths;
-        });
-
-        when(() => mockFileService.exists(any())).thenAnswer((_) async => true);
-
-        // 3. Stub readAsString untuk mengembalikan kode Dart valid pada setiap file
-        when(() => mockFileService.readAsString(any())).thenAnswer((
-          invocation,
-        ) async {
-          final path = invocation.positionalArguments.first as String;
-          if (path.contains('auth_ds_impl.dart')) {
-            return 'class AuthDatasourceImpl {}';
-          } else if (path.contains('auth_ds.dart')) {
-            return 'abstract class AuthRemoteDatasource {}';
-          } else if (path.contains('auth_repo.dart')) {
-            return 'abstract class AuthRepository {}';
-          } else if (path.contains('login_usecase.dart')) {
-            return 'class LoginUseCase {}';
-          } else if (path.contains('auth_cubit.dart')) {
-            return '''
-class AuthCubit extends Cubit<AuthState> {
-  AuthCubit(this.loginUseCase, super.initialState, token);
-  final LoginUseCase loginUseCase;
+        ).thenAnswer((_) async => [dsInterfaceFile, dsImplFile]);
+        when(() => mockFileService.readAsString(dsInterfaceFile)).thenAnswer(
+          (_) async => 'abstract interface class TaskRemoteDataSource {}',
+        );
+        when(() => mockFileService.readAsString(dsImplFile)).thenAnswer(
+          (_) async => '''
+class TaskRemoteDataSourceImpl implements TaskRemoteDataSource {
+  final ApiClient _apiClient;
+  const TaskRemoteDataSourceImpl({required ApiClient apiClient}) : _apiClient = apiClient;
 }
-''';
-          } else if (path.contains('di')) {
-            return '''
-class AuthDi {
-  static void register() {}
-}
-''';
-          } else if (path.contains('route')) {
-            return '''
-class AuthRoute {}
-''';
-          } else if (path.contains('app_router.dart')) {
-            return '''
-class AppRouter {
-  final router = GoRouter(
-    routes: [
-      RouteItem(),
-    ],
-  );
-}
-''';
-          }
-          return 'class DummyClass {}';
-        });
-
-        when(
-          () => mockFileService.writeAsString(
-            path: any(named: 'path'),
-            content: any(named: 'content'),
-          ),
-        ).thenAnswer((_) async => {});
-
-        when(() => mockReportService.addCreated(any())).thenReturn(null);
-        when(() => mockReportService.addInjected(any())).thenReturn(null);
-
-        final progressLogs = <String>[];
-        await regFeatureService.registerFeature(
-          param: regParam,
-          onProgress: (msg) => progressLogs.add(msg),
+''',
         );
 
-        expect(progressLogs, isNotEmpty);
+        // Repositories
+        final repoImplFile = p.join(repoDirPath, 'task_repository_impl.dart');
+        when(
+          () => mockDirectoryService.listPaths(
+            dirPath: repoDirPath,
+            where: any(named: 'where'),
+          ),
+        ).thenAnswer((_) async => [repoImplFile]);
+        when(() => mockFileService.readAsString(repoImplFile)).thenAnswer(
+          (_) async => '''
+class TaskRepositoryImpl implements TaskRepository {
+  final AppLogger _log;
+  final TaskRemoteDataSource _remoteDataSource;
+  const TaskRepositoryImpl({
+    required AppLogger appLogger,
+    required TaskRemoteDataSource taskRemoteDataSource,
+  }) : _log = appLogger, _remoteDataSource = taskRemoteDataSource;
+}
+''',
+        );
+
+        // UseCases
+        final ucFile = p.join(ucDirPath, 'get_task_use_case.dart');
+        when(
+          () => mockDirectoryService.listPaths(
+            dirPath: ucDirPath,
+            where: any(named: 'where'),
+          ),
+        ).thenAnswer((_) async => [ucFile]);
+        when(() => mockFileService.readAsString(ucFile)).thenAnswer(
+          (_) async => '''
+class GetTaskUseCase {
+  final TaskRepository _repository;
+  const GetTaskUseCase({required TaskRepository taskRepository}) : _repository = taskRepository;
+}
+''',
+        );
+
+        // Logic slices
+        final listSliceDir = p.join(logicDirPath, 'list');
+        final cubitFile = p.join(listSliceDir, 'task_list_cubit.dart');
+        when(
+          () => mockDirectoryService.listPaths(
+            dirPath: logicDirPath,
+            where: any(named: 'where'),
+          ),
+        ).thenAnswer((_) async => [listSliceDir]);
+        when(
+          () => mockDirectoryService.listPaths(
+            dirPath: listSliceDir,
+            where: any(named: 'where'),
+          ),
+        ).thenAnswer((_) async => [cubitFile]);
+        when(() => mockFileService.readAsString(cubitFile)).thenAnswer(
+          (_) async => '''
+class TaskListCubit {
+  final GetTaskUseCase _getTaskUseCase;
+  TaskListCubit({required GetTaskUseCase getTaskUseCase}) : _getTaskUseCase = getTaskUseCase;
+}
+''',
+        );
+
+        // 3. Initial Module DI & Route contents
+        const initialDiContent = '''
+class ProjectManagementDi {
+  static void register() {
+  }
+}
+''';
+        const initialRouteContent = '''
+class ProjectManagementRoute {
+  static const String root = '/project-management';
+
+  static List<RouteBase> get routes => [
+    ...dashboardBase,
+  ];
+
+  static List<RouteBase> get dashboardBase => [];
+}
+''';
+
+        when(
+          () => mockFileService.readAsString(diPath),
+        ).thenAnswer((_) async => initialDiContent);
+        when(
+          () => mockFileService.readAsString(routePath),
+        ).thenAnswer((_) async => initialRouteContent);
+
+        // When
+        await regFeatureService.registerFeature(
+          param: sampleParam,
+          onProgress: progressLogs.add,
+        );
+
+        // Then
+        expect(progressLogs, [
+          'Scaffolding feature pages and widgets directories...',
+          'Inspecting feature files in module...',
+          'Injecting feature DI registrations into module DI...',
+          'Injecting feature routes into module route...',
+        ]);
+
+        // Verify scaffold folders
+        verify(() => mockDirectoryService.create(expectedPagesPath)).called(1);
+        verify(() => mockReportService.addCreated(expectedPagesPath)).called(1);
+        verify(
+          () => mockDirectoryService.create(expectedWidgetsPath),
+        ).called(1);
+        verify(
+          () => mockReportService.addCreated(expectedWidgetsPath),
+        ).called(1);
+
+        // Verify DI injection
+        final capturedDi =
+            verify(
+                  () => mockFileService.writeAsString(
+                    path: diPath,
+                    content: captureAny(named: 'content'),
+                  ),
+                ).captured.single
+                as String;
+
+        expect(capturedDi, contains('_taskDi();'));
+        expect(capturedDi, contains('static void _taskDi() {'));
+        expect(
+          capturedDi,
+          contains('sl.registerLazySingleton<TaskRemoteDataSource>('),
+        );
+        expect(
+          capturedDi,
+          contains('sl.registerLazySingleton<TaskRepository>('),
+        );
+        expect(capturedDi, contains('() => GetTaskUseCase('));
+        expect(capturedDi, contains('() => TaskListCubit('));
+        verify(() => mockReportService.addInjected(diPath)).called(1);
+
+        // Verify Route injection
+        final capturedRoute =
+            verify(
+                  () => mockFileService.writeAsString(
+                    path: routePath,
+                    content: captureAny(named: 'content'),
+                  ),
+                ).captured.single
+                as String;
+
+        expect(capturedRoute, contains('static RouteBase get taskBase'));
+        verify(() => mockReportService.addInjected(routePath)).called(1);
       },
     );
 
     test(
-      'Given feature subdirectories exist with valid architecture files (datasources, repositories, usecases, logic), '
-      'When registerFeature is called, '
-      'Then it successfully inspects feature metadata, parses AST classes, and injects DI & routes',
+      'GIVEN pages/widgets already exist, feature folders are missing, and DI/Route are already registered '
+      'WHEN registerFeature is called '
+      'THEN skips existing folders and duplicate DI/Route injections safely',
       () async {
-        // Arrange (Given)
-        when(() => mockDirectoryService.exists(any())).thenAnswer((
-          invocation,
-        ) async {
-          final path = invocation.positionalArguments.first as String;
-          // Mengaktifkan folder fitur agar proses _inspectFeatureMetadata dieksekusi
-          if (path.contains('datasources') ||
-              path.contains('repositories') ||
-              path.contains('usecases') ||
-              path.contains('logic') ||
-              path.contains('pages') ||
-              path.contains('widgets')) {
-            return true;
-          }
-          return false;
-        });
+        // Given
+        when(
+          () => mockDirectoryService.exists(expectedPagesPath),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockDirectoryService.exists(expectedWidgetsPath),
+        ).thenAnswer((_) async => true);
 
         when(
-          () => mockDirectoryService.create(any()),
-        ).thenAnswer((_) async => {});
-
+          () => mockDirectoryService.exists(dsDirPath),
+        ).thenAnswer((_) async => false);
         when(
-          () => mockDirectoryService.listPaths(
-            dirPath: any(named: 'dirPath'),
-            where: any(named: 'where'),
-          ),
-        ).thenAnswer((invocation) async {
-          final dirPath =
-              invocation.namedArguments[const Symbol('dirPath')] as String;
-          final whereFilter =
-              invocation.namedArguments[const Symbol('where')]
-                  as bool Function(FakeFileSystemEntity, bool)?;
-
-          List<String> rawPaths = [];
-          if (dirPath.contains('datasources')) {
-            rawPaths = [
-              '/modules/auth/lib/src/features/auth/data/datasources/auth_ds_impl.dart',
-            ];
-          } else if (dirPath.contains('repositories')) {
-            rawPaths = [
-              '/modules/auth/lib/src/features/auth/domain/repositories/auth_repo.dart',
-            ];
-          } else if (dirPath.contains('usecases')) {
-            rawPaths = [
-              '/modules/auth/lib/src/features/auth/domain/usecases/login_usecase.dart',
-            ];
-          } else if (dirPath.contains('logic')) {
-            rawPaths = [
-              '/modules/auth/lib/src/features/auth/logic/auth_slice/auth_cubit.dart',
-            ];
-          } else if (dirPath.contains('logicPath') ||
-              dirPath.endsWith('logic')) {
-            return ['/modules/auth/lib/src/features/auth/logic/auth_slice'];
-          }
-
-          if (whereFilter != null) {
-            return rawPaths
-                .where(
-                  (path) =>
-                      whereFilter(FakeFileSystemEntity(path), true) == true,
-                )
-                .toList();
-          }
-          return rawPaths;
-        });
-
-        when(() => mockFileService.exists(any())).thenAnswer((_) async => true);
-
-        when(() => mockFileService.readAsString(any())).thenAnswer((
-          invocation,
-        ) async {
-          final path = invocation.positionalArguments.first as String;
-          if (path.contains('auth_ds_impl.dart')) {
-            return 'class AuthDatasourceImpl {}';
-          } else if (path.contains('auth_repo.dart')) {
-            return 'abstract class AuthRepository {}';
-          } else if (path.contains('login_usecase.dart')) {
-            return 'class LoginUseCase {}';
-          } else if (path.contains('auth_cubit.dart')) {
-            return 'class AuthCubit {}';
-          } else if (path.contains('di')) {
-            return 'class AuthDi { static void register() {} }';
-          } else if (path.contains('route')) {
-            return 'class AuthRoute {}';
-          }
-          return 'class DummyClass {}';
-        });
-
+          () => mockDirectoryService.exists(repoDirPath),
+        ).thenAnswer((_) async => false);
         when(
+          () => mockDirectoryService.exists(ucDirPath),
+        ).thenAnswer((_) async => false);
+        when(
+          () => mockDirectoryService.exists(logicDirPath),
+        ).thenAnswer((_) async => false);
+        const alreadyRegisteredDi = '''
+class ProjectManagementDi {
+static void register() {
+_taskDi();
+}
+static void _taskDi() {}
+}
+''';
+        const alreadyRegisteredRoute = '''
+class ProjectManagementRoute {
+static List get taskBase => [];
+}
+''';
+        when(
+          () => mockFileService.readAsString(diPath),
+        ).thenAnswer((_) async => alreadyRegisteredDi);
+        when(
+          () => mockFileService.readAsString(routePath),
+        ).thenAnswer((_) async => alreadyRegisteredRoute);
+        // When
+        await regFeatureService.registerFeature(
+          param: sampleParam,
+          onProgress: (_) {},
+        );
+        // Then
+        verifyNever(() => mockDirectoryService.create(any()));
+        verify(() => mockReportService.addSkipped(expectedPagesPath)).called(1);
+        verify(
+          () => mockReportService.addSkipped(expectedWidgetsPath),
+        ).called(1);
+        verify(() => mockReportService.addSkipped(diPath)).called(1);
+        verify(() => mockReportService.addSkipped(routePath)).called(1);
+        verifyNever(
           () => mockFileService.writeAsString(
             path: any(named: 'path'),
             content: any(named: 'content'),
           ),
-        ).thenAnswer((_) async => {});
-
-        when(() => mockReportService.addCreated(any())).thenReturn(null);
-        when(() => mockReportService.addInjected(any())).thenReturn(null);
-        when(() => mockReportService.addSkipped(any())).thenReturn(null);
-
-        final progressLogs = <String>[];
-
-        // Act (When)
-        await regFeatureService.registerFeature(
-          param: regParam,
-          onProgress: (msg) => progressLogs.add(msg),
         );
-
-        // Assert (Then)
-        expect(progressLogs, isNotEmpty);
-        verify(() => mockDirectoryService.exists(any())).called(greaterThan(0));
+        verifyNever(() => mockReportService.addInjected(any()));
       },
     );
-
-    test('Given feature DI and route already exist in target module files, '
-        'When registerFeature is called, '
-        'Then it skips injection and reports them as skipped', () async {
-      // Arrange (Given)
+    test('GIVEN listPaths predicate filter is invoked '
+        'WHEN inspecting datasources and logic directories '
+        'THEN filters files and subdirectories accurately', () async {
+      // Given
       when(
-        () => mockDirectoryService.exists(any()),
+        () => mockDirectoryService.exists(expectedPagesPath),
       ).thenAnswer((_) async => true);
       when(
-        () => mockDirectoryService.create(any()),
-      ).thenAnswer((_) async => {});
+        () => mockDirectoryService.exists(expectedWidgetsPath),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockDirectoryService.exists(dsDirPath),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockDirectoryService.exists(repoDirPath),
+      ).thenAnswer((_) async => false);
+      when(
+        () => mockDirectoryService.exists(ucDirPath),
+      ).thenAnswer((_) async => false);
+      when(
+        () => mockDirectoryService.exists(logicDirPath),
+      ).thenAnswer((_) async => true);
+      bool Function(FileSystemEntity, bool)? capturedDsWhere;
+      bool Function(FileSystemEntity, bool)? capturedLogicSliceWhere;
+      bool Function(FileSystemEntity, bool)? capturedLogicFileWhere;
       when(
         () => mockDirectoryService.listPaths(
-          dirPath: any(named: 'dirPath'),
+          dirPath: dsDirPath,
           where: any(named: 'where'),
         ),
-      ).thenAnswer((_) async => []);
-
-      when(() => mockFileService.exists(any())).thenAnswer((_) async => true);
-
-      // Mengembalikan konten yang sudah memiliki tanda pendaftaran agar memicu branch skipped
-      when(() => mockFileService.readAsString(any())).thenAnswer((
-        invocation,
-      ) async {
-        final path = invocation.positionalArguments.first as String;
-        if (path.contains('di')) {
-          return 'class AuthDi { static void register() { _authDi(); } }';
-        } else if (path.contains('route')) {
-          return 'class AuthRoute { static final authBase = ""; }';
-        }
-        return '';
+      ).thenAnswer((invocation) async {
+        capturedDsWhere =
+            invocation.namedArguments[#where]
+                as bool Function(FileSystemEntity, bool)?;
+        return [];
       });
-
-      when(() => mockReportService.addSkipped(any())).thenReturn(null);
-
-      final progressLogs = <String>[];
-
-      // Act (When)
-      await regFeatureService.registerFeature(
-        param: regParam,
-        onProgress: (msg) => progressLogs.add(msg),
+      final sliceDir = p.join(logicDirPath, 'form');
+      when(
+        () => mockDirectoryService.listPaths(
+          dirPath: logicDirPath,
+          where: any(named: 'where'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedLogicSliceWhere =
+            invocation.namedArguments[#where]
+                as bool Function(FileSystemEntity, bool)?;
+        return [sliceDir];
+      });
+      when(
+        () => mockDirectoryService.listPaths(
+          dirPath: sliceDir,
+          where: any(named: 'where'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedLogicFileWhere =
+            invocation.namedArguments[#where]
+                as bool Function(FileSystemEntity, bool)?;
+        return [];
+      });
+      when(() => mockFileService.readAsString(diPath)).thenAnswer(
+        (_) async =>
+            'class ProjectManagementDi { static void register() { taskDi(); } }',
       );
-
-      // Assert (Then)
-      expect(progressLogs, isNotEmpty);
-      verify(
-        () => mockReportService.addSkipped(any()),
-      ).called(greaterThanOrEqualTo(1));
+      when(() => mockFileService.readAsString(routePath)).thenAnswer(
+        (_) async =>
+            'class ProjectManagementRoute { static List get taskBase => []; }',
+      );
+      // When
+      await regFeatureService.registerFeature(
+        param: sampleParam,
+        onProgress: (_) {},
+      );
+      // Then: Verify filter predicates
+      expect(capturedDsWhere!(File('a.dart'), true), isTrue);
+      expect(capturedDsWhere!(File('a.txt'), true), isFalse);
+      expect(capturedDsWhere!(Directory('sub.dart'), false), isFalse);
+      expect(capturedLogicSliceWhere!(Directory('form'), false), isTrue);
+      expect(capturedLogicSliceWhere!(File('form.dart'), true), isFalse);
+      expect(capturedLogicFileWhere!(File('a_cubit.dart'), true), isTrue);
+      expect(capturedLogicFileWhere!(File('a_controller.dart'), true), isTrue);
+      expect(capturedLogicFileWhere!(File('a_provider.dart'), true), isTrue);
+      expect(capturedLogicFileWhere!(File('a_bloc.dart'), true), isTrue);
+      expect(capturedLogicFileWhere!(File('a_state.dart'), true), isFalse);
     });
   });
 }

@@ -9,7 +9,9 @@ enum LogicFlowType {
 
   const LogicFlowType(this.value);
 
-  static LogicFlowType? fromvalue(String value) {
+  static LogicFlowType? tryParse(String value) {
     return values.firstWhereOrNull((e) => e.value == value);
   }
+
+  static String get available => values.map((e) => e.value).join(', ');
 }

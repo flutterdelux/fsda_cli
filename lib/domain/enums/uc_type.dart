@@ -18,7 +18,7 @@ enum UcType {
 
   const UcType(this.value);
 
-  static UcType? fromValue(String value) {
+  static UcType? tryParse(String value) {
     return values.firstWhereOrNull((e) => e.value == value);
   }
 }

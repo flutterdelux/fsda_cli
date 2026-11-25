@@ -7,7 +7,7 @@ These commands manage code generation, localizations, and dependency configurati
 
 ## Workspace Guard
 
-Must be executed inside an FSDA workspace root directory where `fsda.yaml` is present. If executed outside, the command will abort immediately with an error.
+Must be executed inside an FSDA workspace root directory where `.fsda/config.yaml` is present. If executed outside, the command will abort immediately with an error.
 
 ## Options
 

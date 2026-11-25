@@ -4,50 +4,40 @@ import 'package:args/command_runner.dart';
 import '../../core/constants/cli_info.dart';
 import '../cli_logger.dart';
 import '../di/injection.dart';
-import 'compose/compose_form_command.dart';
-import 'compose/compose_mutation_command.dart';
-import 'compose/compose_pagination_command.dart';
-import 'compose/compose_retrieval_command.dart';
+import 'apply_command.dart';
+import 'compose_command.dart';
 import 'configure_app_command.dart';
+import 'configure_command.dart';
 import 'create_workspace_command.dart';
 import 'ds_local_command.dart';
 import 'ds_remote_command.dart';
 import 'gen_app_command.dart';
+import 'gen_command.dart';
 import 'gen_enum_command.dart';
 import 'gen_failure_command.dart';
 import 'gen_feature_command.dart';
+import 'gen_input_command.dart';
 import 'gen_logic_command.dart';
 import 'gen_logic_flow_command.dart';
 import 'gen_model_command.dart';
 import 'gen_module_command.dart';
 import 'gen_sequence_command.dart';
-import 'input/input_dropdown_command.dart';
-import 'input/input_dropdown_enum_command.dart';
-import 'input/input_image_command.dart';
-import 'input/input_number_command.dart';
-import 'input/input_password_command.dart';
-import 'input/input_qty_command.dart';
-import 'input/input_selector_command.dart';
-import 'input/input_switch_command.dart';
-import 'input/input_text_area_command.dart';
-import 'input/input_text_command.dart';
+import 'gen_ui_command.dart';
 import 'maintenance/drb_command.dart';
 import 'maintenance/fix_import_command.dart';
 import 'maintenance/l10n_command.dart';
 import 'maintenance/rebuild_command.dart';
 import 'maintenance/refresh_command.dart';
 import 'package/pkg_command.dart';
+import 'plan_command.dart';
+import 'reg_command.dart';
 import 'reg_feature_command.dart';
 import 'reg_module_command.dart';
+import 'rm_command.dart';
 import 'rm_enum_command.dart';
 import 'rm_feature_command.dart';
 import 'rm_model_command.dart';
 import 'rm_sequence_command.dart';
-import 'ui/gen_ui_command.dart';
-import 'ui/gen_ui_form_command.dart';
-import 'ui/gen_ui_lsh_command.dart';
-import 'ui/gen_ui_lsv_command.dart';
-import 'ui/gen_ui_pag_command.dart';
 
 bool checkVersionFlag(ArgResults parsedArgs, CliLogger logger) {
   if (parsedArgs.flag('version')) {
@@ -57,7 +47,7 @@ bool checkVersionFlag(ArgResults parsedArgs, CliLogger logger) {
   return false;
 }
 
-void registerCommands(CommandRunner runner) {
+void registerCommands(CommandRunner<int> runner) {
   runner.argParser.addFlag(
     'version',
     negatable: false,
@@ -85,64 +75,64 @@ void registerCommands(CommandRunner runner) {
     ),
   );
 
-  // App
+  // Main Group Generation
   runner.addCommand(
-    GenAppCommand(
-      configService: sl(),
-      logger: sl(),
-      appService: sl(),
-      directoryService: sl(),
-      reportService: sl(),
-    ),
-  );
-  runner.addCommand(
-    ConfigureAppCommand(
-      configService: sl(),
-      logger: sl(),
-      directoryService: sl(),
-      reportService: sl(),
-      configureAppService: sl(),
-    ),
-  );
-
-  // Module
-  runner.addCommand(
-    GenModuleCommand(
-      moduleService: sl(),
-      logger: sl(),
-      configService: sl(),
-      directoryService: sl(),
-      reportService: sl(),
-    ),
-  );
-  runner.addCommand(
-    GenFailureCommand(
-      logger: sl(),
-      configService: sl(),
-      directoryService: sl(),
-      reportService: sl(),
-      failureService: sl(),
-      fileService: sl(),
+    GenCommand(
+      genAppCommand: GenAppCommand(
+        configService: sl(),
+        logger: sl(),
+        appService: sl(),
+        directoryService: sl(),
+        reportService: sl(),
+      ),
+      genModuleCommand: GenModuleCommand(
+        moduleService: sl(),
+        logger: sl(),
+        configService: sl(),
+        directoryService: sl(),
+        reportService: sl(),
+      ),
+      genFeatureCommand: GenFeatureCommand(
+        configService: sl(),
+        logger: sl(),
+        featureService: sl(),
+        directoryService: sl(),
+        reportService: sl(),
+      ),
+      genFailureCommand: GenFailureCommand(
+        logger: sl(),
+        configService: sl(),
+        directoryService: sl(),
+        reportService: sl(),
+        failureService: sl(),
+        fileService: sl(),
+      ),
     ),
   );
 
-  // Feature
+  // Main Group Remove
   runner.addCommand(
-    GenFeatureCommand(
-      configService: sl(),
-      logger: sl(),
-      featureService: sl(),
-      directoryService: sl(),
-      reportService: sl(),
+    RmCommand(
+      rmFeatureCommand: RmFeatureCommand(
+        configService: sl(),
+        logger: sl(),
+        featureService: sl(),
+        directoryService: sl(),
+        reportService: sl(),
+      ),
     ),
   );
+
+  // Configure
   runner.addCommand(
-    RmFeatureCommand(
-      configService: sl(),
-      logger: sl(),
-      featureService: sl(),
-      directoryService: sl(),
-      reportService: sl(),
+    ConfigureCommand(
+      configureAppCommand: ConfigureAppCommand(
+        configService: sl(),
+        logger: sl(),
+        directoryService: sl(),
+        reportService: sl(),
+        configureAppService: sl(),
+      ),
     ),
   );
 
@@ -254,7 +244,6 @@ void registerCommands(CommandRunner runner) {
       reportService: sl(),
       fileService: sl(),
       logicService: sl(),
-      logicUcService: sl(),
     ),
   );
 
@@ -307,97 +296,7 @@ void registerCommands(CommandRunner runner) {
 
   // Input
   runner.addCommand(
-    InputDropdownCommand(
-      configService: sl(),
-      logger: sl(),
-      directoryService: sl(),
-      reportService: sl(),
-      fileService: sl(),
-      inputService: sl(),
-    ),
-  );
-  runner.addCommand(
-    InputDropdownEnumCommand(
-      configService: sl(),
-      logger: sl(),
-      directoryService: sl(),
-      reportService: sl(),
-      fileService: sl(),
-      inputService: sl(),
-    ),
-  );
-  runner.addCommand(
-    InputImageCommand(
-      configService: sl(),
-      logger: sl(),
-      directoryService: sl(),
-      reportService: sl(),
-      fileService: sl(),
-      inputService: sl(),
-    ),
-  );
-  runner.addCommand(
-    InputNumberCommand(
-      configService: sl(),
-      logger: sl(),
-      directoryService: sl(),
-      reportService: sl(),
-      fileService: sl(),
-      inputService: sl(),
-    ),
-  );
-  runner.addCommand(
-    InputPasswordCommand(
-      configService: sl(),
-      logger: sl(),
-      directoryService: sl(),
-      reportService: sl(),
-      fileService: sl(),
-      inputService: sl(),
-    ),
-  );
-  runner.addCommand(
-    InputQtyCommand(
-      configService: sl(),
-      logger: sl(),
-      directoryService: sl(),
-      reportService: sl(),
-      fileService: sl(),
-      inputService: sl(),
-    ),
-  );
-  runner.addCommand(
-    InputSelectorCommand(
-      configService: sl(),
-      logger: sl(),
-      directoryService: sl(),
-      reportService: sl(),
-      fileService: sl(),
-      inputService: sl(),
-    ),
-  );
-  runner.addCommand(
-    InputSwitchCommand(
-      configService: sl(),
-      logger: sl(),
-      directoryService: sl(),
-      reportService: sl(),
-      fileService: sl(),
-      inputService: sl(),
-    ),
-  );
-  runner.addCommand(
-    InputTextAreaCommand(
-      configService: sl(),
-      logger: sl(),
-      directoryService: sl(),
-      reportService: sl(),
-      fileService: sl(),
-      inputService: sl(),
-    ),
-  );
-  runner.addCommand(
-    InputTextCommand(
+    GenInputCommand(
       configService: sl(),
       logger: sl(),
       directoryService: sl(),
@@ -409,43 +308,7 @@ void registerCommands(CommandRunner runner) {
 
   // UI
   runner.addCommand(
-    GenUICommand(
-      configService: sl(),
-      logger: sl(),
-      directoryService: sl(),
-      reportService: sl(),
-      uiService: sl(),
-    ),
-  );
-  runner.addCommand(
-    GenUIFormCommand(
-      configService: sl(),
-      logger: sl(),
-      directoryService: sl(),
-      reportService: sl(),
-      uiService: sl(),
-    ),
-  );
-  runner.addCommand(
-    GenUILshCommand(
-      configService: sl(),
-      logger: sl(),
-      directoryService: sl(),
-      reportService: sl(),
-      uiService: sl(),
-    ),
-  );
-  runner.addCommand(
-    GenUILsvCommand(
-      configService: sl(),
-      logger: sl(),
-      directoryService: sl(),
-      reportService: sl(),
-      uiService: sl(),
-    ),
-  );
-  runner.addCommand(
-    GenUIPagCommand(
+    GenUiCommand(
       configService: sl(),
       logger: sl(),
       directoryService: sl(),
@@ -455,28 +318,28 @@ void registerCommands(CommandRunner runner) {
   );
 
   runner.addCommand(
-    RegModuleCommand(
-      configService: sl(),
-      logger: sl(),
-      directoryService: sl(),
-      reportService: sl(),
-      regModuleService: sl(),
-    ),
-  );
-  runner.addCommand(
-    RegFeatureCommand(
-      configService: sl(),
-      logger: sl(),
-      directoryService: sl(),
-      reportService: sl(),
-      fileService: sl(),
-      regFeatureService: sl(),
+    RegCommand(
+      regModuleCommand: RegModuleCommand(
+        configService: sl(),
+        logger: sl(),
+        directoryService: sl(),
+        reportService: sl(),
+        regModuleService: sl(),
+      ),
+      regFeatureCommand: RegFeatureCommand(
+        configService: sl(),
+        logger: sl(),
+        directoryService: sl(),
+        reportService: sl(),
+        fileService: sl(),
+        regFeatureService: sl(),
+      ),
     ),
   );
 
   // Compose
   runner.addCommand(
-    ComposePaginationCommand(
+    ComposeCommand(
       configService: sl(),
       logger: sl(),
       directoryService: sl(),
@@ -485,33 +348,24 @@ void registerCommands(CommandRunner runner) {
       fileService: sl(),
     ),
   );
+
+  // Declarative
   runner.addCommand(
-    ComposeRetrievalCommand(
+    PlanCommand(
       configService: sl(),
       logger: sl(),
       directoryService: sl(),
       reportService: sl(),
-      composeService: sl(),
-      fileService: sl(),
+      planService: sl(),
     ),
   );
   runner.addCommand(
-    ComposeFormCommand(
+    ApplyCommand(
       configService: sl(),
       logger: sl(),
       directoryService: sl(),
       reportService: sl(),
-      composeService: sl(),
-      fileService: sl(),
-    ),
-  );
-  runner.addCommand(
-    ComposeMutationCommand(
-      configService: sl(),
-      logger: sl(),
-      directoryService: sl(),
-      reportService: sl(),
-      composeService: sl(),
+      applyService: sl(),
       fileService: sl(),
     ),
   );

@@ -5,8 +5,8 @@ class LogicUcModel {
   final String path;
   final UcType type;
 
-  /// Method from UseCAse VST already in camel case format. method repo.
-  final String method;
+  /// Method repo from UseCase VST already in camel case format.
+  final String repoMethod;
   final String?
   returnType; // include List if exist e.g List<entity> also include ? if exists
   final String? paramType;
@@ -15,7 +15,7 @@ class LogicUcModel {
     required this.name,
     required this.path,
     required this.type,
-    required this.method,
+    required this.repoMethod,
     this.returnType,
     this.paramType,
   });

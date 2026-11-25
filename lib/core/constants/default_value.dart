@@ -1,7 +1,7 @@
 abstract final class DefaultValue {
   static String fromType(String type) {
     return switch (type) {
-      'String' => '',
+      'String' => "''",
       'int' => '0',
       'double' => '0.0',
       'bool' => 'false',

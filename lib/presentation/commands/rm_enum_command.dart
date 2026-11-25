@@ -1,10 +1,10 @@
-import 'package:path/path.dart' as p;
-
-import '../../core/constants/rules.dart';
+import '../../core/extensions/arg_results_x.dart';
+import '../../core/extensions/enum_param_x.dart';
 import '../../domain/params/enum_param.dart';
-import '../../domain/params/feature_gate_param.dart';
+import '../../domain/params/feature_param.dart';
 import '../../infrastructure/services/enum_service.dart';
 import '../../infrastructure/services/helpers/file_service.dart';
+import '../resolvers/enum_resolver.dart';
 import 'wrapper/feature_gate_command.dart';
 
 class RmEnumCommand extends FeatureGateCommand {
@@ -19,7 +19,13 @@ class RmEnumCommand extends FeatureGateCommand {
     required super.reportService,
     required super.directoryService,
   }) : _enumService = enumService,
-       _fileService = fileService;
+       _fileService = fileService {
+    argParser.addOption(
+      EnumResolverKeys.name,
+      abbr: 'n',
+      help: 'Name of the enum in PascalCase (e.g., UserRole).',
+    );
+  }
 
   @override
   String get name => 'rm-enum';
@@ -29,61 +35,51 @@ class RmEnumCommand extends FeatureGateCommand {
       'Removes an existing Enum, Converter, UI Extension, and uninjects ARB labels from a feature.';
 
   @override
-  String get invocation => 'fsda rm-enum <name> -f <feature> -m <module>';
+  String get invocation => 'fsda $name -n <name> -f <feature> -m <module>';
 
   @override
-  Future<int> handleFeatureGate(FeatureGateParam featureGateParam) async {
-    final rest = argResults?.rest;
-    if (rest == null || rest.isEmpty) {
-      logger.error('Enum name is required.\nUsage: $invocation');
-      return errorUsage;
-    }
+  bool get featureShouldExists => true;
 
-    if (rest.length > 1) {
-      logger.error('Invalid enum name: "$rest".');
-      logger.log(Rules.enumDescription);
+  @override
+  Future<int> handleFeatureGate(FeatureParam feature) async {
+    final String enumName;
+    try {
+      enumName = EnumResolver.resolveName(argResults?.toMap() ?? {});
+    } catch (e) {
+      logger.error(e is FormatException ? e.message : e.toString());
       logger.log('Usage: $invocation');
       return errorUsage;
     }
 
-    final enumName = rest.first;
-    if (!Rules.enumRegExp.hasMatch(enumName)) {
-      logger.error('Invalid enum name: "$enumName".');
-      logger.log(Rules.enumDescription);
-      logger.log('Usage: $invocation');
-      return errorUsage;
-    }
-
-    final enumPath = p.join(
-      featureGateParam.featurePath,
-      'domain',
-      'enums',
-      '$enumName.dart',
+    final initParam = EnumParam.fromFeature(
+      feature: feature,
+      enumName: enumName,
+      values: const [],
+      isLower: false,
     );
-    if (!await _fileService.exists(enumPath)) {
-      logger.error('Enum "$enumName" not found at $enumPath');
+
+    if (!await _fileService.exists(initParam.enumPath)) {
+      logger.error('Enum "$enumName" not found at ${initParam.enumPath}');
       logger.log('Usage: $invocation');
       return errorUsage;
     }
 
-    final enumParam = EnumParam(
-      name: enumName,
-      path: enumPath,
-      values: await _enumService.getValuesFromEnumFile(enumPath),
-      featureName: featureGateParam.featureName,
-      featurePath: featureGateParam.featurePath,
-      moduleName: featureGateParam.moduleName,
-      modulePath: featureGateParam.modulePath,
+    final values = await _enumService.getValuesFromEnumFile(initParam.enumPath);
+
+    final param = EnumParam.fromFeature(
+      feature: feature,
+      enumName: enumName,
+      values: values,
       isLower: false,
     );
 
     final progress = logger.progress(
-      'Removing enum "$enumName" from feature "${enumParam.featureName}" (${enumParam.moduleName})...',
+      'Removing enum "$enumName" from feature "${param.featureName}" (${param.moduleName})...',
     );
 
     try {
-      await _enumService.removeEnum(
-        enumParam: enumParam,
+      await _enumService.remove(
+        enumParam: param,
         onProgress: (msg) => progress.update(msg),
       );
 

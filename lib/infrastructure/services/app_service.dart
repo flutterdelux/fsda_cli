@@ -1,7 +1,10 @@
 import 'package:path/path.dart' as p;
 
+import '../../core/extensions/app_param_x.dart';
+import '../../core/extensions/gen_app_param_x.dart';
 import '../../domain/models/config_model.dart';
 import '../../domain/params/app_param.dart';
+import '../../domain/params/gen_app_param.dart';
 import '../bundles/app_bundle.dart';
 import 'helpers/config_service.dart';
 import 'helpers/directory_service.dart';
@@ -50,54 +53,55 @@ class AppService {
        _fileService = fileService,
        _generatorService = generatorService;
 
-  Future<void> generateApp({
-    required AppParam app,
+  Future<void> generate({
+    required GenAppParam genApp,
     required Function(String) onProgress,
   }) async {
     onProgress('Reading FSDA configuration...');
     final config = await _configService.loadConfig();
 
-    onProgress('Running flutter create for "${app.projectName}"...');
-    await _createFlutterProject(app);
+    onProgress('Running flutter create for "${genApp.appName}"...');
+    await _createFlutterProject(genApp);
 
     onProgress('Cleaning up default test directory...');
-    await _deleteTestDir(app);
+    await _deleteTestDir(genApp);
 
     onProgress('Copying app bundle...');
     await _generatorService.generate(
       bundle: appBundle,
-      targetPath: app.projectPath,
+      targetPath: genApp.appPath,
       vars: {
-        'app': app.projectName,
-        'app_name': app.appName,
-        'org': app.org,
-        'org_name': app.orgName,
-        'dart_sdk': config.sdkVersion,
+        'app': genApp.appName,
+        'project_id': genApp.projectId,
+        'app_title': genApp.appTitle,
+        'org': genApp.org,
+        'org_name': genApp.orgName,
+        'dart_sdk': config.dartSdk,
         'android_min_sdk': config.android.minSdk,
       },
     );
 
     onProgress('Configuring Android SDK versions in build.gradle.kts...');
-    await _updateAndroidGradle(app, config);
+    await _updateAndroidGradle(genApp, config);
 
     onProgress('Installing package dependencies...');
-    await _installDependencies(app);
+    await _installDependencies(genApp);
   }
 
   // ================= Gen App Helper ========================
 
-  Future<void> _createFlutterProject(AppParam app) async {
+  Future<void> _createFlutterProject(GenAppParam app) async {
     await _processService.run('flutter', [
       'create',
       '--org',
       app.org,
-      app.projectName,
-    ], p.dirname(app.projectPath));
-    _reportService.addCreated(app.projectPath);
+      app.appName,
+    ], p.dirname(app.appPath));
+    _reportService.addCreated(app.appPath);
   }
 
   Future<void> _deleteTestDir(AppParam app) async {
-    final testPath = p.join(app.projectPath, 'test');
+    final testPath = p.join(app.appPath, 'test');
     if (await _directoryService.exists(testPath)) {
       await _directoryService.delete(testPath);
       _reportService.addRemoved(testPath);
@@ -106,7 +110,7 @@ class AppService {
 
   Future<void> _updateAndroidGradle(AppParam app, ConfigModel config) async {
     final gradlePath = p.join(
-      app.projectPath,
+      app.appPath,
       'android',
       'app',
       'build.gradle.kts',
@@ -141,7 +145,7 @@ class AppService {
         'pub',
         'add',
         ..._dependencies,
-      ], app.projectPath);
+      ], app.appPath);
     }
 
     if (_devDependencies.isNotEmpty) {
@@ -150,7 +154,7 @@ class AppService {
         'add',
         '--dev',
         ..._devDependencies,
-      ], app.projectPath);
+      ], app.appPath);
     }
   }
 }

@@ -1,18 +1,18 @@
 import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 
-import '../../../core/extensions/feature_gate_param_x.dart';
-import '../../../core/extensions/module_gate_param_x.dart';
-import '../../../core/extensions/slice_gate_param_x.dart';
+import '../../../core/extensions/feature_param_x.dart';
+import '../../../core/extensions/module_param_x.dart';
+import '../../../core/extensions/slice_param_x.dart';
 import '../../../core/extensions/ui_gate_param_x.dart';
 import '../../../domain/models/artifact_generation_model.dart';
 import '../../../domain/models/prop_model.dart';
-import '../../../domain/params/ui/ui_pag_param.dart';
+import '../../../domain/params/ui_param.dart';
 import '../../text_modifiers/string_extension.dart';
 
 abstract final class UiPagTemplate {
   static ArtifactGenerationModel buildItem({
-    required UiPagParam ui,
+    required UiParam ui,
     required List<PropModel> props,
   }) {
     final className = '${ui.featurePascal}${ui.slicePascal}Item';
@@ -77,7 +77,7 @@ class $className extends StatelessWidget {
     );
   }
 
-  static ArtifactGenerationModel buildItemSkeleton(UiPagParam ui) {
+  static ArtifactGenerationModel buildItemSkeleton(UiParam ui) {
     final className = '${ui.featurePascal}${ui.slicePascal}ItemSkeleton';
     return ArtifactGenerationModel(
       name: className,
@@ -108,7 +108,7 @@ class $className extends StatelessWidget {
     );
   }
 
-  static ArtifactGenerationModel buildContent(UiPagParam ui) {
+  static ArtifactGenerationModel buildContent(UiParam ui) {
     final className = '${ui.featurePascal}${ui.slicePascal}Content';
     final stateClassName = '${ui.featurePascal}${ui.slicePascal}ContentState';
     final itemClassName = '${ui.featurePascal}${ui.slicePascal}Item';
@@ -215,7 +215,7 @@ class $stateClassName extends State<$className> {
     );
   }
 
-  static ArtifactGenerationModel buildSkeleton(UiPagParam ui) {
+  static ArtifactGenerationModel buildSkeleton(UiParam ui) {
     final className = '${ui.featurePascal}${ui.slicePascal}Skeleton';
     final itemSkeletonClassName =
         '${ui.featurePascal}${ui.slicePascal}ItemSkeleton';
@@ -264,7 +264,7 @@ class $className extends StatelessWidget {
     );
   }
 
-  static ArtifactGenerationModel buildErrorFeedback(UiPagParam ui) {
+  static ArtifactGenerationModel buildErrorFeedback(UiParam ui) {
     final className = '${ui.featurePascal}${ui.slicePascal}ErrorFeedback';
     return ArtifactGenerationModel(
       name: className,
@@ -309,7 +309,7 @@ class $className extends StatelessWidget {
     );
   }
 
-  static ArtifactGenerationModel buildEmptyFeedback(UiPagParam ui) {
+  static ArtifactGenerationModel buildEmptyFeedback(UiParam ui) {
     final className = '${ui.featurePascal}${ui.slicePascal}EmptyFeedback';
     return ArtifactGenerationModel(
       name: className,
@@ -349,7 +349,7 @@ class $className extends StatelessWidget {
     );
   }
 
-  static Map<String, dynamic> buildArbEntries(UiPagParam ui) {
+  static Map<String, dynamic> buildArbEntries(UiParam ui) {
     final entries = <String, dynamic>{};
     final prefixKey = '${ui.featureCamel}${ui.slicePascal}';
     final title = '${ui.featureTitle} ${ui.sliceTitle}';

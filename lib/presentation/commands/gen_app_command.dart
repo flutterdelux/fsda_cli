@@ -1,11 +1,12 @@
-import 'package:path/path.dart' as p;
-
 import '../../core/constants/rules.dart';
+import '../../core/extensions/arg_results_x.dart';
 import '../../domain/params/app_param.dart';
+import '../../domain/params/gen_app_param.dart';
 import '../../infrastructure/services/app_service.dart';
-import 'wrapper/workspace_guard_command.dart';
+import '../resolvers/gen_app_resolver.dart';
+import 'wrapper/app_gate_command.dart';
 
-class GenAppCommand extends WorkspaceGuardCommand {
+class GenAppCommand extends AppGateCommand {
   final AppService _appService;
 
   GenAppCommand({
@@ -16,85 +17,54 @@ class GenAppCommand extends WorkspaceGuardCommand {
     required AppService appService,
   }) : _appService = appService {
     argParser.addOption(
-      'org',
+      GenAppResolverKeys.org,
       help: 'The organization identifier (e.g., com.example).',
       defaultsTo: Rules.orgDefault,
     );
-    argParser.addOption('name', help: 'The title or label of the app.');
-    argParser.addOption('org-name', help: 'The Organization name.');
+    argParser.addOption(
+      GenAppResolverKeys.title,
+      help: 'The title or label of the app.',
+    );
+    argParser.addOption(
+      GenAppResolverKeys.orgName,
+      help: 'The Organization name.',
+    );
   }
 
   @override
-  String get name => 'gen-app';
+  String get name => 'app';
 
   @override
   String get description =>
-      'Generates a new Flutter application project inside apps/ using flutter create and app bundle blueprint.';
+      'Generates a new Flutter application project inside apps/.';
 
   @override
   String get invocation =>
-      'fsda $name <app> [--org <org>] [--name "<App Name>"] [--org-name "<Organization Name>"]';
+      'fsda gen -a <app> [--org <org>] [--title "<App Name>"] [--org-name "<Organization Name>"]';
 
   @override
-  Future<int> handle() async {
-    final rest = argResults?.rest;
-    if (rest == null || rest.isEmpty) {
-      logger.error('App project name is required.\nUsage: $invocation');
-      return errorUsage;
-    }
+  bool get appShouldExists => false;
 
-    if (rest.length > 1) {
-      logger.error('Invalid app project name: "$rest".');
-      logger.log(Rules.appProjectNameDescription);
+  @override
+  Future<int> handleAppGate(AppParam app) async {
+    final data = argResults?.toMap() ?? {};
+
+    GenAppParam genApp;
+    try {
+      genApp = GenAppResolver.resolve(data: data, app: app);
+    } catch (e) {
+      logger.error(e is FormatException ? e.message : e.toString());
       logger.log('Usage: $invocation');
       return errorUsage;
     }
-
-    final appProjectName = rest.first;
-    if (!Rules.appProjectNameRegExp.hasMatch(appProjectName)) {
-      logger.error('Invalid app project name: "$appProjectName".');
-      logger.log(Rules.appProjectNameDescription);
-      logger.log('Usage: $invocation');
-      return errorUsage;
-    }
-
-    final org = (argResults?['org'] as String?) ?? Rules.orgDefault;
-    if (!Rules.orgRegExp.hasMatch(org)) {
-      logger.error('Invalid organization identifier format: "$org".');
-      logger.log(Rules.orgDescription);
-      logger.log('Usage: $invocation');
-      return errorUsage;
-    }
-
-    final appProjectPath = p.join(
-      directoryService.currentPath,
-      'apps',
-      appProjectName,
-    );
-    if (await directoryService.exists(appProjectPath)) {
-      logger.error('App "$appProjectName" already exists at $appProjectPath');
-      logger.log('Usage: $invocation');
-      return errorUsage;
-    }
-
-    final appName = (argResults?['name'] as String?) ?? appProjectName;
-    final orgName = (argResults?['org-name'] as String?) ?? org.split('.').last;
-
-    final app = AppParam(
-      projectName: appProjectName,
-      projectPath: appProjectPath,
-      org: org,
-      appName: appName,
-      orgName: orgName,
-    );
 
     final progress = logger.progress(
-      'Generating app "$appProjectName" with org "$org"...',
+      'Generating app "${genApp.appName}" with org "${genApp.org}"...',
     );
 
     try {
-      await _appService.generateApp(
-        app: app,
+      await _appService.generate(
+        genApp: genApp,
         onProgress: (msg) => progress.update(msg),
       );
       progress.update('Generating report...');
@@ -103,13 +73,13 @@ class GenAppCommand extends WorkspaceGuardCommand {
       );
 
       progress.complete(
-        'App "$appProjectName" successfully generated under apps/$appProjectName!',
+        'App "${genApp.appName}" successfully generated under apps/${genApp.appName}!',
       );
       logger.log(reportBuffer.toString());
 
       return successCode;
     } catch (e) {
-      progress.fail('Failed to generate app $appProjectName: $e');
+      progress.fail('Failed to generate app ${genApp.appName}: $e');
       return errorSystem;
     }
   }

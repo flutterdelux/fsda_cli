@@ -26,10 +26,7 @@ void main() {
         ).thenAnswer((_) async => false);
 
         expect(
-          () => logicUcService.inspectUseCase(
-            usecaseName: 'GetUserUseCase',
-            usecasePath: usecasePath,
-          ),
+          () => logicUcService.inspectUseCase(usecasePath),
           throwsException,
         );
 
@@ -48,10 +45,7 @@ void main() {
         ).thenAnswer((_) async => 'class InvalidUseCase {}');
 
         expect(
-          () => logicUcService.inspectUseCase(
-            usecaseName: 'InvalidUseCase',
-            usecasePath: usecasePath,
-          ),
+          () => logicUcService.inspectUseCase(usecasePath),
           throwsException,
         );
       },
@@ -82,14 +76,11 @@ class GetUserUseCase extends ReturnParamUseCase<UserEntity, UserParam> {
           () => mockFileService.readAsString(usecasePath),
         ).thenAnswer((_) async => fileContent);
 
-        final model = await logicUcService.inspectUseCase(
-          usecaseName: 'GetUserUseCase',
-          usecasePath: usecasePath,
-        );
+        final model = await logicUcService.inspectUseCase(usecasePath);
 
-        expect(model.name, 'GetUserUseCase');
+        expect(model.name, 'get_user_use_case');
         expect(model.path, usecasePath);
-        expect(model.method, 'fetchUser');
+        expect(model.repoMethod, 'fetchUser');
         expect(model.returnType, 'UserEntity');
         expect(model.paramType, 'UserParam');
       },
@@ -118,15 +109,12 @@ class UpdateUserUseCase extends ParamUseCase<UserParam> {
           () => mockFileService.readAsString(usecasePath),
         ).thenAnswer((_) async => fileContent);
 
-        final model = await logicUcService.inspectUseCase(
-          usecaseName: 'UpdateUserUseCase',
-          usecasePath: usecasePath,
-        );
+        final model = await logicUcService.inspectUseCase(usecasePath);
 
-        expect(model.name, 'UpdateUserUseCase');
+        expect(model.name, 'update_user_use_case');
         expect(model.paramType, 'UserParam');
         expect(model.returnType, isNull);
-        expect(model.method, 'updateUser');
+        expect(model.repoMethod, 'updateUser');
       },
     );
 
@@ -153,15 +141,12 @@ class GetSettingsUseCase extends ReturnUseCase<SettingsEntity> {
           () => mockFileService.readAsString(usecasePath),
         ).thenAnswer((_) async => fileContent);
 
-        final model = await logicUcService.inspectUseCase(
-          usecaseName: 'GetSettingsUseCase',
-          usecasePath: usecasePath,
-        );
+        final model = await logicUcService.inspectUseCase(usecasePath);
 
-        expect(model.name, 'GetSettingsUseCase');
+        expect(model.name, 'get_settings_use_case');
         expect(model.returnType, 'SettingsEntity');
         expect(model.paramType, isNull);
-        expect(model.method, 'getSettings');
+        expect(model.repoMethod, 'getSettings');
       },
     );
   });

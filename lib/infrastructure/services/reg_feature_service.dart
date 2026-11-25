@@ -2,7 +2,9 @@ import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:path/path.dart' as p;
 
-import '../../core/extensions/app_integration_param_x.dart';
+import '../../core/extensions/feature_param_x.dart';
+import '../../core/extensions/module_param_x.dart';
+import '../../core/extensions/reg_module_param_x.dart';
 import '../../domain/models/dependency_metadata.dart';
 import '../../domain/models/feature_metadata.dart';
 import '../../domain/params/app_integration/reg_feature_param.dart';
@@ -70,7 +72,7 @@ class RegFeatureService {
     final logics = <DependencyMetadata>[];
 
     // Inspect Datasources (mengambil dari folder data/datasources, termasuk file _impl.dart jika ada)
-    final dsPath = p.join(param.featurePath!, 'data', 'datasources');
+    final dsPath = p.join(param.featurePath, 'data', 'datasources');
     if (await _directoryService.exists(dsPath)) {
       final files = await _directoryService.listPaths(
         dirPath: dsPath,
@@ -99,7 +101,7 @@ class RegFeatureService {
     }
 
     // Inspect Repositories (mencari file _impl.dart atau file di repositories)
-    final repoPath = p.join(param.featurePath!, 'data', 'repositories');
+    final repoPath = p.join(param.featurePath, 'data', 'repositories');
     if (await _directoryService.exists(repoPath)) {
       final files = await _directoryService.listPaths(
         dirPath: repoPath,
@@ -125,7 +127,7 @@ class RegFeatureService {
     }
 
     // Inspect UseCases (domain/usecases)
-    final ucPath = p.join(param.featurePath!, 'domain', 'usecases');
+    final ucPath = p.join(param.featurePath, 'domain', 'usecases');
     if (await _directoryService.exists(ucPath)) {
       final files = await _directoryService.listPaths(
         dirPath: ucPath,
@@ -151,7 +153,7 @@ class RegFeatureService {
     }
 
     // Inspect Logic dengan struktur folder slice (logic/<slice_folder>/...)
-    final logicPath = p.join(param.featurePath!, 'logic');
+    final logicPath = p.join(param.featurePath, 'logic');
     final logicSuffix = ['_cubit', '_controller', '_provider', '_bloc'];
 
     if (await _directoryService.exists(logicPath)) {
@@ -201,7 +203,7 @@ class RegFeatureService {
     );
   }
 
-  // ================= 2. Inject Module DI =================
+  // ================= 2. Inject Feature DI =================
 
   Future<void> _injectFeatureDi(
     RegFeatureParam param,
@@ -211,7 +213,9 @@ class RegFeatureService {
     String content = await _fileService.readAsString(path);
 
     final diMethodName = '_${param.featureCamel}Di';
-    if (content.contains('$diMethodName();')) {
+    final hasCallInRegister = content.contains('$diMethodName();');
+
+    if (hasCallInRegister && !param.force) {
       _reportService.addSkipped(path);
       return;
     }
@@ -225,15 +229,15 @@ class RegFeatureService {
           declaration.namePart.typeName.lexeme == '${param.modulePascal}Di') {
         final body = declaration.body;
         if (body is BlockClassBody) {
-          // Ambil posisi sebelum penutup kurung kurawal class '}'
           classEndOffset = body.rightBracket.offset;
           for (final member in body.members) {
-            if (member is MethodDeclaration &&
-                member.name.lexeme == 'register') {
-              final mBody = member.body;
-              if (mBody is BlockFunctionBody) {
-                // Ambil posisi di dalam method register() sebelum kurung tutup '}'
-                registerBodyOffset = mBody.block.rightBracket.offset;
+            if (member is MethodDeclaration) {
+              if (member.name.lexeme == 'register' &&
+                  member.body is BlockFunctionBody) {
+                registerBodyOffset = (member.body as BlockFunctionBody)
+                    .block
+                    .rightBracket
+                    .offset;
               }
             }
           }
@@ -241,40 +245,57 @@ class RegFeatureService {
       }
     }
 
-    // 1. Inject pemanggilan method di DALAM method `register()` dengan baris baru dan indentasi rapi
-    if (registerBodyOffset != null) {
+    // 1. Inject pemanggilan di dalam register() jika belum ada
+    if (!hasCallInRegister && registerBodyOffset != null) {
       final callCode = '\n    $diMethodName();\n  ';
       content =
           '${content.substring(0, registerBodyOffset)}$callCode${content.substring(registerBodyOffset)}';
     }
 
-    // Re-parse file setelah modifikasi pertama agar offset penutup class tetap valid
+    // 2. Replace method _<feature>Di() jika sudah ada dan force == true, atau append jika belum ada
     final updatedUnit = parseString(content: content).unit;
+    int? targetStart;
+    int? targetEnd;
     int? recomputedClassEnd;
+
     for (final declaration in updatedUnit.declarations) {
       if (declaration is ClassDeclaration &&
           declaration.namePart.typeName.lexeme == '${param.modulePascal}Di') {
         final body = declaration.body;
         if (body is BlockClassBody) {
           recomputedClassEnd = body.rightBracket.offset;
+          for (final member in body.members) {
+            if (member is MethodDeclaration &&
+                member.name.lexeme == diMethodName) {
+              targetStart = member.offset;
+              targetEnd = member.end;
+            }
+          }
         }
       }
     }
 
-    // 2. Tambahkan blok deklarasi method helper `static void _<feature>Di()` di BAGIAN BAWAH class (di luar register)
-    final targetEnd = recomputedClassEnd ?? classEndOffset;
-    if (targetEnd != null) {
-      final templateDiBlock =
-          '\n${ModuleDiTemplate.buildFeatureDiMethod(param: param, metadata: metadata)}\n';
+    final newMethodCode = ModuleDiTemplate.buildFeatureDiMethod(
+      param: param,
+      metadata: metadata,
+    );
 
+    if (param.force && targetStart != null && targetEnd != null) {
       content =
-          '${content.substring(0, targetEnd)}$templateDiBlock${content.substring(targetEnd)}';
-      await _fileService.writeAsString(path: path, content: content);
-      _reportService.addInjected(path);
+          '${content.substring(0, targetStart)}$newMethodCode${content.substring(targetEnd)}';
+    } else if (targetStart == null) {
+      final appendOffset = recomputedClassEnd ?? classEndOffset;
+      if (appendOffset != null) {
+        content =
+            '${content.substring(0, appendOffset)}\n$newMethodCode\n${content.substring(appendOffset)}';
+      }
     }
+
+    await _fileService.writeAsString(path: path, content: content);
+    _reportService.addInjected(path);
   }
 
-  // ================= 3. Inject Module Route =================
+  // ================= 3. Inject Feature Route =================
 
   Future<void> _injectFeatureRoute(RegFeatureParam param) async {
     final path = param.appModuleRoutePath;

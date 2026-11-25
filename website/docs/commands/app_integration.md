@@ -5,10 +5,10 @@ title: App Integration
 
 These commands manage the integration of standalone modules and feature slices into target applications within your FSDA workspace by generating wrapper files and injecting dependency injection, routing, localization, and error-handling configurations.
 
-## reg-module
+## Register a module
 
 ```
-fsda reg-module -m <module> -a <app>
+fsda reg -m <module> -a <app>
 
 ```
 
@@ -22,7 +22,7 @@ Scaffolds module registration wrapper files inside the target application and au
 
 ### Workspace Guard
 
-Must be executed inside an FSDA workspace root directory where `fsda.yaml` is present.
+Must be executed inside an FSDA workspace root directory where `.fsda/config.yaml` is present.
 
 ### What Happens
 
@@ -49,10 +49,10 @@ Must be executed inside an FSDA workspace root directory where `fsda.yaml` is pr
 
 ### File Structure Created & Modified
 
-Executing `fsda reg-module -m user -a adminapp` produces and modifies the following paths inside `apps/adminapp/`:
+Executing `fsda reg -m user -a admin_app` produces and modifies the following paths inside `apps/admin_app/`:
 
 ```
-apps/adminapp/
+apps/admin_app/
 ├── lib/
 │   ├── app/
 │   │   ├── main_app.dart           # [Injected] UserLocalizations.localizationsDelegates
@@ -69,10 +69,10 @@ apps/adminapp/
 
 ```
 
-## reg-feature
+## Register a feature
 
 ```
-fsda reg-feature -f <feature> -m <module> -a <app>
+fsda reg -f <feature> -m <module> -a <app>
 
 ```
 
@@ -88,7 +88,7 @@ Registers a specific feature into an integrated module within a target applicati
 
 ### Workspace Guard
 
-Must be executed inside an FSDA workspace root directory where `fsda.yaml` is present. Requires the target module to be registered in the app (`reg-module`) beforehand so that `<module>_di.dart` and `<module>_route.dart` exist.
+Must be executed inside an FSDA workspace root directory where `.fsda/config.yaml` is present. Requires the target module to be registered in the app (`reg -m <module> -a <app>`) beforehand so that `<module>_di.dart` and `<module>_route.dart` exist.
 
 ### What Happens
 
@@ -120,10 +120,10 @@ Must be executed inside an FSDA workspace root directory where `fsda.yaml` is pr
 
 ### File Structure Created & Modified
 
-Executing `fsda reg-feature -f staff -m user -a adminapp` (after `reg-module` has been executed) produces and modifies the following paths inside `apps/adminapp/`:
+Executing `fsda reg -f staff -m user -a admin_app` (after module registration) produces and modifies the following paths inside `apps/admin_app/`:
 
 ```
-apps/adminapp/
+apps/admin_app/
 ├── lib/
 │   └── modules/
 │       └── user/

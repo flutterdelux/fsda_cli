@@ -1,7 +1,8 @@
-import 'package:path/path.dart' as p;
-
-import '../../../core/constants/rules.dart';
-import '../../../domain/params/module_gate_param.dart';
+import '../../../core/extensions/arg_results_x.dart';
+import '../../../core/extensions/module_param_x.dart';
+import '../../../domain/params/module_param.dart';
+import '../../../domain/params/workspace_param.dart';
+import '../../resolvers/module_resolver.dart';
 import 'workspace_guard_command.dart';
 
 abstract class ModuleGateCommand extends WorkspaceGuardCommand {
@@ -12,43 +13,53 @@ abstract class ModuleGateCommand extends WorkspaceGuardCommand {
     required super.directoryService,
   }) {
     argParser.addOption(
-      'module',
+      ModuleResolverKeys.module,
       abbr: 'm',
       help: 'Target module name under modules/.',
     );
   }
 
   @override
-  Future<int> handle() async {
-    final moduleArg = argResults?['module'] as String?;
-
-    if (moduleArg == null || moduleArg.isEmpty) {
-      logger.error('Missing required options (--module).');
+  Future<int> handle(WorkspaceParam workspace) async {
+    final rest = argResults?.rest ?? [];
+    if (rest.isNotEmpty) {
+      logger.error('Invalid command.');
       logger.log('Usage: $invocation');
       return errorUsage;
     }
 
-    if (!Rules.moduleRegExp.hasMatch(moduleArg)) {
-      logger.error('Invalid module name: "$moduleArg".');
-      logger.log(Rules.moduleDescription);
+    ModuleParam module;
+    try {
+      module = ModuleResolver.resolve(
+        workspace: workspace,
+        data: argResults?.toMap() ?? {},
+      );
+    } catch (e) {
+      logger.error(e is FormatException ? e.message : e.toString());
       logger.log('Usage: $invocation');
       return errorUsage;
     }
 
-    final resolvedModulePath = p.join(
-      directoryService.currentPath,
-      'modules',
-      moduleArg,
-    );
-    if (!await directoryService.exists(resolvedModulePath)) {
-      logger.error('Module "$moduleArg" not found at $resolvedModulePath');
+    final moduleFound = await directoryService.exists(module.modulePath);
+
+    if (moduleShouldExists && !moduleFound) {
+      logger.error(
+        'Module "${module.moduleName}" not found at ${module.modulePath}',
+      );
       return errorUsage;
     }
 
-    return handleModuleGate(
-      ModuleGateParam(moduleName: moduleArg, modulePath: resolvedModulePath),
-    );
+    if (!moduleShouldExists && moduleFound) {
+      logger.error(
+        'Module "${module.moduleName}" already exists at ${module.modulePath}',
+      );
+      return errorUsage;
+    }
+
+    return handleModuleGate(module);
   }
 
-  Future<int> handleModuleGate(ModuleGateParam moduleGate);
+  bool get moduleShouldExists;
+
+  Future<int> handleModuleGate(ModuleParam module);
 }

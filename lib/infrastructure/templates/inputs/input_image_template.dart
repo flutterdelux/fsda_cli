@@ -1,15 +1,15 @@
-import '../../../domain/params/inputs/input_image_param.dart';
+import '../../../domain/params/input_param.dart';
 import '../../text_modifiers/string_extension.dart';
 
 abstract final class InputImageTemplate {
-  static String build(InputImageParam input) {
+  static String build(InputParam input) {
     final featurePascal = input.featureName.pascalCase;
     final fieldPascal = input.field.pascalCase;
     final modulePascal = input.moduleName.pascalCase;
     final className = '$featurePascal${fieldPascal}Field';
     final l10nKey = '${input.featureName.camelCase}Field$fieldPascal';
-    final valueType = input.type;
-    final normalizedType = valueType.replaceAll(' ', '').replaceAll('?', '');
+    final valueType = input.dataType;
+    final normalizedType = valueType?.replaceAll(' ', '').replaceAll('?', '');
     final isNetworkFile = normalizedType == 'NetworkFile';
     final previewBytesAccess = isNetworkFile
         ? 'selectedValue!.bytes'
@@ -103,7 +103,7 @@ class $className extends StatelessWidget {
 ''';
   }
 
-  static Map<String, dynamic> buildArbEntries(InputImageParam input) {
+  static Map<String, dynamic> buildArbEntries(InputParam input) {
     final entries = <String, dynamic>{};
     final featureCamel = input.featureName.camelCase;
     final fieldPascal = input.field.pascalCase;

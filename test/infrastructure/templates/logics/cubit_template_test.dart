@@ -1,96 +1,132 @@
+import 'package:fsda_cli/domain/enums/state_control.dart';
 import 'package:fsda_cli/domain/models/prop_model.dart';
 import 'package:fsda_cli/domain/params/logic_param.dart';
 import 'package:fsda_cli/infrastructure/templates/logics/cubit_template.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
+  LogicParam createLogic({
+    List<PropModel> props = const [],
+    String featureName = 'task',
+    String slice = 'filter',
+  }) {
+    return LogicParam(
+      props: props,
+      control: StateControl.cubit,
+      featureName: featureName,
+      moduleName: 'project_management',
+      sliceName: slice,
+      workspaceName: 'my_workspace',
+      workspacePath: '/projects/my_workspace',
+    );
+  }
+
   group('CubitTemplate', () {
     test(
-      'Given logic param with properties, '
-      'When build is called, '
-      'Then it generates cubit content with updateState method and correct properties and imports',
+      'GIVEN a LogicParam with multiple props including duplicate types '
+      'WHEN build is called '
+      'THEN returns ArtifactGenerationModel with accurate metadata, deduplicated typesToImport, and Cubit content',
       () {
-        // Arrange (Given)
-        const logicParam = LogicParam(
-          featureName: 'user_profile',
-          featurePath: 'features/user_profile',
-          moduleName: 'auth',
-          modulePath: 'modules/auth',
-          slice: 'edit',
-          props: [
-            PropModel(
-              name: 'first_name',
-              type: 'String',
-              defaultValue: '',
-              converter: '',
-            ),
-            PropModel(
-              name: 'age',
-              type: 'int',
-              defaultValue: '',
-              converter: '',
-            ),
-          ],
+        // Given
+        const props = [
+          PropModel(
+            type: 'String',
+            name: 'search_query',
+            defaultValue: "''",
+            converter: '',
+          ),
+          PropModel(
+            type: 'TaskStatus',
+            name: 'selected_status',
+            defaultValue: 'TaskStatus.todo',
+            converter: '',
+          ),
+          PropModel(
+            type: 'String',
+            name: 'sort_by',
+            defaultValue: "'created_at'",
+            converter: '',
+          ),
+        ];
+        final logic = createLogic(props: props, slice: 'filter');
+
+        // When
+        final artifact = CubitTemplate.build(logic);
+
+        // Then
+        expect(artifact.name, 'TaskFilterCubit');
+        expect(
+          artifact.path,
+          p.join(
+            '/projects/my_workspace',
+            'modules',
+            'project_management',
+            'lib',
+            'src',
+            'features',
+            'task',
+            'logic',
+            'filter',
+            'task_filter_cubit.dart',
+          ),
         );
-
-        // Act (When)
-        final artifact = CubitTemplate.build(logicParam);
-
-        // Assert (Then)
-        expect(artifact.name, equals('UserProfileEditCubit'));
+        expect(artifact.typesToImport, {'String', 'TaskStatus'});
         expect(artifact.needToExport, isTrue);
-        expect(artifact.typesToImport, containsAll(['String', 'int']));
+        expect(artifact.content, '''
+import 'package:bloc/bloc.dart';
+import 'task_filter_state.dart';
 
-        expect(
-          artifact.content,
-          contains(
-            'class UserProfileEditCubit extends Cubit<UserProfileEditState>',
-          ),
-        );
-        expect(
-          artifact.content,
-          contains(
-            'UserProfileEditCubit() : super(const UserProfileEditState());',
-          ),
-        );
-        expect(artifact.content, contains('void updateState({'));
-        expect(artifact.content, contains('String firstName,'));
-        expect(artifact.content, contains('int age,'));
-        expect(artifact.content, contains('firstName: firstName,'));
-        expect(artifact.content, contains('age: age,'));
+class TaskFilterCubit extends Cubit<TaskFilterState> {
+  TaskFilterCubit() : super(const TaskFilterState());
+
+  void updateState({
+    String searchQuery,
+    TaskStatus selectedStatus,
+    String sortBy,
+  }) {
+    emit(TaskFilterState(
+      searchQuery: searchQuery,
+      selectedStatus: selectedStatus,
+      sortBy: sortBy,
+    ));
+  }
+}
+''');
       },
     );
 
     test(
-      'Given logic param without properties, '
-      'When build is called, '
-      'Then it generates cubit content with empty updateState parameters',
+      'GIVEN a LogicParam with empty props '
+      'WHEN build is called '
+      'THEN returns empty typesToImport and Cubit with empty updateState parameters',
       () {
-        // Arrange (Given)
-        const logicParam = LogicParam(
-          featureName: 'settings',
-          featurePath: 'features/settings',
-          moduleName: 'app',
-          modulePath: 'modules/app',
-          slice: 'general',
-          props: [],
-        );
+        // Given
+        final logic = createLogic(props: const [], slice: 'empty_state');
 
-        // Act (When)
-        final artifact = CubitTemplate.build(logicParam);
+        // When
+        final artifact = CubitTemplate.build(logic);
 
-        // Assert (Then)
-        expect(artifact.name, equals('SettingsGeneralCubit'));
-        expect(artifact.needToExport, isTrue);
+        // Then
+        expect(artifact.name, 'TaskEmptyStateCubit');
         expect(artifact.typesToImport, isEmpty);
+        expect(artifact.needToExport, isTrue);
+        expect(artifact.content, '''
+import 'package:bloc/bloc.dart';
+import 'task_empty_state_state.dart';
 
-        expect(
-          artifact.content,
-          contains(
-            'class SettingsGeneralCubit extends Cubit<SettingsGeneralState>',
-          ),
-        );
-        expect(artifact.content, contains('void updateState({\n    \n  })'));
+class TaskEmptyStateCubit extends Cubit<TaskEmptyStateState> {
+  TaskEmptyStateCubit() : super(const TaskEmptyStateState());
+
+  void updateState({
+    
+  }) {
+    emit(TaskEmptyStateState(
+      
+    ));
+  }
+}
+''');
       },
     );
   });

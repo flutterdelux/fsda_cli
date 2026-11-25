@@ -25,8 +25,9 @@ Creates a new FSDA workspace wrapper structure with baseline directories and sta
    - `<workspace_name>/apps/`
    - `<workspace_name>/modules/`
    - `<workspace_name>/packages/`
-3. **Configuration Generation**: Creates `<workspace_name>/fsda.yaml` containing metadata and all available bundled package templates listed in an **inactive status** (prefixed with `# - package_name`).
-4. **Operation Report**: Displays a clean, structured terminal summary logging all created directories and files.
+3. **Configuration Generation**: Creates `<workspace_name>/.fsda/config.yaml` with workspace metadata, Dart/Android defaults, and mandatory bundled packages.
+4. **Plan Directory**: Creates `<workspace_name>/.fsda/plans/` for declarative YAML plans.
+5. **Operation Report**: Displays a clean, structured terminal summary logging all created directories and files.
 
 ### Rerun Behavior
 

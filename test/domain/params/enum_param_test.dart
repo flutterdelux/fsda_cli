@@ -1,80 +1,83 @@
-import 'package:fsda_cli/domain/params/enum_param.dart'; // Sesuaikan path import dengan project Anda
-import 'package:fsda_cli/domain/params/feature_gate_param.dart';
+import 'package:fsda_cli/domain/params/enum_param.dart';
+import 'package:fsda_cli/domain/params/feature_param.dart';
+import 'package:fsda_cli/domain/params/module_param.dart';
+import 'package:fsda_cli/domain/params/workspace_param.dart';
 import 'package:test/test.dart';
 
 void main() {
   group('EnumParam', () {
-    const tFeatureGate = FeatureGateParam(
-      featureName: 'task',
-      featurePath: '/workspace/modules/todo/lib/src/features/task',
-      moduleName: 'todo',
-      modulePath: '/workspace/modules/todo',
-    );
-
     test(
-      'Given name, path, values, and isLower flag, '
-      'When EnumParam is instantiated directly via constructor, '
-      'Then it correctly holds all provided properties and inherited feature gate parameters',
+      'GIVEN valid enum and feature hierarchy parameters '
+      'WHEN EnumParam primary constructor is called '
+      'THEN stores all properties accurately and extends FeatureParam hierarchy',
       () {
-        // Arrange (Given)
-        const name = 'TaskStatus';
-        const path =
-            '/workspace/modules/todo/lib/src/features/task/domain/enums/task_status.dart';
-        const values = ['pending', 'completed'];
+        // Given
+        const enumName = 'task_status';
+        const values = ['todo', 'in_progress', 'completed'];
         const isLower = true;
+        const featureName = 'task';
+        const moduleName = 'project_management';
+        const workspaceName = 'my_workspace';
+        const workspacePath = '/projects/my_workspace';
 
-        // Act (When)
-        final enumParam = EnumParam(
-          name: name,
-          path: path,
+        // When
+        const param = EnumParam(
+          enumName: enumName,
           values: values,
           isLower: isLower,
-          featureName: tFeatureGate.featureName,
-          featurePath: tFeatureGate.featurePath,
-          moduleName: tFeatureGate.moduleName,
-          modulePath: tFeatureGate.modulePath,
+          featureName: featureName,
+          moduleName: moduleName,
+          workspaceName: workspaceName,
+          workspacePath: workspacePath,
         );
 
-        // Assert (Then)
-        expect(enumParam.name, equals(name));
-        expect(enumParam.path, equals(path));
-        expect(enumParam.values, equals(values));
-        expect(enumParam.isLower, isTrue);
-        expect(enumParam.featureName, equals(tFeatureGate.featureName));
-        expect(enumParam.featurePath, equals(tFeatureGate.featurePath));
-        expect(enumParam.moduleName, equals(tFeatureGate.moduleName));
-        expect(enumParam.modulePath, equals(tFeatureGate.modulePath));
+        // Then
+        expect(param, isA<FeatureParam>());
+        expect(param, isA<ModuleParam>());
+        expect(param, isA<WorkspaceParam>());
+        expect(param.enumName, enumName);
+        expect(param.values, values);
+        expect(param.isLower, isTrue);
+        expect(param.featureName, featureName);
+        expect(param.moduleName, moduleName);
+        expect(param.workspaceName, workspaceName);
+        expect(param.workspacePath, workspacePath);
       },
     );
 
-    test('Given a FeatureGateParam and enum specific fields, '
-        'When EnumParam.fromFeatureGate factory is called, '
-        'Then it correctly maps all properties from the feature gate', () {
-      // Arrange (Given)
-      const name = 'Priority';
-      const path =
-          '/workspace/modules/todo/lib/src/features/task/domain/enums/priority.dart';
-      const values = ['low', 'medium', 'high'];
-      const isLower = false;
+    test(
+      'GIVEN a FeatureParam instance and enum details '
+      'WHEN EnumParam.fromFeature factory is called '
+      'THEN copies feature hierarchy properties and sets enum fields accurately',
+      () {
+        // Given
+        const feature = FeatureParam(
+          featureName: 'payment',
+          moduleName: 'billing',
+          workspaceName: 'my_workspace',
+          workspacePath: '/projects/my_workspace',
+        );
+        const enumName = 'payment_method';
+        const values = ['credit_card', 'bank_transfer', 'e_wallet'];
+        const isLower = false;
 
-      // Act (When)
-      final enumParam = EnumParam.fromFeatureGate(
-        featureGate: tFeatureGate,
-        name: name,
-        path: path,
-        values: values,
-        isLower: isLower,
-      );
+        // When
+        final param = EnumParam.fromFeature(
+          feature: feature,
+          enumName: enumName,
+          values: values,
+          isLower: isLower,
+        );
 
-      // Assert (Then)
-      expect(enumParam.name, equals(name));
-      expect(enumParam.path, equals(path));
-      expect(enumParam.values, equals(values));
-      expect(enumParam.isLower, isFalse);
-      expect(enumParam.featureName, equals(tFeatureGate.featureName));
-      expect(enumParam.featurePath, equals(tFeatureGate.featurePath));
-      expect(enumParam.moduleName, equals(tFeatureGate.moduleName));
-      expect(enumParam.modulePath, equals(tFeatureGate.modulePath));
-    });
+        // Then
+        expect(param.enumName, enumName);
+        expect(param.values, values);
+        expect(param.isLower, isFalse);
+        expect(param.featureName, feature.featureName);
+        expect(param.moduleName, feature.moduleName);
+        expect(param.workspaceName, feature.workspaceName);
+        expect(param.workspacePath, feature.workspacePath);
+      },
+    );
   });
 }

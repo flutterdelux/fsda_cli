@@ -1,3 +1,24 @@
+## 2.0.0-dev.6
+
+### Added
+
+- Add a declarative YAML workflow alongside direct CLI commands:
+    - `fsda plan` scaffolds app, module, feature, or slice plans under `.fsda/plans/`; `--example` (`-e`) populates an example plan.
+    - `fsda apply <plan.yaml>` validates and applies plans through the existing generation/composition services.
+    - Plans can declare module failures; feature/slice data sources, enums, models, sequences, logic, logic flows, inputs, and UI; and app-side compose artifacts.
+- Move workspace settings from root `fsda.yaml` to `.fsda/config.yaml`; workspace plans live under `.fsda/plans/`. Config uses `dart_sdk` for the Dart constraint.
+
+### Changed
+
+- Consolidate app/module/feature/failure generation under `fsda gen` (`-a`, `-m`, `-f`, `--failure`) and feature removal under `fsda rm -m <module> -f <feature>`.
+- Consolidate module/feature registration under `fsda reg`; use `-a` and `-m` for module registration and add `-f` for feature registration.
+- Replace compose-specific commands with `fsda compose` and `--type` (`m`, `r`, `pag`, `form`), `--target`, and the applicable logic/UI options.
+- Consolidate per-widget `input-*` commands as `gen-input -t <type> --field <field>`; consolidate UI variants as `gen-ui -t <type>`, with repeatable `--field` options for forms.
+- Update generation arguments: `gen-model`/`rm-model` take `-n <name>`; `gen-sequence` takes `--act` and repeatable `--model` instead of a positional action and `--models` list.
+- App names now use strict `snake_case`; the app display-name option is `--title` (replacing `--name`).
+- Since v2.0.0-dev.1, the CLI command interface has been regrouped; update scripts using the earlier standalone `gen-app`, `gen-module`, `gen-feature`, `gen-failure`, `reg-module`, `reg-feature`, `compose-*`, `input-*`, and variant-specific `gen-ui-*` commands.
+
+
 ## 2.0.0-dev.5
 
 ### Fix

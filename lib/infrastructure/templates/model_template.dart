@@ -1,3 +1,4 @@
+import '../../core/extensions/model_param_x.dart';
 import '../../core/utils/import_util.dart';
 import '../../domain/models/prop_model.dart';
 import '../../domain/params/model_param.dart';
@@ -37,20 +38,20 @@ abstract final class ModelTemplate {
   }
 
   static Map<String, dynamic> buildArbEntries(ModelParam model) {
-    final modelSnake = model.name;
-    final modelCamel = modelSnake.camelCase;
-    final modelTitle = modelSnake.titleCase;
+    final baseSnake = model.baseNameSnake;
+    final baseCamel = baseSnake.camelCase;
+    final baseTitle = baseSnake.titleCase;
 
     final entries = <String, dynamic>{};
 
-    final modelKey = modelCamel;
-    entries[modelKey] = modelTitle;
+    final baseKey = baseCamel;
+    entries[baseKey] = baseTitle;
 
     final props = model.props;
     for (final prop in props) {
       final nameSnake = prop.name;
       final namePascal = nameSnake.pascalCase;
-      final propKey = '$modelCamel$namePascal';
+      final propKey = '$baseCamel$namePascal';
 
       entries[propKey] = prop.name.titleCase;
     }
@@ -60,26 +61,21 @@ abstract final class ModelTemplate {
 }
 
 String _buildFreezed(ModelParam model) {
-  final modelSnake = model.name;
-  final modelPascal = modelSnake.pascalCase;
-
-  final typeSnake = model.type.value;
-  final typePascal = typeSnake.pascalCase;
-
-  final className = '$modelPascal$typePascal';
+  final nameSnake = model.modelName;
+  final namePascal = nameSnake.pascalCase;
 
   final props = model.props;
 
   return '''
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-part '${modelSnake}_$typeSnake.freezed.dart';
+part '$nameSnake.freezed.dart';
 
 @freezed
-abstract class $className with _\$$className {
-  const factory $className({
+abstract class $namePascal with _\$$namePascal {
+  const factory $namePascal({
 ${props.map((e) => _propDefinition(e)).join('\n')}
-  }) = _$className;
+  }) = _$namePascal;
 }
 ''';
 }
@@ -88,41 +84,37 @@ String _buildFreezedWithSerializable({
   required ModelParam model,
   List<String> otherMethods = const [],
 }) {
-  final modelSnake = model.name;
-  final modelPascal = modelSnake.pascalCase;
-
-  final typeSnake = model.type.value;
-  final typePascal = typeSnake.pascalCase;
-
-  final className = '$modelPascal$typePascal';
+  final nameSnake = model.modelName;
+  final namePascal = nameSnake.pascalCase;
+  final baseNameSnake = model.baseNameSnake;
 
   final sortedImports = ImportUtil.sort([
     "import 'package:freezed_annotation/freezed_annotation.dart';",
     if (otherMethods.join('').contains('fromEntity') ||
         otherMethods.join('').contains('toEntity'))
-      "import '../../domain/entities/${modelSnake}_entity.dart';",
+      "import '../../domain/entities/${baseNameSnake}_entity.dart';",
     if (otherMethods.join('').contains('fromParam') ||
         otherMethods.join('').contains('toParam'))
-      "import '../../domain/params/${modelSnake}_param.dart';",
+      "import '../../domain/params/${baseNameSnake}_param.dart';",
   ]);
 
   final props = model.props;
 
   return '''${sortedImports.join('\n')}
 
-part '${modelSnake}_$typeSnake.freezed.dart';
-part '${modelSnake}_$typeSnake.g.dart';
+part '$nameSnake.freezed.dart';
+part '$nameSnake.g.dart';
 
 @freezed
-abstract class $className with _\$$className {
-  const $className._();
+abstract class $namePascal with _\$$namePascal {
+  const $namePascal._();
 
-  const factory $className({
+  const factory $namePascal({
 ${props.map((e) => _propDefinition(e)).join('\n')}
-  }) = _$className;
+  }) = _$namePascal;
 
-  factory $className.fromJson(Map<String, dynamic> json) =>
-      _\$${className}FromJson(json);
+  factory $namePascal.fromJson(Map<String, dynamic> json) =>
+      _\$${namePascal}FromJson(json);
 
 ${otherMethods.join('\n')}
 }
@@ -133,18 +125,15 @@ String _fromMethod({required ModelParam model, required String from}) {
   final fromCamel = from.camelCase;
   final fromPascal = from.pascalCase;
 
-  final modelSnake = model.name;
-  final modelPascal = modelSnake.pascalCase;
+  final nameSnake = model.modelName;
+  final namePascal = nameSnake.pascalCase;
 
-  final typeSnake = model.type.value;
-  final typePascal = typeSnake.pascalCase;
-
-  final className = '$modelPascal$typePascal';
+  final baseNamePascal = model.baseNamePascal;
 
   final props = model.props;
   return '''
-  factory $className.from$fromPascal($modelPascal$fromPascal $fromCamel) {
-    return $className(
+  factory $namePascal.from$fromPascal($baseNamePascal$fromPascal $fromCamel) {
+    return $namePascal(
 ${props.map((e) => _propFrom(e, from)).join('\n')}
     );
   }
@@ -153,14 +142,12 @@ ${props.map((e) => _propFrom(e, from)).join('\n')}
 
 String _toMethod(ModelParam model, String to) {
   final toPascal = to.pascalCase;
-
-  final modelSnake = model.name;
-  final modelPascal = modelSnake.pascalCase;
+  final baseNamePascal = model.baseNamePascal;
 
   final props = model.props;
   return '''
-  $modelPascal$toPascal to$toPascal() {
-    return $modelPascal$toPascal(
+  $baseNamePascal$toPascal to$toPascal() {
+    return $baseNamePascal$toPascal(
 ${props.map((e) => _propTo(e)).join('\n')}      
     );
   }

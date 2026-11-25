@@ -4,6 +4,7 @@ import 'package:analyzer/dart/ast/visitor.dart';
 import '../../domain/enums/uc_type.dart';
 
 class UseCaseVisitor extends RecursiveAstVisitor<void> {
+  String? className;
   UcType? detectedUcType;
   String? detectedMethod;
   String? returnType;
@@ -13,6 +14,8 @@ class UseCaseVisitor extends RecursiveAstVisitor<void> {
   void visitClassDeclaration(ClassDeclaration node) {
     super.visitClassDeclaration(node);
 
+    className = node.namePart.typeName.lexeme;
+
     final extendsClause = node.extendsClause;
     if (extendsClause == null) return;
 
@@ -20,7 +23,7 @@ class UseCaseVisitor extends RecursiveAstVisitor<void> {
     final superTypeName = superType.name.lexeme;
 
     // Deteksi UcType dari superclass
-    detectedUcType = UcType.fromValue(superTypeName);
+    detectedUcType = UcType.tryParse(superTypeName);
 
     // Ekstrak Type Arguments jika ada (misal: ReturnParamUseCase<List<TaskEntity>, TaskParam>)
     final typeArgs = superType.typeArguments?.arguments;

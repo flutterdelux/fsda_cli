@@ -2,6 +2,7 @@ import 'package:path/path.dart' as p;
 
 import '../../domain/params/failure_param.dart';
 import '../../infrastructure/text_modifiers/string_extension.dart';
+import 'module_param_x.dart';
 
 extension FailureParamX on FailureParam {
   String get exceptionPath => p.join(
@@ -35,5 +36,5 @@ extension FailureParamX on FailureParam {
   String get nameSnake => name;
   String get nameCamel => nameSnake.camelCase;
   String get namePascal => nameSnake.pascalCase;
-  String get nameCode => nameSnake.toUpperCase();
+  String get nameScreaming => nameSnake.toUpperCase();
 }

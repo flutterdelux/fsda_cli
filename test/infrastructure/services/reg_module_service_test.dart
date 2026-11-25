@@ -1,12 +1,17 @@
-import 'package:fsda_cli/core/extensions/app_integration_param_x.dart';
+import 'package:fsda_cli/core/extensions/app_param_x.dart';
+import 'package:fsda_cli/core/extensions/reg_module_param_x.dart';
 import 'package:fsda_cli/domain/params/app_integration/reg_module_param.dart';
 import 'package:fsda_cli/infrastructure/services/helpers/file_service.dart';
 import 'package:fsda_cli/infrastructure/services/helpers/import_service.dart';
 import 'package:fsda_cli/infrastructure/services/helpers/operation_report_service.dart';
 import 'package:fsda_cli/infrastructure/services/maintenance/refresh_service.dart';
 import 'package:fsda_cli/infrastructure/services/reg_module_service.dart';
+import 'package:fsda_cli/infrastructure/templates/app_integration/app_module_di_template.dart';
+import 'package:fsda_cli/infrastructure/templates/app_integration/app_module_route_template.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
+import 'package:yaml/yaml.dart';
 
 class MockOperationReportService extends Mock
     implements OperationReportService {}
@@ -24,6 +29,22 @@ void main() {
   late MockRefreshService mockRefreshService;
   late RegModuleService regModuleService;
 
+  const workspacePath = '/projects/my_workspace';
+  const sampleParam = RegModuleParam(
+    moduleName: 'project_management',
+    appName: 'portal_app',
+    workspaceName: 'my_workspace',
+    workspacePath: workspacePath,
+  );
+
+  final pubspecPath = sampleParam.appPubspecPath;
+  final diArtifact = AppModuleDiTemplate.build(sampleParam);
+  final routeArtifact = AppModuleRouteTemplate.build(sampleParam);
+  final mainAppPath = sampleParam.mainAppPath;
+  final failureXPath = sampleParam.failureXPath;
+  final appDiPath = sampleParam.appDiPath;
+  final appRouterPath = sampleParam.appRouterPath;
+
   setUp(() {
     mockReportService = MockOperationReportService();
     mockFileService = MockFileService();
@@ -36,351 +57,379 @@ void main() {
       importService: mockImportService,
       refreshService: mockRefreshService,
     );
+
+    when(
+      () => mockFileService.writeAsString(
+        path: any(named: 'path'),
+        content: any(named: 'content'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockImportService.injectImport(
+        path: any(named: 'path'),
+        imports: any(named: 'imports'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockRefreshService.refresh(
+        any(),
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer((_) async {});
   });
 
-  group('RegModuleService - registerModule', () {
-    const tRegModuleParam = RegModuleParam(
-      appName: 'my_app',
-      appPath: '/workspace/apps/my_app',
-      moduleName: 'todo',
-      modulePath: '/workspace/modules/todo',
-      featureName: 'task',
-      featurePath: '/workspace/modules/todo/lib/src/features/task',
-    );
-
+  group('RegModuleService.registerModule', () {
     test(
-      'Given valid RegModuleParam and non-existent wrapper files, '
-      'When registerModule is called, '
-      'Then it injects pubspec dependency, creates DI & Route wrappers, updates configurations, and refreshes app successfully',
+      'GIVEN valid RegModuleParam and target app files without existing module registration '
+      'WHEN registerModule is called '
+      'THEN updates pubspec, creates DI/Route wrappers, injects AST across app files, refreshes app, and reports progress',
       () async {
-        // Arrange (Given)
+        // Given
         final progressLogs = <String>[];
 
-        // 1. Pubspec injection stubbing
+        // All target files exist; wrapper files do not exist yet
         when(
-          () => mockFileService.exists(tRegModuleParam.appPubspecPath),
+          () => mockFileService.exists(pubspecPath),
         ).thenAnswer((_) async => true);
         when(
-          () => mockFileService.readAsString(tRegModuleParam.appPubspecPath),
-        ).thenAnswer(
-          (_) async =>
-              'name: my_app\ndependencies:\n  flutter:\n    sdk: flutter',
-        );
-        when(
-          () => mockFileService.writeAsString(
-            path: any(named: 'path'),
-            content: any(named: 'content'),
-          ),
-        ).thenAnswer((_) async {});
-        when(() => mockReportService.addInjected(any())).thenReturn(null);
-        when(() => mockReportService.addCreated(any())).thenReturn(null);
-
-        // 2. DI & Route wrapper file existence check (dianggap belum ada agar dibuat baru)
-        final diArtifactPath = tRegModuleParam.appModuleDiPath;
-        final routeArtifactPath = tRegModuleParam.appModuleRoutePath;
-
-        when(
-          () => mockFileService.exists(diArtifactPath),
+          () => mockFileService.exists(diArtifact.path),
         ).thenAnswer((_) async => false);
         when(
-          () => mockFileService.exists(routeArtifactPath),
+          () => mockFileService.exists(routeArtifact.path),
         ).thenAnswer((_) async => false);
-
-        // 3. Localizations, FailureX, AppDi, AppRouter file checks and contents
         when(
-          () => mockFileService.exists(tRegModuleParam.mainAppPath),
+          () => mockFileService.exists(mainAppPath),
         ).thenAnswer((_) async => true);
         when(
-          () => mockFileService.readAsString(tRegModuleParam.mainAppPath),
-        ).thenAnswer((_) async => 'class MyApp {}');
-
-        when(
-          () => mockFileService.exists(tRegModuleParam.failureXPath),
+          () => mockFileService.exists(failureXPath),
         ).thenAnswer((_) async => true);
         when(
-          () => mockFileService.readAsString(tRegModuleParam.failureXPath),
-        ).thenAnswer((_) async => 'class FailureX {}');
-
-        when(
-          () => mockFileService.exists(tRegModuleParam.appDiPath),
+          () => mockFileService.exists(appDiPath),
         ).thenAnswer((_) async => true);
         when(
-          () => mockFileService.readAsString(tRegModuleParam.appDiPath),
-        ).thenAnswer((_) async => 'void initDi() {}');
-
-        when(
-          () => mockFileService.exists(tRegModuleParam.appRouterPath),
+          () => mockFileService.exists(appRouterPath),
         ).thenAnswer((_) async => true);
-        when(
-          () => mockFileService.readAsString(tRegModuleParam.appRouterPath),
-        ).thenAnswer((_) async => 'class AppRouter {}');
+
+        const initialPubspec = '''
+name: portal_app
+dependencies:
+  flutter:
+    sdk: flutter
+''';
+
+        const initialMainApp = '''
+class MainApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      localizationsDelegates: [
+        GlobalMaterialLocalizations.delegate
+      ],
+    );
+  }
+}
+''';
+
+        const initialFailureX = '''
+extension FailureX on Failure {
+  String localizeAny(BuildContext context) {
+    if (this is CoreFailure) {
+      return (this as CoreFailure).localize(context);
+    }
+    return context.l10n.unknownError;
+  }
+}
+''';
+
+        const initialAppDi = '''
+Future<void> initDI() async {
+  sl.registerLazySingleton(() => AppConfig());
+}
+''';
+
+        const initialAppRouter = '''
+final appRouter = GoRouter(
+  routes: [
+    GoRoute(path: '/', builder: (_, __) => const SizedBox())
+  ],
+);
+''';
 
         when(
-          () => mockImportService.injectImport(
-            path: any(named: 'path'),
-            imports: any(named: 'imports'),
-          ),
-        ).thenAnswer((_) async {});
-
-        // 4. Refresh service stubbing
+          () => mockFileService.readAsString(pubspecPath),
+        ).thenAnswer((_) async => initialPubspec);
         when(
-          () => mockRefreshService.refresh(
-            tRegModuleParam.appPath,
-            onProgress: any(named: 'onProgress'),
-          ),
-        ).thenAnswer((_) async {});
+          () => mockFileService.readAsString(mainAppPath),
+        ).thenAnswer((_) async => initialMainApp);
+        when(
+          () => mockFileService.readAsString(failureXPath),
+        ).thenAnswer((_) async => initialFailureX);
+        when(
+          () => mockFileService.readAsString(appDiPath),
+        ).thenAnswer((_) async => initialAppDi);
+        when(
+          () => mockFileService.readAsString(appRouterPath),
+        ).thenAnswer((_) async => initialAppRouter);
 
-        // Act (When)
+        // When
         await regModuleService.registerModule(
-          param: tRegModuleParam,
-          onProgress: (msg) => progressLogs.add(msg),
+          param: sampleParam,
+          onProgress: progressLogs.add,
         );
 
-        // Assert (Then)
+        // Then
+        expect(progressLogs, [
+          'Injecting module dependency into app pubspec.yaml...',
+          'Creating app module DI wrapper file...',
+          'Creating app module Route wrapper file...',
+          'Injecting module localizations into main_app.dart...',
+          'Injecting failure handling into failure_x.dart...',
+          'Injecting module DI registration into core/di/di.dart...',
+          'Injecting module route into app_router.dart...',
+          'refreshing app...',
+        ]);
+
+        // 1. Verify pubspec.yaml dependency injection
+        final capturedPubspec =
+            verify(
+                  () => mockFileService.writeAsString(
+                    path: pubspecPath,
+                    content: captureAny(named: 'content'),
+                  ),
+                ).captured.single
+                as String;
+
+        final parsedPubspec = loadYaml(capturedPubspec) as YamlMap;
         expect(
-          progressLogs,
-          contains('Injecting module dependency into app pubspec.yaml...'),
+          parsedPubspec['dependencies']['project_management']['path'],
+          '../../modules/project_management',
         );
-        expect(
-          progressLogs,
-          contains('Creating app module DI wrapper file...'),
-        );
-        expect(
-          progressLogs,
-          contains('Creating app module Route wrapper file...'),
-        );
-        expect(
-          progressLogs,
-          contains('Injecting module localizations into main_app.dart...'),
-        );
-        expect(
-          progressLogs,
-          contains('Injecting failure handling into failure_x.dart...'),
-        );
-        expect(
-          progressLogs,
-          contains('Injecting module DI registration into core/di/di.dart...'),
-        );
-        expect(
-          progressLogs,
-          contains('Injecting module route into app_router.dart...'),
-        );
-        expect(progressLogs, contains('refreshing app...'));
+        verify(() => mockReportService.addInjected(pubspecPath)).called(1);
+
+        // 2. Verify DI & Route wrapper files creation
+        verify(
+          () => mockFileService.writeAsString(
+            path: diArtifact.path,
+            content: diArtifact.content,
+          ),
+        ).called(1);
+        verify(() => mockReportService.addCreated(diArtifact.path)).called(1);
 
         verify(
           () => mockFileService.writeAsString(
-            path: diArtifactPath,
-            content: any(named: 'content'),
+            path: routeArtifact.path,
+            content: routeArtifact.content,
           ),
         ).called(1);
-
         verify(
-          () => mockFileService.writeAsString(
-            path: routeArtifactPath,
-            content: any(named: 'content'),
-          ),
+          () => mockReportService.addCreated(routeArtifact.path),
         ).called(1);
 
+        // 3. Verify main_app.dart localizationsDelegates injection
+        verify(
+          () => mockImportService.injectImport(
+            path: mainAppPath,
+            imports: {
+              "import 'package:project_management/project_management.dart';",
+            },
+          ),
+        ).called(1);
+        final capturedMainApp =
+            verify(
+                  () => mockFileService.writeAsString(
+                    path: mainAppPath,
+                    content: captureAny(named: 'content'),
+                  ),
+                ).captured.single
+                as String;
+        expect(
+          capturedMainApp,
+          contains('...ProjectManagementLocalizations.localizationsDelegates'),
+        );
+        verify(() => mockReportService.addInjected(mainAppPath)).called(1);
+
+        // 4. Verify failure_x.dart injection
+        verify(
+          () => mockImportService.injectImport(
+            path: failureXPath,
+            imports: {
+              "import 'package:project_management/project_management.dart';",
+            },
+          ),
+        ).called(1);
+        final capturedFailureX =
+            verify(
+                  () => mockFileService.writeAsString(
+                    path: failureXPath,
+                    content: captureAny(named: 'content'),
+                  ),
+                ).captured.single
+                as String;
+        expect(
+          capturedFailureX,
+          contains('if (this is ProjectManagementFailure)'),
+        );
+        expect(
+          capturedFailureX,
+          contains(
+            'return (this as ProjectManagementFailure).localize(context);',
+          ),
+        );
+        verify(() => mockReportService.addInjected(failureXPath)).called(1);
+
+        // 5. Verify core/di/di.dart injection
+        verify(
+          () => mockImportService.injectImport(
+            path: appDiPath,
+            imports: {
+              "import '../../modules/project_management/project_management_di.dart';",
+            },
+          ),
+        ).called(1);
+        final capturedAppDi =
+            verify(
+                  () => mockFileService.writeAsString(
+                    path: appDiPath,
+                    content: captureAny(named: 'content'),
+                  ),
+                ).captured.single
+                as String;
+        expect(capturedAppDi, contains('ProjectManagementDi.register();'));
+        verify(() => mockReportService.addInjected(appDiPath)).called(1);
+
+        // 6. Verify app_router.dart injection
+        final relativeRoutePath = p
+            .relative(
+              sampleParam.appModuleRoutePath,
+              from: p.dirname(appRouterPath),
+            )
+            .replaceAll(r'\', '/');
+        verify(
+          () => mockImportService.injectImport(
+            path: appRouterPath,
+            imports: {"import '$relativeRoutePath';"},
+          ),
+        ).called(1);
+        final capturedAppRouter =
+            verify(
+                  () => mockFileService.writeAsString(
+                    path: appRouterPath,
+                    content: captureAny(named: 'content'),
+                  ),
+                ).captured.single
+                as String;
+        expect(capturedAppRouter, contains('ProjectManagementRoute.base'));
+        verify(() => mockReportService.addInjected(appRouterPath)).called(1);
+        // 7. Verify app refresh
         verify(
           () => mockRefreshService.refresh(
-            tRegModuleParam.appPath,
-            onProgress: any(named: 'onProgress'),
+            sampleParam.appPath,
+            onProgress: progressLogs.add,
           ),
         ).called(1);
       },
     );
-
     test(
-      'Given valid RegModuleParam and valid app source files containing visitor targets, '
-      'When registerModule is called, '
-      'Then it fully injects pubspec dependency, creates wrappers, parses AST visitors, injects code updates, and refreshes app',
+      'GIVEN module is already registered in all target files and wrappers already exist '
+      'WHEN registerModule is called '
+      'THEN skips duplicate creations and injections and only triggers refresh',
       () async {
-        // Arrange (Given)
-        final progressLogs = <String>[];
-
-        // 1. Pubspec injection stubbing (belum ada dependensi todo)
-        when(
-          () => mockFileService.exists(tRegModuleParam.appPubspecPath),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockFileService.readAsString(tRegModuleParam.appPubspecPath),
-        ).thenAnswer(
-          (_) async =>
-              'name: my_app\ndependencies:\n  flutter:\n    sdk: flutter\n',
-        );
-
-        when(
-          () => mockFileService.writeAsString(
-            path: any(named: 'path'),
-            content: any(named: 'content'),
-          ),
-        ).thenAnswer((_) async {});
-
-        when(() => mockReportService.addInjected(any())).thenReturn(null);
-        when(() => mockReportService.addCreated(any())).thenReturn(null);
-
-        // 2. Wrapper files (dianggap belum ada)
-        when(
-          () => mockFileService.exists(tRegModuleParam.appModuleDiPath),
-        ).thenAnswer((_) async => false);
-        when(
-          () => mockFileService.exists(tRegModuleParam.appModuleRoutePath),
-        ).thenAnswer((_) async => false);
-
-        // 3. Stubbing file utama dengan struktur AST yang dikenali oleh visitor masing-masing
-        when(
-          () => mockFileService.exists(tRegModuleParam.mainAppPath),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockFileService.readAsString(tRegModuleParam.mainAppPath),
-        ).thenAnswer(
-          (_) async => '''
-class MyApp {
-  List<LocalizationsDelegate> get localizationsDelegates => [
-        AppLocalizations.delegate,
-      ];
-}
-''',
-        );
-
-        when(
-          () => mockFileService.exists(tRegModuleParam.failureXPath),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockFileService.readAsString(tRegModuleParam.failureXPath),
-        ).thenAnswer(
-          (_) async => '''
-String mapFailureToString(Failure failure, BuildContext context) {
-  return 'Unexpected error';
-}
-''',
-        );
-
-        when(
-          () => mockFileService.exists(tRegModuleParam.appDiPath),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockFileService.readAsString(tRegModuleParam.appDiPath),
-        ).thenAnswer(
-          (_) async => '''
-void initDi() {
-  // register others
-}
-''',
-        );
-
-        when(
-          () => mockFileService.exists(tRegModuleParam.appRouterPath),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockFileService.readAsString(tRegModuleParam.appRouterPath),
-        ).thenAnswer(
-          (_) async => '''
-class AppRouter {
-  final routes = [
-    HomeRoute.base,
-  ];
-}
-''',
-        );
-
-        when(
-          () => mockImportService.injectImport(
-            path: any(named: 'path'),
-            imports: any(named: 'imports'),
-          ),
-        ).thenAnswer((_) async {});
-
-        when(
-          () => mockRefreshService.refresh(
-            tRegModuleParam.appPath,
-            onProgress: any(named: 'onProgress'),
-          ),
-        ).thenAnswer((_) async {});
-
-        // Act (When)
-        await regModuleService.registerModule(
-          param: tRegModuleParam,
-          onProgress: (msg) => progressLogs.add(msg),
-        );
-
-        // Assert (Then)
-        expect(progressLogs, isNotEmpty);
-        verify(
-          () => mockFileService.writeAsString(
-            path: tRegModuleParam.appPubspecPath,
-            content: any(named: 'content'),
-          ),
-        ).called(1);
-        verify(
-          () => mockRefreshService.refresh(
-            tRegModuleParam.appPath,
-            onProgress: any(named: 'onProgress'),
-          ),
-        ).called(1);
-      },
-    );
-
-    test(
-      'Given pubspec already contains the module dependency and files already contain injections, '
-      'When registerModule is called, '
-      'Then it safely skips existing injections without duplicating code',
-      () async {
-        // Arrange (Given)
+        // Given
         when(() => mockFileService.exists(any())).thenAnswer((_) async => true);
-
-        // Pubspec sudah ada dependensi todo
-        when(
-          () => mockFileService.readAsString(tRegModuleParam.appPubspecPath),
-        ).thenAnswer(
-          (_) async => 'dependencies:\n  todo:\n    path: ../modules/todo\n',
+        when(() => mockFileService.readAsString(pubspecPath)).thenAnswer(
+          (_) async => '''
+name: portal_app
+dependencies:
+  project_management:
+    path: ../../modules/project_management
+''',
         );
 
-        // File-file target sudah mengandung string pendaftaran modul
+        when(() => mockFileService.readAsString(mainAppPath)).thenAnswer(
+          (_) async =>
+              '...ProjectManagementLocalizations.localizationsDelegates',
+        );
         when(
-          () => mockFileService.readAsString(tRegModuleParam.mainAppPath),
-        ).thenAnswer((_) async => 'TodoLocalizations');
+          () => mockFileService.readAsString(failureXPath),
+        ).thenAnswer((_) async => 'if (this is ProjectManagementFailure) {}');
         when(
-          () => mockFileService.readAsString(tRegModuleParam.failureXPath),
-        ).thenAnswer((_) async => 'TodoFailure');
+          () => mockFileService.readAsString(appDiPath),
+        ).thenAnswer((_) async => 'ProjectManagementDi.register();');
         when(
-          () => mockFileService.readAsString(tRegModuleParam.appDiPath),
-        ).thenAnswer((_) async => 'TodoDi');
-        when(
-          () => mockFileService.readAsString(tRegModuleParam.appRouterPath),
-        ).thenAnswer((_) async => 'TodoRoute.base');
-
-        when(
-          () => mockFileService.exists(tRegModuleParam.appModuleDiPath),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockFileService.exists(tRegModuleParam.appModuleRoutePath),
-        ).thenAnswer((_) async => true);
-
-        when(
-          () => mockRefreshService.refresh(
-            any(),
-            onProgress: any(named: 'onProgress'),
-          ),
-        ).thenAnswer((_) async {});
-
-        final progressLogs = <String>[];
-
-        // Act (When)
+          () => mockFileService.readAsString(appRouterPath),
+        ).thenAnswer((_) async => 'ProjectManagementRoute.base');
+        // When
         await regModuleService.registerModule(
-          param: tRegModuleParam,
-          onProgress: (msg) => progressLogs.add(msg),
+          param: sampleParam,
+          onProgress: (_) {},
         );
-
-        // Assert (Then)
-        expect(progressLogs, isNotEmpty);
+        // Then
         verifyNever(
           () => mockFileService.writeAsString(
-            path: tRegModuleParam.appPubspecPath,
+            path: any(named: 'path'),
             content: any(named: 'content'),
           ),
         );
+        verifyNever(
+          () => mockImportService.injectImport(
+            path: any(named: 'path'),
+            imports: any(named: 'imports'),
+          ),
+        );
+        verifyNever(() => mockReportService.addCreated(any()));
+        verifyNever(() => mockReportService.addInjected(any()));
+        verify(
+          () => mockRefreshService.refresh(
+            sampleParam.appPath,
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).called(1);
       },
     );
+    test('GIVEN optional target files do not exist '
+        'WHEN registerModule is called '
+        'THEN skips missing files gracefully without throwing', () async {
+      // Given
+      when(
+        () => mockFileService.exists(pubspecPath),
+      ).thenAnswer((_) async => false);
+      when(
+        () => mockFileService.exists(diArtifact.path),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockFileService.exists(routeArtifact.path),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockFileService.exists(mainAppPath),
+      ).thenAnswer((_) async => false);
+      when(
+        () => mockFileService.exists(failureXPath),
+      ).thenAnswer((_) async => false);
+      when(
+        () => mockFileService.exists(appDiPath),
+      ).thenAnswer((_) async => false);
+      when(
+        () => mockFileService.exists(appRouterPath),
+      ).thenAnswer((_) async => false);
+      // When
+      await regModuleService.registerModule(
+        param: sampleParam,
+        onProgress: (_) {},
+      );
+      // Then
+      verifyNever(() => mockFileService.readAsString(any()));
+      verifyNever(
+        () => mockFileService.writeAsString(
+          path: any(named: 'path'),
+          content: any(named: 'content'),
+        ),
+      );
+      verify(
+        () => mockRefreshService.refresh(
+          sampleParam.appPath,
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).called(1);
+    });
   });
 }

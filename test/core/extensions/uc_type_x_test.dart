@@ -3,64 +3,193 @@ import 'package:fsda_cli/domain/enums/uc_type.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('UcType & UcTypeX Tests', () {
-    test('should return correct UcType from fromValue method', () {
-      expect(UcType.fromValue('VoidUseCase'), UcType.voidUc);
-      expect(UcType.fromValue('ParamUseCase'), UcType.paramUc);
-      expect(UcType.fromValue('ReturnStreamUseCase'), UcType.returnStreamUc);
-      expect(
-        UcType.fromValue('ReturnParamSyncUseCase'),
-        UcType.returnParamSyncUc,
-      );
-      expect(UcType.fromValue('InvalidUseCase'), isNull);
+  group('UcTypeX', () {
+    group('hasReturn', () {
+      test('GIVEN UcType values with return types '
+          'WHEN hasReturn getter is accessed '
+          'THEN returns true', () {
+        // Given
+        const returnTypes = [
+          UcType.returnUc,
+          UcType.returnSyncUc,
+          UcType.returnStreamUc,
+          UcType.returnParamUc,
+          UcType.returnParamSyncUc,
+          UcType.returnParamStreamUc,
+        ];
+
+        // When & Then
+        for (final type in returnTypes) {
+          expect(
+            type.hasReturn,
+            isTrue,
+            reason: '${type.name} should have return',
+          );
+        }
+      });
+
+      test('GIVEN UcType values without return types '
+          'WHEN hasReturn getter is accessed '
+          'THEN returns false', () {
+        // Given
+        const nonReturnTypes = [
+          UcType.voidUc,
+          UcType.voidSyncUc,
+          UcType.voidStreamUc,
+          UcType.paramUc,
+          UcType.paramSyncUc,
+          UcType.paramStreamUc,
+        ];
+
+        // When & Then
+        for (final type in nonReturnTypes) {
+          expect(
+            type.hasReturn,
+            isFalse,
+            reason: '${type.name} should not have return',
+          );
+        }
+      });
     });
 
-    test('should evaluate hasReturn flag correctly for UcType', () {
-      expect(UcType.returnUc.hasReturn, isTrue);
-      expect(UcType.returnParamUc.hasReturn, isTrue);
-      expect(UcType.returnStreamUc.hasReturn, isTrue);
-      expect(UcType.returnParamStreamUc.hasReturn, isTrue);
-      expect(UcType.returnSyncUc.hasReturn, isTrue);
-      expect(UcType.returnParamSyncUc.hasReturn, isTrue);
+    group('hasParam', () {
+      test('GIVEN UcType values with parameters '
+          'WHEN hasParam getter is accessed '
+          'THEN returns true', () {
+        // Given
+        const paramTypes = [
+          UcType.paramUc,
+          UcType.paramSyncUc,
+          UcType.paramStreamUc,
+          UcType.returnParamUc,
+          UcType.returnParamSyncUc,
+          UcType.returnParamStreamUc,
+        ];
 
-      expect(UcType.voidUc.hasReturn, isFalse);
-      expect(UcType.paramUc.hasReturn, isFalse);
-      expect(UcType.voidStreamUc.hasReturn, isFalse);
-      expect(UcType.paramStreamUc.hasReturn, isFalse);
+        // When & Then
+        for (final type in paramTypes) {
+          expect(
+            type.hasParam,
+            isTrue,
+            reason: '${type.name} should have param',
+          );
+        }
+      });
+
+      test('GIVEN UcType values without parameters '
+          'WHEN hasParam getter is accessed '
+          'THEN returns false', () {
+        // Given
+        const nonParamTypes = [
+          UcType.voidUc,
+          UcType.voidSyncUc,
+          UcType.voidStreamUc,
+          UcType.returnUc,
+          UcType.returnSyncUc,
+          UcType.returnStreamUc,
+        ];
+
+        // When & Then
+        for (final type in nonParamTypes) {
+          expect(
+            type.hasParam,
+            isFalse,
+            reason: '${type.name} should not have param',
+          );
+        }
+      });
     });
 
-    test('should evaluate hasParam flag correctly for UcType', () {
-      expect(UcType.paramUc.hasParam, isTrue);
-      expect(UcType.returnParamUc.hasParam, isTrue);
-      expect(UcType.paramSyncUc.hasParam, isTrue);
-      expect(UcType.returnParamSyncUc.hasParam, isTrue);
-      expect(UcType.paramStreamUc.hasParam, isTrue);
-      expect(UcType.returnParamStreamUc.hasParam, isTrue);
+    group('isAsync', () {
+      test('GIVEN asynchronous UcType values '
+          'WHEN isAsync getter is accessed '
+          'THEN returns true', () {
+        // Given
+        const asyncTypes = [
+          UcType.voidUc,
+          UcType.paramUc,
+          UcType.returnUc,
+          UcType.returnParamUc,
+        ];
 
-      expect(UcType.voidUc.hasParam, isFalse);
-      expect(UcType.returnUc.hasParam, isFalse);
-      expect(UcType.voidSyncUc.hasParam, isFalse);
-      expect(UcType.returnSyncUc.hasParam, isFalse);
+        // When & Then
+        for (final type in asyncTypes) {
+          expect(type.isAsync, isTrue, reason: '${type.name} should be async');
+        }
+      });
+
+      test('GIVEN synchronous and stream UcType values '
+          'WHEN isAsync getter is accessed '
+          'THEN returns false', () {
+        // Given
+        const nonAsyncTypes = [
+          UcType.voidSyncUc,
+          UcType.paramSyncUc,
+          UcType.returnSyncUc,
+          UcType.returnParamSyncUc,
+          UcType.voidStreamUc,
+          UcType.paramStreamUc,
+          UcType.returnStreamUc,
+          UcType.returnParamStreamUc,
+        ];
+
+        // When & Then
+        for (final type in nonAsyncTypes) {
+          expect(
+            type.isAsync,
+            isFalse,
+            reason: '${type.name} should not be async',
+          );
+        }
+      });
     });
 
-    test('should evaluate isAsync flag correctly for UcType', () {
-      expect(UcType.voidUc.isAsync, isTrue);
-      expect(UcType.paramUc.isAsync, isTrue);
-      expect(UcType.returnUc.isAsync, isTrue);
-      expect(UcType.returnParamUc.isAsync, isTrue);
+    group('isStream', () {
+      test('GIVEN stream UcType values '
+          'WHEN isStream getter is accessed '
+          'THEN returns true', () {
+        // Given
+        const streamTypes = [
+          UcType.voidStreamUc,
+          UcType.paramStreamUc,
+          UcType.returnStreamUc,
+          UcType.returnParamStreamUc,
+        ];
 
-      expect(UcType.voidSyncUc.isAsync, isFalse);
-      expect(UcType.returnStreamUc.isAsync, isFalse);
-    });
+        // When & Then
+        for (final type in streamTypes) {
+          expect(
+            type.isStream,
+            isTrue,
+            reason: '${type.name} should be stream',
+          );
+        }
+      });
 
-    test('should evaluate isStream flag correctly for UcType', () {
-      expect(UcType.voidStreamUc.isStream, isTrue);
-      expect(UcType.paramStreamUc.isStream, isTrue);
-      expect(UcType.returnStreamUc.isStream, isTrue);
-      expect(UcType.returnParamStreamUc.isStream, isTrue);
+      test('GIVEN asynchronous and synchronous UcType values '
+          'WHEN isStream getter is accessed '
+          'THEN returns false', () {
+        // Given
+        const nonStreamTypes = [
+          UcType.voidUc,
+          UcType.paramUc,
+          UcType.returnUc,
+          UcType.returnParamUc,
+          UcType.voidSyncUc,
+          UcType.paramSyncUc,
+          UcType.returnSyncUc,
+          UcType.returnParamSyncUc,
+        ];
 
-      expect(UcType.voidUc.isStream, isFalse);
-      expect(UcType.paramSyncUc.isStream, isFalse);
+        // When & Then
+        for (final type in nonStreamTypes) {
+          expect(
+            type.isStream,
+            isFalse,
+            reason: '${type.name} should not be stream',
+          );
+        }
+      });
     });
   });
 }

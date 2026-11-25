@@ -1,95 +1,125 @@
-import 'package:fsda_cli/domain/enums/model_type.dart'; // Sesuaikan path import dengan project Anda
+import 'package:fsda_cli/domain/enums/model_type.dart';
 import 'package:fsda_cli/domain/models/prop_model.dart';
-import 'package:fsda_cli/domain/params/feature_gate_param.dart';
+import 'package:fsda_cli/domain/params/feature_param.dart';
 import 'package:fsda_cli/domain/params/model_param.dart';
+import 'package:fsda_cli/domain/params/module_param.dart';
+import 'package:fsda_cli/domain/params/workspace_param.dart';
 import 'package:test/test.dart';
 
 void main() {
   group('ModelParam', () {
-    const tFeatureGate = FeatureGateParam(
-      featureName: 'task',
-      featurePath: '/workspace/modules/todo/lib/src/features/task',
-      moduleName: 'todo',
-      modulePath: '/workspace/modules/todo',
-    );
-
-    const tProps = [
-      PropModel(name: 'id', type: 'String', defaultValue: '', converter: ''),
-      PropModel(name: 'title', type: 'String', defaultValue: '', converter: ''),
+    const sampleProps = [
+      PropModel(
+        type: 'String',
+        name: 'title',
+        defaultValue: "''",
+        converter: '',
+      ),
+      PropModel(
+        type: 'int',
+        name: 'priority',
+        defaultValue: '0',
+        converter: '',
+      ),
     ];
 
-    test(
-      'Given name, path, type, props, and isInjectL10n flag, '
-      'When ModelParam is instantiated directly via constructor, '
-      'Then it correctly holds all provided properties and inherited feature gate parameters',
-      () {
-        // Arrange (Given)
-        const name = 'TaskModel';
-        const path =
-            '/workspace/modules/todo/lib/src/features/task/domain/models/task_model.dart';
-        const type =
-            ModelType.dto; // Sesuaikan dengan enum ModelType yang tersedia
-        const isInjectL10n = true;
+    group('Primary Constructor', () {
+      test(
+        'GIVEN valid modelName, type, props, and feature hierarchy parameters without isL10n '
+        'WHEN ModelParam primary constructor is called '
+        'THEN sets isL10n to false by default and extends FeatureParam hierarchy',
+        () {
+          // Given
+          const modelName = 'task_entity';
+          const type = ModelType.entity;
+          const featureName = 'task';
+          const moduleName = 'project_management';
+          const workspaceName = 'my_workspace';
+          const workspacePath = '/projects/my_workspace';
 
-        // Act (When)
-        final modelParam = ModelParam(
-          name: name,
-          path: path,
-          type: type,
-          props: tProps,
-          isInjectL10n: isInjectL10n,
-          featureName: tFeatureGate.featureName,
-          featurePath: tFeatureGate.featurePath,
-          moduleName: tFeatureGate.moduleName,
-          modulePath: tFeatureGate.modulePath,
+          // When
+          const param = ModelParam(
+            modelName: modelName,
+            type: type,
+            props: sampleProps,
+            featureName: featureName,
+            moduleName: moduleName,
+            workspaceName: workspaceName,
+            workspacePath: workspacePath,
+          );
+
+          // Then
+          expect(param, isA<FeatureParam>());
+          expect(param, isA<ModuleParam>());
+          expect(param, isA<WorkspaceParam>());
+          expect(param.modelName, modelName);
+          expect(param.type, type);
+          expect(param.props, sampleProps);
+          expect(param.isL10n, isFalse);
+          expect(param.featureName, featureName);
+          expect(param.moduleName, moduleName);
+          expect(param.workspaceName, workspaceName);
+          expect(param.workspacePath, workspacePath);
+        },
+      );
+
+      test('GIVEN explicit isL10n set to true '
+          'WHEN ModelParam primary constructor is called '
+          'THEN stores isL10n as true accurately', () {
+        // Given & When
+        const param = ModelParam(
+          modelName: 'task_create_param',
+          type: ModelType.param,
+          props: sampleProps,
+          isL10n: true,
+          featureName: 'task',
+          moduleName: 'project_management',
+          workspaceName: 'my_workspace',
+          workspacePath: '/projects/my_workspace',
         );
 
-        // Assert (Then)
-        expect(modelParam.name, equals(name));
-        expect(modelParam.path, equals(path));
-        expect(modelParam.type, equals(type));
-        expect(modelParam.props, equals(tProps));
-        expect(modelParam.isInjectL10n, isTrue);
-        expect(modelParam.featureName, equals(tFeatureGate.featureName));
-        expect(modelParam.featurePath, equals(tFeatureGate.featurePath));
-        expect(modelParam.moduleName, equals(tFeatureGate.moduleName));
-        expect(modelParam.modulePath, equals(tFeatureGate.modulePath));
-      },
-    );
+        // Then
+        expect(param.modelName, 'task_create_param');
+        expect(param.type, ModelType.param);
+        expect(param.props, sampleProps);
+        expect(param.isL10n, isTrue);
+      });
+    });
 
-    test(
-      'Given a FeatureGateParam and model specific fields, '
-      'When ModelParam.fromFeatureGate factory is called, '
-      'Then it correctly maps all properties from the feature gate with default isInjectL10n handling',
-      () {
-        // Arrange (Given)
-        const name = 'TaskEntity';
-        const path =
-            '/workspace/modules/todo/lib/src/features/task/domain/models/task_entity.dart';
-        const type = ModelType.entity;
-        const isInjectL10n = false;
+    group('ModelParam.fromFeature Factory', () {
+      test(
+        'GIVEN a FeatureParam instance and model arguments '
+        'WHEN ModelParam.fromFeature factory is called '
+        'THEN copies feature hierarchy properties and stores all model arguments',
+        () {
+          // Given
+          const baseFeature = FeatureParam(
+            featureName: 'task',
+            moduleName: 'project_management',
+            workspaceName: 'my_workspace',
+            workspacePath: '/projects/my_workspace',
+          );
 
-        // Act (When)
-        final modelParam = ModelParam.fromFeatureGate(
-          featureGate: tFeatureGate,
-          name: name,
-          path: path,
-          type: type,
-          props: tProps,
-          isInjectL10n: isInjectL10n,
-        );
+          // When
+          final param = ModelParam.fromFeature(
+            feature: baseFeature,
+            modelName: 'task_dto',
+            type: ModelType.dto,
+            props: sampleProps,
+            isL10n: true,
+          );
 
-        // Assert (Then)
-        expect(modelParam.name, equals(name));
-        expect(modelParam.path, equals(path));
-        expect(modelParam.type, equals(type));
-        expect(modelParam.props, equals(tProps));
-        expect(modelParam.isInjectL10n, isFalse);
-        expect(modelParam.featureName, equals(tFeatureGate.featureName));
-        expect(modelParam.featurePath, equals(tFeatureGate.featurePath));
-        expect(modelParam.moduleName, equals(tFeatureGate.moduleName));
-        expect(modelParam.modulePath, equals(tFeatureGate.modulePath));
-      },
-    );
+          // Then
+          expect(param.modelName, 'task_dto');
+          expect(param.type, ModelType.dto);
+          expect(param.props, sampleProps);
+          expect(param.isL10n, isTrue);
+          expect(param.featureName, baseFeature.featureName);
+          expect(param.moduleName, baseFeature.moduleName);
+          expect(param.workspaceName, baseFeature.workspaceName);
+          expect(param.workspacePath, baseFeature.workspacePath);
+        },
+      );
+    });
   });
 }

@@ -6,238 +6,294 @@ import 'package:fsda_cli/infrastructure/templates/repositories/repo_body_common_
 import 'package:test/test.dart';
 
 void main() {
+  SequenceParam createParam({
+    Action action = Action.get,
+    String method = 'get_task_list',
+    FlowType flow = FlowType.asynchronous,
+    DsMode dsMode = DsMode.remote,
+    bool isList = false,
+    String? entity,
+    String? dto,
+    String? param,
+    String? request,
+  }) {
+    return SequenceParam(
+      action: action,
+      usecase: 'task_list_get_use_case',
+      method: method,
+      flow: flow,
+      dsMode: dsMode,
+      isList: isList,
+      entity: entity,
+      dto: dto,
+      param: param,
+      request: request,
+      featureName: 'task',
+      moduleName: 'project_management',
+      workspaceName: 'my_workspace',
+      workspacePath: '/projects/my_workspace',
+    );
+  }
+
   group('RepoBodyCommonTemplate', () {
-    // Helper untuk membuat SequenceParam dasar sesuai rule snake_case
-    SequenceParam createTestParam({
-      Action action = Action.get,
-      String usecase = 'get_user_use_case',
-      String usecasePath = 'path',
-      String method = 'get_user', // Sesuai Rules.methodRegExp (snake_case)
-      FlowType flow = FlowType.asynchronous,
-      DsMode dsMode = DsMode.remote,
-      bool isList = false,
-      String? entity,
-      String? entityPath,
-      String? param,
-      String? paramPath,
-      String? dto,
-      String? dtoPath,
-      String? request,
-      String? requestPath,
-      String? response,
-      String? responsePath,
-    }) {
-      return SequenceParam(
-        action: action,
-        usecase: usecase,
-        usecasePath: usecasePath,
-        method: method,
-        flow: flow,
-        dsMode: dsMode,
-        isList: isList,
-        entity: entity,
-        entityPath: entityPath,
-        param: param,
-        paramPath: paramPath,
-        dto: dto,
-        dtoPath: dtoPath,
-        request: request,
-        requestPath: requestPath,
-        response: response,
-        responsePath: responsePath,
-        featureName: 'user',
-        featurePath: 'user',
-        moduleName: 'core',
-        modulePath: 'core',
-      );
+    group('ReturnParam Combination (isReturnParam)', () {
+      test(
+        'GIVEN asynchronous remote SequenceParam with single entity, dto, param, and request '
+        'WHEN build is called '
+        'THEN converts param to request, awaits single dto conversion to entity, and wraps in try-catch',
+        () {
+          // Given
+          final sequence = createParam(
+            action: Action.post,
+            method: 'create_task',
+            flow: FlowType.asynchronous,
+            dsMode: DsMode.remote,
+            isList: false,
+            entity: 'task_entity',
+            dto: 'task_dto',
+            param: 'task_create_param',
+            request: 'task_create_request',
+          );
+
+          // When
+          final result = RepoBodyCommonTemplate.build(sequence);
+
+          // Then
+          expect(result, '''
+    try {
+      final request = TaskCreateRequest.fromParam(param);
+      final dto = await _remoteDataSource.createTask(request);
+      final entity = dto.toEntity();
+      return Result.success(entity);
+    } catch (e, st) {
+      return handleException('createTask', e, st);
     }
+''');
+        },
+      );
 
-    test(
-      'Given sequence param with return and param (asynchronous, single), '
-      'When building repo body, '
-      'Then it should return correct code template with request mapping and single entity conversion',
-      () {
-        // Given
-        final sequence = createTestParam(
-          method: 'get_user', // snake_case
-          flow: FlowType.asynchronous,
-          entity: 'user_entity',
-          dto: 'user_dto',
-          request: 'user_request',
-          param: 'user_param',
-          isList: false,
-        );
+      test(
+        'GIVEN synchronous local SequenceParam with List entity, dto, param, and request '
+        'WHEN build is called '
+        'THEN calls local data source without await and maps DTO list to entity list',
+        () {
+          // Given
+          final sequence = createParam(
+            action: Action.get,
+            method: 'search_cached_tasks',
+            flow: FlowType.synchronous,
+            dsMode: DsMode.local,
+            isList: true,
+            entity: 'task_entity',
+            dto: 'task_dto',
+            param: 'task_search_param',
+            request: 'task_search_request',
+          );
 
-        // When
-        final result = RepoBodyCommonTemplate.build(sequence);
+          // When
+          final result = RepoBodyCommonTemplate.build(sequence);
 
-        // Then
-        // Berdasarkan SequenceParamX, method 'get_user' dengan camelCase akan menjadi 'getUser' di pemanggilan datasource
-        expect(
-          result,
-          contains('final request = UserRequest.fromParam(param);'),
-        );
-        expect(
-          result,
-          contains('final dto = await _remoteDataSource.getUser(request);'),
-        );
-        expect(result, contains('final entity = dto.toEntity();'));
-        expect(result, contains('return Result.success(entity);'));
-        expect(result, contains("return handleException('getUser', e, st);"));
-      },
-    );
+          // Then
+          expect(result, '''
+    try {
+      final request = TaskSearchRequest.fromParam(param);
+      final dtos = _localDataSource.searchCachedTasks(request);
+      final entities = dtos.map((dto) => dto.toEntity()).toList();
+      return Result.success(entities);
+    } catch (e, st) {
+      return handleException('searchCachedTasks', e, st);
+    }
+''');
+        },
+      );
+    });
 
-    test(
-      'Given sequence param with return and param (synchronous, list), '
-      'When building repo body, '
-      'Then it should return correct code template without await and with list entities mapping',
-      () {
-        // Given
-        final sequence = createTestParam(
-          method: 'get_users', // snake_case
-          flow: FlowType.synchronous,
-          entity: 'user_entity',
-          dto: 'user_dto',
-          request: 'user_request',
-          param: 'user_param',
-          isList: true,
-        );
+    group('Return Combination (isReturn)', () {
+      test(
+        'GIVEN asynchronous remote SequenceParam with List entity and dto only '
+        'WHEN build is called '
+        'THEN awaits DTO list without request parameter and maps to entity list',
+        () {
+          // Given
+          final sequence = createParam(
+            action: Action.get,
+            method: 'get_task_list',
+            flow: FlowType.asynchronous,
+            dsMode: DsMode.remote,
+            isList: true,
+            entity: 'task_entity',
+            dto: 'task_dto',
+          );
 
-        // When
-        final result = RepoBodyCommonTemplate.build(sequence);
+          // When
+          final result = RepoBodyCommonTemplate.build(sequence);
 
-        // Then
-        expect(
-          result,
-          contains('final request = UserRequest.fromParam(param);'),
-        );
-        expect(
-          result,
-          contains('final dtos = _remoteDataSource.getUsers(request);'),
-        );
-        expect(
-          result,
-          contains(
-            'final entities = dtos.map((dto) => dto.toEntity()).toList();',
-          ),
-        );
-        expect(result, contains('return Result.success(entities);'));
-        expect(result, isNot(contains('await')));
-      },
-    );
+          // Then
+          expect(result, '''
+    try {
+      final dtos = await _remoteDataSource.getTaskList();
+      final entities = dtos.map((dto) => dto.toEntity()).toList();
+      return Result.success(entities);
+    } catch (e, st) {
+      return handleException('getTaskList', e, st);
+    }
+''');
+        },
+      );
 
-    test(
-      'Given sequence param with return only (single), '
-      'When building repo body, '
-      'Then it should return template without fromParam and with single entity conversion',
-      () {
-        // Given
-        final sequence = createTestParam(
-          method: 'get_profile', // snake_case
-          entity: 'profile_entity',
-          dto: 'profile_dto',
-          isList: false,
-        );
+      test(
+        'GIVEN synchronous local SequenceParam with single entity and dto only '
+        'WHEN build is called '
+        'THEN reads single DTO without await and converts to entity',
+        () {
+          // Given
+          final sequence = createParam(
+            action: Action.get,
+            method: 'get_cached_task',
+            flow: FlowType.synchronous,
+            dsMode: DsMode.local,
+            isList: false,
+            entity: 'task_entity',
+            dto: 'task_dto',
+          );
 
-        // When
-        final result = RepoBodyCommonTemplate.build(sequence);
+          // When
+          final result = RepoBodyCommonTemplate.build(sequence);
 
-        // Then
-        expect(result, isNot(contains('fromParam')));
-        expect(
-          result,
-          contains('final dto = await _remoteDataSource.getProfile();'),
-        );
-        expect(result, contains('final entity = dto.toEntity();'));
-        expect(result, contains('return Result.success(entity);'));
-      },
-    );
+          // Then
+          expect(result, '''
+    try {
+      final dto = _localDataSource.getCachedTask();
+      final entity = dto.toEntity();
+      return Result.success(entity);
+    } catch (e, st) {
+      return handleException('getCachedTask', e, st);
+    }
+''');
+        },
+      );
+    });
 
-    test(
-      'Given sequence param with return only (list), '
-      'When building repo body, '
-      'Then it should return template without fromParam and with list entities conversion',
-      () {
-        // Given
-        final sequence = createTestParam(
-          method: 'get_profiles', // snake_case
-          entity: 'profile_entity',
-          dto: 'profile_dto',
-          isList: true,
-        );
+    group('Param Combination (isParam)', () {
+      test(
+        'GIVEN asynchronous remote SequenceParam with param and request only '
+        'WHEN build is called '
+        'THEN converts param to request, awaits data source call, and returns const Result.success(null)',
+        () {
+          // Given
+          final sequence = createParam(
+            action: Action.delete,
+            method: 'delete_task',
+            flow: FlowType.asynchronous,
+            dsMode: DsMode.remote,
+            param: 'task_delete_param',
+            request: 'task_delete_request',
+          );
 
-        // When
-        final result = RepoBodyCommonTemplate.build(sequence);
+          // When
+          final result = RepoBodyCommonTemplate.build(sequence);
 
-        // Then
-        expect(
-          result,
-          contains('final dtos = await _remoteDataSource.getProfiles();'),
-        );
-        expect(
-          result,
-          contains(
-            'final entities = dtos.map((dto) => dto.toEntity()).toList();',
-          ),
-        );
-        expect(result, contains('return Result.success(entities);'));
-      },
-    );
+          // Then
+          expect(result, '''
+    try {
+      final request = TaskDeleteRequest.fromParam(param);
+      await _remoteDataSource.deleteTask(request);
+      return const Result.success(null);
+    } catch (e, st) {
+      return handleException('deleteTask', e, st);
+    }
+''');
+        },
+      );
 
-    test(
-      'Given sequence param with param only (no return), '
-      'When building repo body, '
-      'Then it should return template with request mapping and success null result',
-      () {
-        // Given
-        final sequence = createTestParam(
-          method: 'update_user', // snake_case
-          request: 'user_request',
-          param: 'user_param',
-        );
+      test(
+        'GIVEN synchronous local SequenceParam with param and request only '
+        'WHEN build is called '
+        'THEN converts param to request, calls local data source without await, and returns const Result.success(null)',
+        () {
+          // Given
+          final sequence = createParam(
+            action: Action.post,
+            method: 'save_task_draft',
+            flow: FlowType.synchronous,
+            dsMode: DsMode.local,
+            param: 'task_draft_param',
+            request: 'task_draft_request',
+          );
 
-        // When
-        final result = RepoBodyCommonTemplate.build(sequence);
+          // When
+          final result = RepoBodyCommonTemplate.build(sequence);
 
-        // Then
-        expect(
-          result,
-          contains('final request = UserRequest.fromParam(param);'),
-        );
-        expect(
-          result,
-          contains('await _remoteDataSource.updateUser(request);'),
-        );
-        expect(result, contains('return const Result.success(null);'));
-        expect(
-          result,
-          contains("return handleException('updateUser', e, st);"),
-        );
-      },
-    );
+          // Then
+          expect(result, '''
+    try {
+      final request = TaskDraftRequest.fromParam(param);
+      _localDataSource.saveTaskDraft(request);
+      return const Result.success(null);
+    } catch (e, st) {
+      return handleException('saveTaskDraft', e, st);
+    }
+''');
+        },
+      );
+    });
 
-    test(
-      'Given sequence param as void (no return and no param), '
-      'When building repo body, '
-      'Then it should return basic execution template with success null result',
-      () {
-        // Given
-        final sequence = createTestParam(
-          method: 'clear_cache', // snake_case
-        );
+    group('Void Combination (isVoid)', () {
+      test(
+        'GIVEN asynchronous remote SequenceParam with no models '
+        'WHEN build is called '
+        'THEN awaits parameterless data source method and returns const Result.success(null)',
+        () {
+          // Given
+          final sequence = createParam(
+            action: Action.post,
+            method: 'sync_tasks',
+            flow: FlowType.asynchronous,
+            dsMode: DsMode.remote,
+          );
 
-        // When
-        final result = RepoBodyCommonTemplate.build(sequence);
+          // When
+          final result = RepoBodyCommonTemplate.build(sequence);
 
-        // Then
-        expect(result, isNot(contains('fromParam')));
-        expect(result, contains('await _remoteDataSource.clearCache();'));
-        expect(result, contains('return const Result.success(null);'));
-        expect(
-          result,
-          contains("return handleException('clearCache', e, st);"),
-        );
-      },
-    );
+          // Then
+          expect(result, '''
+    try {
+      await _remoteDataSource.syncTasks();
+      return const Result.success(null);
+    } catch (e, st) {
+      return handleException('syncTasks', e, st);
+    }
+''');
+        },
+      );
+
+      test(
+        'GIVEN synchronous local SequenceParam with no models '
+        'WHEN build is called '
+        'THEN calls parameterless local data source method without await and returns const Result.success(null)',
+        () {
+          // Given
+          final sequence = createParam(
+            action: Action.delete,
+            method: 'clear_task_cache',
+            flow: FlowType.synchronous,
+            dsMode: DsMode.local,
+          );
+
+          // When
+          final result = RepoBodyCommonTemplate.build(sequence);
+
+          // Then
+          expect(result, '''
+    try {
+      _localDataSource.clearTaskCache();
+      return const Result.success(null);
+    } catch (e, st) {
+      return handleException('clearTaskCache', e, st);
+    }
+''');
+        },
+      );
+    });
   });
 }

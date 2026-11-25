@@ -1,8 +1,8 @@
-import '../../../domain/params/inputs/input_qty_param.dart';
+import '../../../domain/params/input_param.dart';
 import '../../text_modifiers/string_extension.dart';
 
 abstract final class InputQtyTemplate {
-  static String build(InputQtyParam input) {
+  static String build(InputParam input) {
     final featurePascal = input.featureName.pascalCase;
     final fieldPascal = input.field.pascalCase;
     final l10nKey = '${input.featureName.camelCase}Field$fieldPascal';
@@ -57,7 +57,7 @@ class $className extends StatelessWidget {
 ''';
   }
 
-  static Map<String, dynamic> buildArbEntries(InputQtyParam input) {
+  static Map<String, dynamic> buildArbEntries(InputParam input) {
     final entries = <String, dynamic>{};
     final featureCamel = input.featureName.camelCase;
     final fieldPascal = input.field.pascalCase;

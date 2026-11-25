@@ -1,5 +1,5 @@
-import '../../../core/extensions/feature_gate_param_x.dart';
-import '../../../core/extensions/module_gate_param_x.dart';
+import '../../../core/extensions/feature_param_x.dart';
+import '../../../core/extensions/module_param_x.dart';
 import '../../../core/extensions/sequence_param_x.dart';
 import '../../../domain/params/sequence_param.dart';
 
@@ -19,8 +19,12 @@ String _asyncReturnParam(SequenceParam sequence) {
       ? 'queryParameters: request.toJson(),'
       : '';
 
+  final pathLine = sequence.action == .post
+      ? 'final path = _basePath;'
+      : "final path = '\$_basePath/\${request.id}';";
+
   return '''
-    final path = '\$_basePath/\${request.id}';
+    $pathLine
     final apiResponse = await _apiClient.${sequence.apiClientMethod}(
       path,
       $queryParamStr
@@ -58,8 +62,11 @@ ${_handleReturnData(sequence).trimRight()}
 }
 
 String _asyncParam(SequenceParam sequence) {
+  final pathLine = sequence.action == .post
+      ? 'final path = _basePath;'
+      : "final path = '\$_basePath/\${request.id}';";
   return '''
-    final path = '\$_basePath/\${request.id}';
+    $pathLine
     final apiResponse = await _apiClient.${sequence.apiClientMethod}(
       path,
       body: request.toJson(),

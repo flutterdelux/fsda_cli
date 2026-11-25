@@ -15,7 +15,7 @@ This page summarizes documentation channels and behavior changes that matter for
 | `1.0.16` | Historical snapshot for CLI v1.0.16. |
 
 Use the version dropdown in the top-right navbar to switch channels.
-The current v2 prerelease (`2.0.0-dev.5`) is documented under `latest`. These notes describe prerelease behavior and may change before stable `2.0.0`.
+The current v2 prerelease (`2.0.0-dev.6`) is documented under `latest`. These notes describe prerelease behavior and may change before stable `2.0.0`.
 
 ## Migration Notes
 
@@ -27,24 +27,31 @@ The command surface was redesigned. Existing v1.1.0 scripts need migration:
 
 | v1.1.0 | v2 prerelease |
 | --- | --- |
-| `gen-slice` | Use `gen-sequence` for data-to-domain operations, `gen-logic` / `gen-logic-flow` for logic, and `gen-ui*` for UI. |
+| `gen-slice` | Use `gen-sequence` for data-to-domain operations, `gen-logic` / `gen-logic-flow` for logic, and `gen-ui` for UI. |
 | `regen-feature` | Removed; no direct replacement. |
-| `ui-main`, `ui-dialog`, `ui-form`, `ui-form-dialog`, `ui-lsh`, `ui-lsv`, `ui-pag`, `ui-pmi`, `ui-action`, `ui-sec` | Use the available `gen-ui`, `gen-ui-form`, `gen-ui-lsh`, `gen-ui-lsv`, or `gen-ui-pag` commands. Not every v1 UI variant has a direct v2 equivalent. |
-| `gen-ui ... -u <ui_code>` | `gen-ui` is now the standard UI generator and takes `--model`; form/list variants have their own commands. |
-| `compose-main`, `compose-pmi`, `compose-sec`, `compose-action`, `compose-form-dialog` | Removed; review whether `compose-r`, `compose-m`, `compose-pag`, or `compose-form` fits the intended output. |
-| `compose-*` positional/legacy options | Use `--logic-flow` and `--target`; the command may also require `--ui` or `--logic`. See the current [composition command guide](./commands/compose.md). |
-| `reg` | `reg-module`; use `reg-feature` for feature registration. |
+| `ui-main`, `ui-dialog`, `ui-form`, `ui-form-dialog`, `ui-lsh`, `ui-lsv`, `ui-pag`, `ui-pmi`, `ui-action`, `ui-sec` | Use `gen-ui` with `--type`/`-t` (`standard`, `form`, `lsh`, `lsv`, `pag`). Not every v1 UI variant has a direct v2 equivalent. |
+| `gen-ui ... -u <ui_code>` | Use `gen-ui` with `--type`/`-t` and required `--model`; form fields use repeatable `--field`. |
+| `compose-main`, `compose-pmi`, `compose-sec`, `compose-action`, `compose-form-dialog` | Replaced by `compose` with `--type` (`r`, `m`, `pag`, `form`) and `--target`. |
+| `compose-*` positional/legacy options | Use the unified `compose` command with `--logic-flow` and `--target`; retrieval, pagination, and form also take `--ui`, while form additionally takes `--logic`. See the [compose guide](./commands/compose.md). |
+| `reg-module`, `reg-feature` | Use the unified `reg` command: `fsda reg -a <app> -m <module> [-f <feature>]`. |
 | `di`, `rm-reg` | Removed from the current command surface. |
 | `list-pckg`, `add-pckg` | `pkg list`, `pkg add`; `pkg get` synchronizes configured packages and `pkg rm` removes them. |
-| `configure` (workspace package sync) | `pkg get`. |
+| `configure` (workspace package sync) | `pkg get`. `configure -a <app>` now configures an app's infrastructure packages and DI. |
+| `gen-app`, `gen-module`, `gen-feature`, `gen-failure` | Use grouped commands: `gen -a <app>`, `gen -m <module>`, `gen -m <module> -f <feature>`, or `gen -m <module> --failure <name:message>`. |
+| `rm-feature` | `rm -m <module> -f <feature>`. |
 
 Additional migration details:
 
-- Form UI generation now requires `--model` and one or more repeatable `--field "input_type:value_type:field_name[:default]"` options. Update scripts using the v1 `--fields` format.
-- Compose commands generate the app-side artifact but do not synchronize module routes. Add or update route wiring in the app separately.
+- Form UI generation now uses `gen-ui -t form`, requires `--model`, and accepts one or more repeatable `--field "input_type:value_type:field_name[:default]"` options. Update scripts using the v1 `--fields` format.
+- Workspace configuration moved from root `fsda.yaml` to `.fsda/config.yaml`; plans are stored below `.fsda/plans/`.
+- `plan` scaffolds YAML plan files for app composition, module failures, feature generation, or slice generation. Use `--example` to populate a template with an example.
+- `apply <path>` validates and applies one plan file through the same underlying generation services. Applying feature/slice plans auto-creates missing parent module/feature structures and skips existing artifacts where supported; review the operation report and inspect partial changes before reapplying a plan that failed midway.
+- App plans compose wrappers only. The app, module/feature registration, and source logic/UI slices must already exist.
+- Compose commands generate app-side artifacts but do not synchronize routes. Add or update route wiring in the app separately.
+- App/module/feature/failure generators are grouped under `gen`; app/module registration is grouped under `reg`. Use the live CLI help for the exact options of each branch.
 - New modeling and sequence workflows are available through `gen-model` / `rm-model` and `gen-sequence` / `rm-sequence`.
 - Maintenance operations are available as `drb`, `l10n`, `rebuild`, `refresh`, and `fix-import`, targeting modules, apps, or both where supported.
-- The v2 generated templates still use Flutter's SDK Material imports. Migration to the standalone `material_ui` / `cupertino_ui` packages is not part of this prerelease; check the migration notes for the release that introduces it before changing generated projects.
+- `gen-app` now requires app names in `snake_case`; use `--title` for the display name (`--name` is no longer the option).
 
 ### Upgrading from v1.0.x to v1.1.0
 

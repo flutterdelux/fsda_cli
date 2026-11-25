@@ -1,8 +1,8 @@
-import '../../../domain/params/inputs/input_password_param.dart';
+import '../../../domain/params/input_param.dart';
 import '../../text_modifiers/string_extension.dart';
 
 abstract final class InputPasswordTemplate {
-  static String build(InputPasswordParam input) {
+  static String build(InputParam input) {
     final featurePascal = input.featureName.pascalCase;
     final fieldPascal = input.field.pascalCase;
     final l10nKey = '${input.featureName.camelCase}Field$fieldPascal';
@@ -73,7 +73,7 @@ class $stateClassName extends State<$className> {
 ''';
   }
 
-  static Map<String, dynamic> buildArbEntries(InputPasswordParam input) {
+  static Map<String, dynamic> buildArbEntries(InputParam input) {
     final entries = <String, dynamic>{};
     final featureCamel = input.featureName.camelCase;
     final fieldPascal = input.field.pascalCase;

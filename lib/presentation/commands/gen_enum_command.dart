@@ -1,10 +1,10 @@
-import 'package:path/path.dart' as p;
-
-import '../../core/constants/rules.dart';
+import '../../core/extensions/arg_results_x.dart';
+import '../../core/extensions/enum_param_x.dart';
 import '../../domain/params/enum_param.dart';
-import '../../domain/params/feature_gate_param.dart';
+import '../../domain/params/feature_param.dart';
 import '../../infrastructure/services/enum_service.dart';
 import '../../infrastructure/services/helpers/file_service.dart';
+import '../resolvers/enum_resolver.dart';
 import 'wrapper/feature_gate_command.dart';
 
 class GenEnumCommand extends FeatureGateCommand {
@@ -21,13 +21,18 @@ class GenEnumCommand extends FeatureGateCommand {
   }) : _enumService = enumService,
        _fileService = fileService {
     argParser.addOption(
-      'values',
+      EnumResolverKeys.name,
+      abbr: 'n',
+      help: 'Name of the enum in PascalCase (e.g., UserRole).',
+    );
+    argParser.addOption(
+      EnumResolverKeys.values,
       abbr: 'v',
       help:
-          'Comma-separated enum values (e.g., --values cashier,admin_backoffice,owner).',
+          'Comma-separated enum values (e.g., --values "cashier,admin_backoffice,owner").',
     );
     argParser.addFlag(
-      'lower',
+      EnumResolverKeys.isLower,
       negatable: false,
       help:
           "Set value converter as lower constanta (snake case) such as 'in_progress'. If not using upper constanta such as 'IN_PROGRESS'.",
@@ -44,86 +49,45 @@ class GenEnumCommand extends FeatureGateCommand {
 
   @override
   String get invocation =>
-      'fsda gen-enum <name> --values <value_1>,<value_2>,... -f <feature> -m <module>';
+      'fsda $name -n <name> -v "<value_1>,<value_2>,..." -f <feature> -m <module>';
 
   @override
-  Future<int> handleFeatureGate(FeatureGateParam featureGateParam) async {
-    final rest = argResults?.rest;
-    if (rest == null || rest.isEmpty) {
-      logger.error('Enum name is required.');
+  bool get featureShouldExists => true;
+
+  @override
+  Future<int> handleFeatureGate(FeatureParam feature) async {
+    EnumParam param;
+
+    try {
+      param = EnumResolver.resolve(
+        feature: feature,
+        data: argResults?.toMap() ?? {},
+      );
+    } catch (e) {
+      logger.error(e is FormatException ? e.message : e.toString());
       logger.log('Usage: $invocation');
       return errorUsage;
     }
 
-    if (rest.length > 1) {
-      logger.error('Invalid enum name: "$rest".');
-      logger.log(Rules.enumDescription);
-      logger.log('Usage: $invocation');
-      return errorUsage;
-    }
-
-    final enumName = rest.first;
-    if (!Rules.enumRegExp.hasMatch(enumName)) {
-      logger.error('Invalid enum name: "$enumName".');
-      logger.log(Rules.enumDescription);
-      logger.log('Usage: $invocation');
-      return errorUsage;
-    }
-
-    final values = argResults?['values'] as String?;
-
-    if (values == null || values.isEmpty) {
-      logger.error('Missing required arguments.\nUsage: $invocation');
-      return errorUsage;
-    }
-
-    final cleanValues = values
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
-
-    if (cleanValues.isEmpty) {
-      logger.error('At least one enum value is required.');
-      return errorUsage;
-    }
-
-    final isLower = argResults?['lower'] as bool;
-
-    final enumPath = p.join(
-      featureGateParam.featurePath,
-      'domain',
-      'enums',
-      '$enumName.dart',
-    );
-    if (await _fileService.exists(enumPath)) {
-      logger.error('Enum "$enumName" already exists at $enumPath');
+    if (await _fileService.exists(param.enumPath)) {
+      logger.error(
+        'Enum "${param.enumName}" already exists at ${param.enumPath}',
+      );
       logger.log('Usage: $invocation');
       return errorUsage;
     }
 
     final progress = logger.progress(
-      'Generating enum "$enumName" in feature "${featureGateParam.featureName}" (${featureGateParam.moduleName})...',
-    );
-
-    final enumParam = EnumParam(
-      name: enumName,
-      path: enumPath,
-      values: cleanValues,
-      isLower: isLower,
-      featureName: featureGateParam.featureName,
-      featurePath: featureGateParam.featurePath,
-      moduleName: featureGateParam.moduleName,
-      modulePath: featureGateParam.modulePath,
+      'Generating enum "${param.enumName}" in "${feature.moduleName}/${feature.featureName}"...',
     );
 
     try {
-      await _enumService.generateEnum(
-        enumParam: enumParam,
+      await _enumService.generate(
+        enumParam: param,
         onProgress: (msg) => progress.update(msg),
       );
 
-      progress.complete('Enum "$enumName" successfully generated!');
+      progress.complete('Enum "${param.enumName}" successfully generated!');
 
       final reportBuffer = reportService.generateReport(
         operationLabel: 'Enum Generation Summary',
@@ -132,7 +96,7 @@ class GenEnumCommand extends FeatureGateCommand {
 
       return successCode;
     } catch (e) {
-      progress.fail('Failed to generate enum $enumName: $e');
+      progress.fail('Failed to generate enum ${param.enumName}: $e');
       return errorSystem;
     }
   }

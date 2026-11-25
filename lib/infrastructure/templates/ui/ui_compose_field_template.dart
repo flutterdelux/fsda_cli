@@ -6,7 +6,7 @@ abstract final class UiComposeFieldTemplate {
     final valueType = formField.valueType.replaceAll('?', '');
     final fieldPascal = formField.fieldName.pascalCase;
     return switch (formField.inputType) {
-      .selector || .selectorList || .image =>
+      .selector || .image =>
         '''
   final Future<$valueType?> Function(
     BuildContext context,
@@ -21,7 +21,7 @@ abstract final class UiComposeFieldTemplate {
   static String param(FormFieldModel formField) {
     final fieldPascal = formField.fieldName.pascalCase;
     return switch (formField.inputType) {
-      .selector || .selectorList || .image => '    this.onSelect$fieldPascal,',
+      .selector || .image => '    this.onSelect$fieldPascal,',
       _ => '',
     };
   }
@@ -29,12 +29,7 @@ abstract final class UiComposeFieldTemplate {
   static String variable(FormFieldModel formField) {
     final fieldCamel = formField.fieldName.camelCase;
     return switch (formField.inputType) {
-      .dropdown ||
-      .dropdownEnum ||
-      .image ||
-      .selector ||
-      .selectorList ||
-      .swich =>
+      .dropdown || .dropdownEnum || .image || .selector || .swich =>
         "  late final ValueNotifier<${formField.valueType}> _${fieldCamel}Notifier;",
       .number || .password || .qty || .text || .textArea =>
         "  late final TextEditingController _${fieldCamel}Controller;",
@@ -53,12 +48,7 @@ abstract final class UiComposeFieldTemplate {
 
     if (initialValue != null) {
       return switch (formField.inputType) {
-        .dropdown ||
-        .dropdownEnum ||
-        .image ||
-        .selector ||
-        .selectorList ||
-        .swich =>
+        .dropdown || .dropdownEnum || .image || .selector || .swich =>
           '''
     _${fieldCamel}Notifier = ValueNotifier<$valueType>($initialValue)
       ..addListener(_onInputChanged);
@@ -72,12 +62,7 @@ abstract final class UiComposeFieldTemplate {
     }
 
     return switch (formField.inputType) {
-      .dropdown ||
-      .dropdownEnum ||
-      .image ||
-      .selector ||
-      .selectorList ||
-      .swich =>
+      .dropdown || .dropdownEnum || .image || .selector || .swich =>
         '''
     _${fieldCamel}Notifier = ValueNotifier<$valueType?>(null)
       ..addListener(_onInputChanged);
@@ -93,12 +78,7 @@ abstract final class UiComposeFieldTemplate {
   static String dispose(FormFieldModel formField) {
     final fieldCamel = formField.fieldName.camelCase;
     return switch (formField.inputType) {
-      .dropdown ||
-      .dropdownEnum ||
-      .image ||
-      .selector ||
-      .selectorList ||
-      .swich =>
+      .dropdown || .dropdownEnum || .image || .selector || .swich =>
         '''
     _${fieldCamel}Notifier
       ..removeListener(_onInputChanged)
@@ -123,12 +103,7 @@ abstract final class UiComposeFieldTemplate {
     final fieldPascal = formField.fieldName.pascalCase;
     final hasDefault = formField.defaultValue != null || hasInitial;
     return switch (formField.inputType) {
-      .dropdown ||
-      .dropdownEnum ||
-      .image ||
-      .selector ||
-      .selectorList ||
-      .swich => [
+      .dropdown || .dropdownEnum || .image || .selector || .swich => [
         '    final $fieldCamel = _${fieldCamel}Notifier.value;',
         if (!hasDefault)
           '''
@@ -172,7 +147,7 @@ abstract final class UiComposeFieldTemplate {
     final fieldPascal = formField.fieldName.pascalCase;
     final featurePascal = feature.pascalCase;
     return switch (formField.inputType) {
-      .selector || .selectorList || .image =>
+      .selector || .image =>
         '''
         ValueListenableBuilder<$valueType>(
           valueListenable: _${fieldCamel}Notifier,

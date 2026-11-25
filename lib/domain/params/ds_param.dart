@@ -1,17 +1,14 @@
 import '../enums/ds_mode.dart';
+import 'feature_param.dart';
 
-class DsParam {
-  final String featureName;
-  final String featurePath;
-  final String moduleName;
-  final String modulePath;
+class DsParam extends FeatureParam {
   final DsMode mode;
 
   const DsParam({
-    required this.featureName,
-    required this.featurePath,
-    required this.moduleName,
-    required this.modulePath,
     required this.mode,
+    required super.featureName,
+    required super.moduleName,
+    required super.workspaceName,
+    required super.workspacePath,
   });
 }

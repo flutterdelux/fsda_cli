@@ -8,7 +8,9 @@ enum DsMode {
 
   const DsMode(this.value);
 
-  static DsMode? fromValue(String value) {
+  static DsMode? tryParse(String value) {
     return values.firstWhereOrNull((e) => e.value == value);
   }
+
+  static String get available => values.map((e) => e.value).join(', ');
 }

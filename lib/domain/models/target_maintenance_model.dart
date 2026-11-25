@@ -1,4 +1,4 @@
-import '../enums/maintenancee_type.dart';
+import '../enums/maintenance_type.dart';
 
 class TargetMaintenanceModel {
   final MaintenanceType type;

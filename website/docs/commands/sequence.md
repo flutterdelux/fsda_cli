@@ -10,7 +10,7 @@ These commands manage and wire complete data-to-domain operation sequences acros
 ## gen-sequence
 
 ```bash
-fsda gen-sequence <action> -f <feature> -m <module> --uc <usecase> -d <method> [--flow <flow_type>] [--ds <mode>] [--list] [--models <models_list>]
+fsda gen-sequence -f <feature> -m <module> --act <action> --uc <usecase> -d <method> [--flow <flow_type>] [--ds <mode>] [--list] [--model <model> ...]
 ```
 
 Generates and wires a complete data-to-domain operation sequence in a single execution. It automatically injects the required method signatures/bodies, resolves and sorts model imports, generates localization strings, and updates barrel files.
@@ -25,7 +25,7 @@ The sequence command accepts standard HTTP-like action verbs as the primary argu
 * **`patch`**: Typically used for partial resource updates.
 * **`delete`**: Typically used for removing resources or clearing local data.
 
-### Model Combinations (`--models`)
+### Model Combinations (`--model`)
 
 Models are specified using flexible suffix-based identifiers (`_response`, `_dto`, `_entity`, `_request`, `_param`). They can be listed in **any order**, and each suffix can only be specified **at most once per command**.
 
@@ -40,29 +40,30 @@ Depending on the operation type, different model combinations are supported:
 
 ```bash
 # Post with Return and Param models
-fsda gen-sequence post -f task -m todo --uc task_create_use_case -d create_task --models task_create_response, task_dto, task_entity, task_create_request, task_create_param
+fsda gen-sequence -f task -m todo --act post --uc task_create_use_case -d create_task --model task_create_response --model task_dto --model task_entity --model task_create_request --model task_create_param
 
 # Get with List flag and Return models
-fsda gen-sequence get -f task -m todo --uc task_list_use_case -d get_task_list --list --models task_list_response, task_dto, task_entity
+fsda gen-sequence -f task -m todo --act get --uc task_list_use_case -d get_task_list --list --model task_list_response --model task_dto --model task_entity
 
 # Void action targeting local data source
-fsda gen-sequence delete -f note -m todo --uc note_clear_use_case -d clear_note --ds local
+fsda gen-sequence -f note -m todo --act delete --uc note_clear_use_case -d clear_note --ds local
 ```
 
 ### Options
 
 * `-f`, `--feature <name>`: **(Required)** Target feature name under `lib/src/features/`.
 * `-m`, `--module <name>`: **(Required)** Target module name under `modules/`.
+* `--act <action>`: **(Required)** Operation action: `post`, `get`, `put`, `patch`, or `delete`.
 * `--uc <usecase>`: **(Required)** Use case name in strict `snake_case` ending with `_use_case` (e.g., `task_create_use_case`).
 * `-d`, `--method <name>`: **(Required)** Repository and data source method name in strict `snake_case` (e.g., `create_task`).
 * `--flow <flow_type>`: *(Optional)* Execution flow type. Allowed values: `async` (default), `sync`, or `stream`.
 * `--ds <mode>`: *(Optional)* Data source mode. Allowed values: `remote` (default) or `local`.
 * `--list`: *(Optional)* Flag indicating if the return type is a `List` of entities or DTOs.
-* `--models <models>`: *(Optional)* Comma-separated list of model files matching the suffix rules (`_response`, `_dto`, `_entity`, `_request`, `_param`).
+* `--model <model>`: *(Optional, repeatable)* Model name. Provide one flag per model, using a supported suffix (`_response`, `_dto`, `_entity`, `_request`, `_param`).
 
 ### Workspace Guard
 
-Must be executed inside an FSDA workspace root directory where `fsda.yaml` is present.
+Must be executed inside an FSDA workspace root directory where `.fsda/config.yaml` is present.
 
 ### What Happens
 
@@ -97,7 +98,7 @@ Removes an existing data-to-domain sequence by cleaning up associated use cases,
 
 ### Workspace Guard
 
-Must be executed inside an FSDA workspace root directory where `fsda.yaml` is present.
+Must be executed inside an FSDA workspace root directory where `.fsda/config.yaml` is present.
 
 ### What Happens
 

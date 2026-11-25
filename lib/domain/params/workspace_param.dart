@@ -1,6 +1,9 @@
 class WorkspaceParam {
-  final String name;
-  final String path;
+  final String workspaceName;
+  final String workspacePath;
 
-  const WorkspaceParam({required this.name, required this.path});
+  const WorkspaceParam({
+    required this.workspaceName,
+    required this.workspacePath,
+  });
 }

@@ -3,10 +3,10 @@ id: commands-feature
 title: Feature
 ---
 
-## gen-feature
+## Generate a feature
 
 ```bash
-fsda gen-feature <feature> -m <module>
+fsda gen -m <module> -f <feature>
 ```
 
 Generates a complete FSDA Architecture feature layer structure automatically inside the target module directory (`modules/<module>/lib/src/features/`).
@@ -22,7 +22,7 @@ Generates a complete FSDA Architecture feature layer structure automatically ins
 
 ### Workspace Guard
 
-Must be executed inside an FSDA workspace root directory where `fsda.yaml` is present. If executed outside, the command will abort immediately with an error.
+Must be executed inside an FSDA workspace root directory where `.fsda/config.yaml` is present. If executed outside, the command will abort immediately with an error.
 
 ### What Happens
 
@@ -44,10 +44,10 @@ Must be executed inside an FSDA workspace root directory where `fsda.yaml` is pr
 
 ---
 
-## rm-feature
+## Remove a feature
 
 ```bash
-fsda rm-feature <feature> -m <module>
+fsda rm -m <module> -f <feature>
 ```
 
 Removes an existing FSDA Architecture feature structure and cleans up all associated configurations from a target module.
@@ -64,7 +64,7 @@ Removes an existing FSDA Architecture feature structure and cleans up all associ
 
 ### Workspace Guard
 
-Must be executed inside an FSDA workspace root directory where `fsda.yaml` is present. If executed outside, the command will abort immediately with an error.
+Must be executed inside an FSDA workspace root directory where `.fsda/config.yaml` is present. If executed outside, the command will abort immediately with an error.
 
 ### What Happens
 

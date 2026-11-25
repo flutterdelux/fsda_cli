@@ -3,236 +3,287 @@ import 'package:fsda_cli/core/constants/cli_info.dart';
 import 'package:fsda_cli/infrastructure/services/helpers/config_service.dart';
 import 'package:fsda_cli/infrastructure/services/helpers/directory_service.dart';
 import 'package:fsda_cli/infrastructure/services/helpers/file_service.dart';
-import 'package:fsda_cli/infrastructure/templates/config_template.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
+import 'package:yaml/yaml.dart';
 
 class MockDirectoryService extends Mock implements DirectoryService {}
 
 class MockFileService extends Mock implements FileService {}
 
 void main() {
-  late ConfigService configService;
   late MockDirectoryService mockDirectoryService;
   late MockFileService mockFileService;
+  late ConfigService configService;
 
-  const currentPath = '/mock/path';
+  const workspacePath = '/projects/my_workspace';
+  final expectedFsdaDirPath = p.join(workspacePath, '.fsda');
+  final expectedPlansDirPath = p.join(expectedFsdaDirPath, 'plans');
+  final expectedConfigPath = p.join(expectedFsdaDirPath, 'config.yaml');
 
   setUp(() {
     mockDirectoryService = MockDirectoryService();
     mockFileService = MockFileService();
-
-    when(() => mockDirectoryService.currentPath).thenReturn(currentPath);
-
     configService = ConfigService(
       directoryService: mockDirectoryService,
       fileService: mockFileService,
     );
+
+    when(() => mockDirectoryService.currentPath).thenReturn(workspacePath);
+    when(
+      () => mockFileService.writeAsString(
+        path: any(named: 'path'),
+        content: any(named: 'content'),
+      ),
+    ).thenAnswer((_) async {});
   });
 
-  group('ConfigService Tests', () {
-    test(
-      'validateWorkspaceRoot should return true if fsda.yaml exists',
-      () async {
-        when(
-          () => mockFileService.exists('/mock/path/fsda.yaml'),
-        ).thenAnswer((_) async => true);
+  group('ConfigService', () {
+    group('Path Getters', () {
+      test('GIVEN current workspace directory '
+          'WHEN fsdaDirPath, plansDirPath, and configPath are accessed '
+          'THEN returns paths under .fsda directory', () {
+        // When & Then
+        expect(configService.fsdaDirPath, expectedFsdaDirPath);
+        expect(configService.plansDirPath, expectedPlansDirPath);
+        expect(configService.configPath, expectedConfigPath);
+      });
+    });
 
-        final result = await configService.validateWorkspaceRoot;
-        expect(result, isTrue);
-      },
-    );
+    group('fsdaWorkspace', () {
+      test(
+        'GIVEN .fsda/config.yaml exists in current directory '
+        'WHEN fsdaWorkspace is accessed '
+        'THEN returns WorkspaceParam with workspaceName and workspacePath',
+        () async {
+          // Given
+          when(
+            () => mockFileService.exists(expectedConfigPath),
+          ).thenAnswer((_) async => true);
 
-    test(
-      'loadConfig should throw exception if workspace root is not valid',
-      () async {
+          // When
+          final result = await configService.fsdaWorkspace;
+
+          // Then
+          expect(result, isNotNull);
+          expect(result!.workspaceName, 'my_workspace');
+          expect(result.workspacePath, workspacePath);
+        },
+      );
+
+      test('GIVEN .fsda/config.yaml does not exist in current directory '
+          'WHEN fsdaWorkspace is accessed '
+          'THEN returns null', () async {
+        // Given
         when(
-          () => mockFileService.exists('/mock/path/fsda.yaml'),
+          () => mockFileService.exists(expectedConfigPath),
         ).thenAnswer((_) async => false);
 
-        expect(() => configService.loadConfig(), throwsException);
-      },
-    );
+        // When
+        final result = await configService.fsdaWorkspace;
 
-    test('loadConfig should parse full valid config correctly', () async {
-      when(
-        () => mockFileService.exists('/mock/path/fsda.yaml'),
-      ).thenAnswer((_) async => true);
-
-      const yamlContent = '''
-workspace: 'my_workspace'
-fsda_cli: '1.0.0'
-sdk_version: '3.0.0'
-packages:
-  - 'pkg_a'
-  - 'pkg_b'
-android:
-  compile_sdk: 34
-  min_sdk: 21
-  target_sdk: 34
-''';
-
-      when(
-        () => mockFileService.readAsString('/mock/path/fsda.yaml'),
-      ).thenAnswer((_) async => yamlContent);
-
-      final config = await configService.loadConfig();
-
-      expect(config.workspaceName, 'my_workspace');
-      expect(config.workspacePath, currentPath);
-      expect(config.cliVersion, '1.0.0');
-      expect(config.sdkVersion, '3.0.0');
-      expect(config.activePackages, ['pkg_a', 'pkg_b']);
-      expect(config.android.compileSdk, 34);
-      expect(config.android.minSdk, 21);
-      expect(config.android.targetSdk, 34);
+        // Then
+        expect(result, isNull);
+      });
     });
 
-    test(
-      'loadConfig should use defaults when optional fields are missing',
-      () async {
-        when(
-          () => mockFileService.exists('/mock/path/fsda.yaml'),
-        ).thenAnswer((_) async => true);
+    group('loadConfig', () {
+      test(
+        'GIVEN .fsda/config.yaml does not exist '
+        'WHEN loadConfig is called '
+        'THEN throws an Exception indicating not inside an FSDA workspace',
+        () async {
+          // Given
+          when(
+            () => mockFileService.exists(expectedConfigPath),
+          ).thenAnswer((_) async => false);
 
+          // When & Then
+          expect(
+            () => configService.loadConfig(),
+            throwsA(
+              isA<Exception>().having(
+                (e) => e.toString(),
+                'message',
+                contains(
+                  'Not inside an FSDA workspace. File ".fsda/config.yaml" was not found.',
+                ),
+              ),
+            ),
+          );
+        },
+      );
+
+      test('GIVEN valid .fsda/config.yaml with all fields defined '
+          'WHEN loadConfig is called '
+          'THEN parses and returns complete ConfigModel accurately', () async {
+        // Given
         const yamlContent = '''
-workspace: 'my_workspace'
+name: my_workspace
+fsda_cli: "1.2.0"
+dart_sdk: "^3.8.0"
+android:
+  min_sdk: 23
+  target_sdk: 35
+  compile_sdk: 35
+packages:
+  - app_core
+  - app_l10n
+  - app_network
 ''';
-
         when(
-          () => mockFileService.readAsString('/mock/path/fsda.yaml'),
+          () => mockFileService.exists(expectedConfigPath),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockFileService.readAsString(expectedConfigPath),
         ).thenAnswer((_) async => yamlContent);
 
+        // When
         final config = await configService.loadConfig();
 
+        // Then
         expect(config.workspaceName, 'my_workspace');
-        expect(config.cliVersion, '');
-        expect(config.sdkVersion, CliInfo.sdkVersion);
-        expect(config.activePackages, isEmpty);
-        expect(config.android.compileSdk, AppConfig.androidCompileSdk);
-        expect(config.android.minSdk, AppConfig.androidMinSdk);
-        expect(config.android.targetSdk, AppConfig.androidTargetSdk);
-      },
-    );
+        expect(config.workspacePath, workspacePath);
+        expect(config.cliVersion, '1.2.0');
+        expect(config.dartSdk, '^3.8.0');
+        expect(config.activePackages, ['app_core', 'app_l10n', 'app_network']);
+        expect(config.android.minSdk, 23);
+        expect(config.android.targetSdk, 35);
+        expect(config.android.compileSdk, 35);
+      });
 
-    test('addPackages should add and sort packages correctly', () async {
-      when(
-        () => mockFileService.exists('/mock/path/fsda.yaml'),
-      ).thenAnswer((_) async => true);
+      test(
+        'GIVEN minimal or empty .fsda/config.yaml without optional fields '
+        'WHEN loadConfig is called '
+        'THEN falls back to CliInfo.dartSdk and AppConfig default values',
+        () async {
+          // Given
+          when(
+            () => mockFileService.exists(expectedConfigPath),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockFileService.readAsString(expectedConfigPath),
+          ).thenAnswer((_) async => '');
 
-      final mandatoryPkg = ConfigTemplate.mandatoryPackages.isNotEmpty
-          ? ConfigTemplate.mandatoryPackages.first
-          : 'core';
+          // When
+          final config = await configService.loadConfig();
 
-      final yamlContent =
-          '''
-workspace: 'my_workspace'
-packages:
-  - '$mandatoryPkg'
-  - 'beta_pkg'
-''';
-
-      when(
-        () => mockFileService.readAsString('/mock/path/fsda.yaml'),
-      ).thenAnswer((_) async => yamlContent);
-      when(
-        () => mockFileService.writeAsString(
-          path: any(named: 'path'),
-          content: any(named: 'content'),
-        ),
-      ).thenAnswer((_) async => {});
-
-      await configService.addPackages(['alpha_pkg']);
-
-      verify(
-        () => mockFileService.writeAsString(
-          path: '/mock/path/fsda.yaml',
-          content: any(named: 'content'),
-        ),
-      ).called(1);
+          // Then
+          expect(config.cliVersion, '');
+          expect(config.dartSdk, CliInfo.dartSdk);
+          expect(config.activePackages, isEmpty);
+          expect(config.android.minSdk, AppConfig.androidMinSdk);
+          expect(config.android.targetSdk, AppConfig.androidTargetSdk);
+          expect(config.android.compileSdk, AppConfig.androidCompileSdk);
+        },
+      );
     });
 
-    test(
-      'removePackages should remove and sort remaining packages correctly',
-      () async {
-        when(
-          () => mockFileService.exists('/mock/path/fsda.yaml'),
-        ).thenAnswer((_) async => true);
-
-        final mandatoryPkg = ConfigTemplate.mandatoryPackages.isNotEmpty
-            ? ConfigTemplate.mandatoryPackages.first
-            : 'core';
-
-        final yamlContent =
-            '''
-workspace: 'my_workspace'
+    group('addPackages', () {
+      test(
+        'GIVEN existing packages in .fsda/config.yaml '
+        'WHEN addPackages is called with new and duplicate packages '
+        'THEN deduplicates, prioritizes mandatoryPackages order, sorts optional packages alphabetically, and writes updated yaml',
+        () async {
+          // Given
+          const initialYaml = '''
+name: my_workspace
+fsda_cli: "1.0.0"
 packages:
-  - '$mandatoryPkg'
-  - 'beta_pkg'
-  - 'alpha_pkg'
+  - app_ui
+  - zebra_pkg
 ''';
+          when(
+            () => mockFileService.exists(expectedConfigPath),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockFileService.readAsString(expectedConfigPath),
+          ).thenAnswer((_) async => initialYaml);
 
-        when(
-          () => mockFileService.readAsString('/mock/path/fsda.yaml'),
-        ).thenAnswer((_) async => yamlContent);
-        when(
-          () => mockFileService.writeAsString(
-            path: any(named: 'path'),
-            content: any(named: 'content'),
-          ),
-        ).thenAnswer((_) async => {});
+          // When
+          await configService.addPackages([
+            'alpha_pkg',
+            'app_core',
+            'app_l10n',
+            'zebra_pkg',
+          ]);
 
-        await configService.removePackages(['beta_pkg']);
+          // Then
+          final captured =
+              verify(
+                    () => mockFileService.writeAsString(
+                      path: expectedConfigPath,
+                      content: captureAny(named: 'content'),
+                    ),
+                  ).captured.single
+                  as String;
 
-        verify(
-          () => mockFileService.writeAsString(
-            path: '/mock/path/fsda.yaml',
-            content: any(named: 'content'),
-          ),
-        ).called(1);
-      },
-    );
+          final updatedYaml = loadYaml(captured) as YamlMap;
+          final updatedPackages = (updatedYaml['packages'] as YamlList)
+              .map((e) => e.toString())
+              .toList();
 
-    test(
-      'should sort multiple mandatory packages correctly when both are mandatory',
-      () async {
-        when(
-          () => mockFileService.exists('/mock/path/fsda.yaml'),
-        ).thenAnswer((_) async => true);
+          expect(updatedPackages, [
+            'app_core',
+            'app_l10n',
+            'app_ui',
+            'alpha_pkg',
+            'zebra_pkg',
+          ]);
+        },
+      );
+    });
 
-        // Ambil setidaknya 2 paket wajib jika tersedia untuk memicu perbandingan indexA.compareTo(indexB)
-        if (ConfigTemplate.mandatoryPackages.length >= 2) {
-          final pkg1 = ConfigTemplate.mandatoryPackages[1];
-          final pkg2 = ConfigTemplate.mandatoryPackages[0];
-
-          final yamlContent =
-              '''
-workspace: 'my_workspace'
+    group('removePackages', () {
+      test(
+        'GIVEN existing packages in .fsda/config.yaml '
+        'WHEN removePackages is called '
+        'THEN removes target packages, keeps remaining packages sorted, and writes updated yaml',
+        () async {
+          // Given
+          const initialYaml = '''
+name: my_workspace
+fsda_cli: "1.0.0"
 packages:
-  - '$pkg1'
-  - '$pkg2'
+  - app_core
+  - app_l10n
+  - app_ui
+  - alpha_pkg
+  - zebra_pkg
 ''';
-
           when(
-            () => mockFileService.readAsString('/mock/path/fsda.yaml'),
-          ).thenAnswer((_) async => yamlContent);
+            () => mockFileService.exists(expectedConfigPath),
+          ).thenAnswer((_) async => true);
           when(
-            () => mockFileService.writeAsString(
-              path: any(named: 'path'),
-              content: any(named: 'content'),
-            ),
-          ).thenAnswer((_) async => {});
+            () => mockFileService.readAsString(expectedConfigPath),
+          ).thenAnswer((_) async => initialYaml);
 
-          await configService.addPackages(['extra_pkg']);
+          // When
+          await configService.removePackages([
+            'app_l10n',
+            'alpha_pkg',
+            'non_existent',
+          ]);
 
-          verify(
-            () => mockFileService.writeAsString(
-              path: '/mock/path/fsda.yaml',
-              content: any(named: 'content'),
-            ),
-          ).called(1);
-        }
-      },
-    );
+          // Then
+          final captured =
+              verify(
+                    () => mockFileService.writeAsString(
+                      path: expectedConfigPath,
+                      content: captureAny(named: 'content'),
+                    ),
+                  ).captured.single
+                  as String;
+
+          final updatedYaml = loadYaml(captured) as YamlMap;
+          final updatedPackages = (updatedYaml['packages'] as YamlList)
+              .map((e) => e.toString())
+              .toList();
+
+          expect(updatedPackages, ['app_core', 'app_ui', 'zebra_pkg']);
+        },
+      );
+    });
   });
 }

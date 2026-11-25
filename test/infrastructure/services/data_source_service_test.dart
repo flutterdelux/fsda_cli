@@ -5,7 +5,10 @@ import 'package:fsda_cli/infrastructure/services/helpers/export_service.dart';
 import 'package:fsda_cli/infrastructure/services/helpers/file_service.dart';
 import 'package:fsda_cli/infrastructure/services/helpers/import_service.dart';
 import 'package:fsda_cli/infrastructure/services/helpers/operation_report_service.dart';
+import 'package:fsda_cli/infrastructure/templates/datasources/data_source_template.dart';
+import 'package:fsda_cli/infrastructure/templates/repositories/repository_template.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 class MockOperationReportService extends Mock
@@ -18,11 +21,29 @@ class MockFileService extends Mock implements FileService {}
 class MockImportService extends Mock implements ImportService {}
 
 void main() {
-  late DataSourceService dataSourceService;
   late MockOperationReportService mockReportService;
   late MockExportService mockExportService;
   late MockFileService mockFileService;
   late MockImportService mockImportService;
+  late DataSourceService dataSourceService;
+
+  const workspacePath = '/projects/my_workspace';
+  final expectedFeaturePath = p.join(
+    workspacePath,
+    'modules',
+    'project_management',
+    'lib',
+    'src',
+    'features',
+    'task',
+  );
+  final expectedBarrelPath = p.join(expectedFeaturePath, 'task_feature.dart');
+  final expectedRepoImplPath = p.join(
+    expectedFeaturePath,
+    'data',
+    'repositories',
+    'task_repository_impl.dart',
+  );
 
   setUp(() {
     mockReportService = MockOperationReportService();
@@ -36,205 +57,358 @@ void main() {
       fileService: mockFileService,
       importService: mockImportService,
     );
+
+    when(
+      () => mockFileService.writeAsString(
+        path: any(named: 'path'),
+        content: any(named: 'content'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockExportService.inject(
+        barrelPath: any(named: 'barrelPath'),
+        exportLines: any(named: 'exportLines'),
+        checkpoint: any(named: 'checkpoint'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockImportService.injectImport(
+        path: any(named: 'path'),
+        imports: any(named: 'imports'),
+      ),
+    ).thenAnswer((_) async {});
   });
 
-  group('DataSourceService Tests', () {
+  group('DataSourceService.generateRemoteDataSource', () {
+    const remoteParam = RemoteDsParam(
+      basePath: '/api/v1/tasks',
+      featureName: 'task',
+      moduleName: 'project_management',
+      workspaceName: 'my_workspace',
+      workspacePath: workspacePath,
+    );
+
+    final expectedInterfacePath = p.join(
+      expectedFeaturePath,
+      'data',
+      'datasources',
+      'task_remote_data_source.dart',
+    );
+    final expectedImplPath = p.join(
+      expectedFeaturePath,
+      'data',
+      'datasources',
+      'task_remote_data_source_impl.dart',
+    );
+
     test(
-      'generateRemoteDataSource should execute full remote data source pipeline successfully',
+      'GIVEN valid RemoteDsParam and existing repository implementation '
+      'WHEN generateRemoteDataSource is called '
+      'THEN creates interface and impl files, exports to barrel, injects into repository impl, and reports progress',
       () async {
-        const remoteDsParam = RemoteDsParam(
-          moduleName: 'auth',
-          modulePath: '/modules/auth',
-          featureName: 'auth',
-          featurePath: '/modules/auth/lib/src/features/auth',
-          basePath: '/api',
-        );
-
-        when(
-          () => mockFileService.writeAsString(
-            path: any(named: 'path'),
-            content: any(named: 'content'),
-          ),
-        ).thenAnswer((_) async => {});
-        when(
-          () => mockExportService.inject(
-            barrelPath: any(named: 'barrelPath'),
-            exportLines: any(named: 'exportLines'),
-            checkpoint: any(named: 'checkpoint'),
-          ),
-        ).thenAnswer((_) async => {});
-        when(() => mockFileService.exists(any())).thenAnswer((_) async => true);
-        when(() => mockFileService.readAsString(any())).thenAnswer(
-          (_) async => '''
-class AuthRepositoryImpl {
-  // [_FIELD]
-  // [_PARAM]
-  // [_INIT]
-}
-''',
-        );
-        when(
-          () => mockImportService.injectImport(
-            path: any(named: 'path'),
-            imports: any(named: 'imports'),
-          ),
-        ).thenAnswer((_) async => {});
-        when(() => mockReportService.addCreated(any())).thenReturn(null);
-        when(() => mockReportService.addInjected(any())).thenReturn(null);
-
+        // Given
         final progressLogs = <String>[];
+        final initialRepoImpl = RepositoryTemplate.implClass('task');
 
+        when(
+          () => mockFileService.exists(expectedRepoImplPath),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockFileService.readAsString(expectedRepoImplPath),
+        ).thenAnswer((_) async => initialRepoImpl);
+
+        // When
         await dataSourceService.generateRemoteDataSource(
-          remoteDs: remoteDsParam,
-          onProgress: (msg) => progressLogs.add(msg),
+          remoteDs: remoteParam,
+          onProgress: progressLogs.add,
         );
 
-        expect(progressLogs, isNotEmpty);
-        expect(
-          progressLogs.first,
-          contains('Creating remote data source interface'),
-        );
+        // Then
+        expect(progressLogs, [
+          'Creating remote data source interface...',
+          'Injecting export remote data source interface...',
+          'Creating remote data source implementation...',
+          'Injecting export remote data source impl...',
+          'Injecting remote data source into repository implementation...',
+        ]);
+
+        // Verify interface & impl file creation
+        verify(
+          () => mockFileService.writeAsString(
+            path: expectedInterfacePath,
+            content: DataSourceTemplate.interfaceClass(
+              feature: 'task',
+              mode: remoteParam.mode,
+            ),
+          ),
+        ).called(1);
+        verify(
+          () => mockReportService.addCreated(expectedInterfacePath),
+        ).called(1);
 
         verify(
           () => mockFileService.writeAsString(
-            path: any(named: 'path'),
-            content: any(named: 'content'),
+            path: expectedImplPath,
+            content: DataSourceTemplate.remoteImplClass(
+              feature: 'task',
+              basePath: '/api/v1/tasks',
+            ),
           ),
-        ).called(3);
+        ).called(1);
+        verify(() => mockReportService.addCreated(expectedImplPath)).called(1);
+
+        // Verify barrel exports
         verify(
           () => mockExportService.inject(
-            barrelPath: any(named: 'barrelPath'),
-            exportLines: any(named: 'exportLines'),
-            checkpoint: any(named: 'checkpoint'),
+            barrelPath: expectedBarrelPath,
+            exportLines: [
+              "export 'data/datasources/task_remote_data_source.dart';",
+            ],
+            checkpoint: '// data',
           ),
+        ).called(1);
+        verify(
+          () => mockExportService.inject(
+            barrelPath: expectedBarrelPath,
+            exportLines: [
+              "export 'data/datasources/task_remote_data_source_impl.dart';",
+            ],
+            checkpoint: '// data',
+          ),
+        ).called(1);
+        verify(
+          () => mockReportService.addInjected(expectedBarrelPath),
         ).called(2);
-        verify(() => mockReportService.addCreated(any())).called(2);
-        verify(() => mockReportService.addInjected(any())).called(3);
+
+        // Verify repository implementation injection
+        final capturedRepoContent =
+            verify(
+                  () => mockFileService.writeAsString(
+                    path: expectedRepoImplPath,
+                    content: captureAny(named: 'content'),
+                  ),
+                ).captured.single
+                as String;
+
+        expect(
+          capturedRepoContent,
+          contains('  final TaskRemoteDataSource _remoteDataSource;'),
+        );
+        expect(
+          capturedRepoContent,
+          contains('    required TaskRemoteDataSource taskRemoteDataSource,'),
+        );
+        expect(
+          capturedRepoContent,
+          contains('       _remoteDataSource = taskRemoteDataSource,'),
+        );
+
+        verify(
+          () => mockImportService.injectImport(
+            path: expectedRepoImplPath,
+            imports: {"import '../datasources/task_remote_data_source.dart';"},
+          ),
+        ).called(1);
+        verify(
+          () => mockReportService.addInjected(expectedRepoImplPath),
+        ).called(1);
       },
     );
 
     test(
-      'generateLocalDataSource should execute full local data source pipeline when repository impl exists',
+      'GIVEN repository implementation does not exist '
+      'WHEN generateRemoteDataSource is called '
+      'THEN creates files and barrel exports without modifying repository implementation',
       () async {
-        const localDsParam = LocalDsParam(
-          moduleName: 'core',
-          modulePath: '/apps/myapp/core',
-          featureName: 'auth',
-          featurePath: '/apps/myapp/core/auth',
-          cacheKey: 'auth_key',
+        // Given
+        when(
+          () => mockFileService.exists(expectedRepoImplPath),
+        ).thenAnswer((_) async => false);
+
+        // When
+        await dataSourceService.generateRemoteDataSource(
+          remoteDs: remoteParam,
+          onProgress: (_) {},
         );
 
-        when(
-          () => mockFileService.writeAsString(
-            path: any(named: 'path'),
-            content: any(named: 'content'),
-          ),
-        ).thenAnswer((_) async => {});
-        when(
-          () => mockExportService.inject(
-            barrelPath: any(named: 'barrelPath'),
-            exportLines: any(named: 'exportLines'),
-            checkpoint: any(named: 'checkpoint'),
-          ),
-        ).thenAnswer((_) async => {});
-        when(() => mockFileService.exists(any())).thenAnswer((_) async => true);
-        when(() => mockFileService.readAsString(any())).thenAnswer(
-          (_) async =>
-              'class AuthRepositoryImpl {\n  // [DS_FIELD]\n  // [DS_PARAM]\n  // [DS_INIT]\n}',
-        );
-        when(
+        // Then
+        verifyNever(() => mockFileService.readAsString(any()));
+        verifyNever(
           () => mockImportService.injectImport(
             path: any(named: 'path'),
             imports: any(named: 'imports'),
           ),
-        ).thenAnswer((_) async => {});
-        when(() => mockReportService.addCreated(any())).thenReturn(null);
-        when(() => mockReportService.addInjected(any())).thenReturn(null);
-
-        final progressLogs = <String>[];
-
-        await dataSourceService.generateLocalDataSource(
-          localDs: localDsParam,
-          onProgress: (msg) => progressLogs.add(msg),
         );
-
-        expect(progressLogs, isNotEmpty);
-        expect(
-          progressLogs.first,
-          contains('Creating local data source interface'),
-        );
-
-        verify(
-          () => mockFileService.writeAsString(
-            path: any(named: 'path'),
-            content: any(named: 'content'),
-          ),
-        ).called(3);
-        verify(
-          () => mockExportService.inject(
-            barrelPath: any(named: 'barrelPath'),
-            exportLines: any(named: 'exportLines'),
-            checkpoint: any(named: 'checkpoint'),
-          ),
-        ).called(2);
-        verify(() => mockReportService.addCreated(any())).called(2);
-        verify(() => mockReportService.addInjected(any())).called(3);
+        verifyNever(() => mockReportService.addInjected(expectedRepoImplPath));
       },
     );
 
     test(
-      'generateLocalDataSource should skip repository injection when repository impl does not exist',
+      'GIVEN repository implementation already contains TaskRemoteDataSource '
+      'WHEN generateRemoteDataSource is called '
+      'THEN skips duplicate repository injection',
       () async {
-        const localDsParam = LocalDsParam(
-          moduleName: 'core',
-          modulePath: '/apps/myapp/core',
-          featureName: 'auth',
-          featurePath: '/apps/myapp/core/auth',
-          cacheKey: 'auth_key',
-        );
+        // Given
+        const alreadyInjectedContent = '''
+class TaskRepositoryImpl implements TaskRepository {
+  final TaskRemoteDataSource _remoteDataSource;
+}
+''';
         when(
+          () => mockFileService.exists(expectedRepoImplPath),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockFileService.readAsString(expectedRepoImplPath),
+        ).thenAnswer((_) async => alreadyInjectedContent);
+
+        // When
+        await dataSourceService.generateRemoteDataSource(
+          remoteDs: remoteParam,
+          onProgress: (_) {},
+        );
+
+        // Then
+        verifyNever(
           () => mockFileService.writeAsString(
-            path: any(named: 'path'),
+            path: expectedRepoImplPath,
             content: any(named: 'content'),
           ),
-        ).thenAnswer((_) async => {});
-        when(
-          () => mockExportService.inject(
-            barrelPath: any(named: 'barrelPath'),
-            exportLines: any(named: 'exportLines'),
-            checkpoint: any(named: 'checkpoint'),
+        );
+        verifyNever(
+          () => mockImportService.injectImport(
+            path: any(named: 'path'),
+            imports: any(named: 'imports'),
           ),
-        ).thenAnswer((_) async => {});
-        when(
-          () => mockFileService.exists(any()),
-        ).thenAnswer((_) async => false);
-        when(() => mockReportService.addCreated(any())).thenReturn(null);
-        when(() => mockReportService.addInjected(any())).thenReturn(null);
+        );
+        verifyNever(() => mockReportService.addInjected(expectedRepoImplPath));
+      },
+    );
+  });
 
+  group('DataSourceService.generateLocalDataSource', () {
+    const localParam = LocalDsParam(
+      cacheKey: 'cached_tasks_key',
+      featureName: 'task',
+      moduleName: 'project_management',
+      workspaceName: 'my_workspace',
+      workspacePath: workspacePath,
+    );
+
+    final expectedInterfacePath = p.join(
+      expectedFeaturePath,
+      'data',
+      'datasources',
+      'task_local_data_source.dart',
+    );
+    final expectedImplPath = p.join(
+      expectedFeaturePath,
+      'data',
+      'datasources',
+      'task_local_data_source_impl.dart',
+    );
+
+    test(
+      'GIVEN valid LocalDsParam and existing repository implementation '
+      'WHEN generateLocalDataSource is called '
+      'THEN creates local interface and impl files, exports to barrel, injects into repository impl, and reports progress',
+      () async {
+        // Given
         final progressLogs = <String>[];
-
+        final initialRepoImpl = RepositoryTemplate.implClass('task');
+        when(
+          () => mockFileService.exists(expectedRepoImplPath),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockFileService.readAsString(expectedRepoImplPath),
+        ).thenAnswer((_) async => initialRepoImpl);
+        // When
         await dataSourceService.generateLocalDataSource(
-          localDs: localDsParam,
-          onProgress: (msg) => progressLogs.add(msg),
+          localDs: localParam,
+          onProgress: progressLogs.add,
         );
-
-        expect(progressLogs, isNotEmpty);
-
+        // Then
+        expect(progressLogs, [
+          'Creating local data source interface...',
+          'Injecting export local data source interface...',
+          'Creating local data source implementation...',
+          'Injecting export local data source impl...',
+          'Injecting local data source into repository implementation...',
+        ]);
+        // Verify interface & impl file creation
         verify(
           () => mockFileService.writeAsString(
-            path: any(named: 'path'),
-            content: any(named: 'content'),
+            path: expectedInterfacePath,
+            content: DataSourceTemplate.interfaceClass(
+              feature: 'task',
+              mode: localParam.mode,
+            ),
           ),
-        ).called(2);
+        ).called(1);
+        verify(
+          () => mockReportService.addCreated(expectedInterfacePath),
+        ).called(1);
+        verify(
+          () => mockFileService.writeAsString(
+            path: expectedImplPath,
+            content: DataSourceTemplate.localImplClass(
+              feature: 'task',
+              cacheKey: 'cached_tasks_key',
+            ),
+          ),
+        ).called(1);
+        verify(() => mockReportService.addCreated(expectedImplPath)).called(1);
+        // Verify barrel exports
         verify(
           () => mockExportService.inject(
-            barrelPath: any(named: 'barrelPath'),
-            exportLines: any(named: 'exportLines'),
-            checkpoint: any(named: 'checkpoint'),
+            barrelPath: expectedBarrelPath,
+            exportLines: [
+              "export 'data/datasources/task_local_data_source.dart';",
+            ],
+            checkpoint: '// data',
           ),
+        ).called(1);
+        verify(
+          () => mockExportService.inject(
+            barrelPath: expectedBarrelPath,
+            exportLines: [
+              "export 'data/datasources/task_local_data_source_impl.dart';",
+            ],
+            checkpoint: '// data',
+          ),
+        ).called(1);
+        verify(
+          () => mockReportService.addInjected(expectedBarrelPath),
         ).called(2);
-        verify(() => mockReportService.addCreated(any())).called(2);
-        verify(() => mockReportService.addInjected(any())).called(2);
+        // Verify repository implementation injection
+        final capturedRepoContent =
+            verify(
+                  () => mockFileService.writeAsString(
+                    path: expectedRepoImplPath,
+                    content: captureAny(named: 'content'),
+                  ),
+                ).captured.single
+                as String;
+        expect(
+          capturedRepoContent,
+          contains('  final TaskLocalDataSource _localDataSource;'),
+        );
+        expect(
+          capturedRepoContent,
+          contains('    required TaskLocalDataSource taskLocalDataSource,'),
+        );
+        expect(
+          capturedRepoContent,
+          contains('       _localDataSource = taskLocalDataSource,'),
+        );
+        verify(
+          () => mockImportService.injectImport(
+            path: expectedRepoImplPath,
+            imports: {"import '../datasources/task_local_data_source.dart';"},
+          ),
+        ).called(1);
+        verify(
+          () => mockReportService.addInjected(expectedRepoImplPath),
+        ).called(1);
       },
     );
   });

@@ -2,6 +2,7 @@ import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 
 import '../../core/extensions/failure_param_x.dart';
+import '../../core/extensions/module_param_x.dart';
 import '../../domain/params/failure_param.dart';
 import '../templates/failure_template.dart';
 import '../visitors/switch_expression_visitor.dart';
@@ -24,7 +25,7 @@ class FailureService {
        _fileService = fileService,
        _arbService = arbService;
 
-  Future<void> generateFailure({
+  Future<void> generate({
     required FailureParam failureParam,
     required Function(String) onProgress,
   }) async {
@@ -232,9 +233,14 @@ class FailureService {
 
     if (extensionSwitchInsertOffset != null) {
       final localizeCode = FailureTemplate.buildItemLocalizeX(failureParam);
-      // Switch expression mewajibkan adanya koma pemisah antar case
+      final preceding = content
+          .substring(0, extensionSwitchInsertOffset)
+          .trimRight();
+      final needComma = !preceding.endsWith(',');
+      final comma = needComma ? ',' : '';
+
       content =
-          '${content.substring(0, extensionSwitchInsertOffset)}  $localizeCode,\n    ${content.substring(extensionSwitchInsertOffset!)}';
+          '${content.substring(0, extensionSwitchInsertOffset)}$comma\n      $localizeCode,\n    ${content.substring(extensionSwitchInsertOffset!)}';
     }
 
     await _fileService.writeAsString(path: path, content: content);

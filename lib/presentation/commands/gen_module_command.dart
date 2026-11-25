@@ -1,11 +1,8 @@
-import 'package:path/path.dart' as p;
-
-import '../../core/constants/rules.dart';
 import '../../domain/params/module_param.dart';
 import '../../infrastructure/services/module_service.dart';
-import 'wrapper/workspace_guard_command.dart';
+import 'wrapper/module_gate_command.dart';
 
-class GenModuleCommand extends WorkspaceGuardCommand {
+class GenModuleCommand extends ModuleGateCommand {
   final ModuleService _moduleService;
 
   GenModuleCommand({
@@ -17,54 +14,23 @@ class GenModuleCommand extends WorkspaceGuardCommand {
   }) : _moduleService = moduleService;
 
   @override
-  String get name => 'gen-module';
+  String get name => 'module';
 
   @override
   String get description =>
-      'Generates a new FSDA Architecture module from the built-in brick template.';
+      'Generates a new FSDA Architecture module template.';
 
   @override
-  String get invocation => 'fsda $name <name>';
+  String get invocation => 'fsda gen -m <module>';
 
   @override
-  Future<int> handle() async {
-    final rest = argResults?.rest;
-    if (rest == null || rest.isEmpty) {
-      logger.error('Module name is required.');
-      logger.log('Usage: $invocation');
-      return errorUsage;
-    }
+  bool get moduleShouldExists => false;
 
-    if (rest.length > 1) {
-      logger.error('Invalid module name: "$rest".');
-      logger.log(Rules.moduleDescription);
-      logger.log('Usage: $invocation');
-      return errorUsage;
-    }
-
-    final moduleName = rest.first;
-
-    if (!Rules.moduleRegExp.hasMatch(moduleName)) {
-      logger.error('Invalid module name: "$moduleName".');
-      logger.log(Rules.moduleDescription);
-      logger.log('Usage: $invocation');
-      return errorUsage;
-    }
-
-    final modulePath = p.join(
-      directoryService.currentPath,
-      'modules',
-      moduleName,
+  @override
+  Future<int> handleModuleGate(ModuleParam module) async {
+    final progress = logger.progress(
+      'Generating module "${module.moduleName}"...',
     );
-    if (await directoryService.exists(modulePath)) {
-      logger.error('Module "$moduleName" already exists at $modulePath');
-      logger.log('Usage: $invocation');
-      return errorUsage;
-    }
-
-    final module = ModuleParam(name: moduleName, path: modulePath);
-
-    final progress = logger.progress('Generating module "$moduleName"...');
 
     try {
       await _moduleService.generate(
@@ -78,7 +44,7 @@ class GenModuleCommand extends WorkspaceGuardCommand {
       );
 
       progress.complete(
-        'Module "$moduleName" successfully generated and configured!',
+        'Module "${module.moduleName}" successfully generated and configured!',
       );
       logger.log(reportBuffer.toString());
 

@@ -2,12 +2,9 @@ import 'package:path/path.dart' as p;
 
 import '../../domain/params/sequence_param.dart';
 import '../../infrastructure/text_modifiers/string_extension.dart';
-import 'feature_gate_param_x.dart';
+import 'feature_param_x.dart';
 
 extension SequenceParamX on SequenceParam {
-  String get featureBarrelPath =>
-      p.join(featurePath, '${featureSnake}_feature.dart');
-
   bool get hasEntity => entity != null;
   bool get hasDto => dto != null;
   bool get hasParam => param != null;
@@ -25,6 +22,8 @@ extension SequenceParamX on SequenceParam {
   String get ucSnake => usecase;
   String get ucCamel => ucSnake.camelCase;
   String get ucPascal => ucSnake.pascalCase;
+  String get ucPath =>
+      p.join(featurePath, 'domain', 'usecases', '$ucSnake.dart');
 
   String get ucBaseSnake => usecase.endsWith('_use_case')
       ? usecase.replaceAll('_use_case', '')
@@ -34,33 +33,38 @@ extension SequenceParamX on SequenceParam {
 
   String get methodSnake => method;
   String get methodCamel => methodSnake.camelCase;
-  String get methodPascal => methodSnake.pascalCase;
   String get methodTitle => methodSnake.titleCase;
-
-  // Model
 
   String? get responseSnake => response;
   String? get responseCamel => responseSnake?.camelCase;
   String? get responsePascal => responseSnake?.pascalCase;
+  String get responsePath =>
+      p.join(featurePath, 'data', 'responses', '$responseSnake.dart');
 
   String? get dtoSnake => dto;
   String? get dtoCamel => dtoSnake?.camelCase;
   String? get dtoPascal => dtoSnake?.pascalCase;
+  String get dtoPath => p.join(featurePath, 'data', 'dtos', '$dtoSnake.dart');
 
   String? get entitySnake => entity;
   String? get entityCamel => entitySnake?.camelCase;
   String? get entityPascal => entitySnake?.pascalCase;
+  String get entityPath =>
+      p.join(featurePath, 'domain', 'entities', '$entitySnake.dart');
 
   String? get requestSnake => request;
   String? get requestCamel => requestSnake?.camelCase;
   String? get requestPascal => requestSnake?.pascalCase;
+  String get requestPath =>
+      p.join(featurePath, 'data', 'requests', '$requestSnake.dart');
 
   String? get paramSnake => param;
   String? get paramCamel => paramSnake?.camelCase;
   String? get paramPascal => paramSnake?.pascalCase;
+  String get paramPath =>
+      p.join(featurePath, 'domain', 'params', '$paramSnake.dart');
 
-  String get dsVar =>
-      dsMode == .remote ? '_remoteDataSource' : '_localDataSource';
+  String get dsVar => '_${dsMode.value.camelCase}DataSource';
 
   String get localStorageMethod => switch (action) {
     .post || .put || .patch => 'write',
@@ -111,24 +115,6 @@ extension SequenceParamX on SequenceParam {
       'data',
       'datasources',
       '${featureSnake}_${dsMode.value}_data_source_impl.dart',
-    );
-  }
-
-  String get repoInterfacePath {
-    return p.join(
-      featurePath,
-      'domain',
-      'repositories',
-      '${featureSnake}_repository.dart',
-    );
-  }
-
-  String get repoImplPath {
-    return p.join(
-      featurePath,
-      'data',
-      'repositories',
-      '${featureSnake}_repository_impl.dart',
     );
   }
 }

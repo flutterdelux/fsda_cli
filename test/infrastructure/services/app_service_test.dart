@@ -1,6 +1,7 @@
 import 'package:fsda_cli/domain/models/config_android_model.dart';
 import 'package:fsda_cli/domain/models/config_model.dart';
-import 'package:fsda_cli/domain/params/app_param.dart';
+import 'package:fsda_cli/domain/params/gen_app_param.dart';
+import 'package:fsda_cli/infrastructure/bundles/app_bundle.dart';
 import 'package:fsda_cli/infrastructure/services/app_service.dart';
 import 'package:fsda_cli/infrastructure/services/helpers/config_service.dart';
 import 'package:fsda_cli/infrastructure/services/helpers/directory_service.dart';
@@ -8,8 +9,8 @@ import 'package:fsda_cli/infrastructure/services/helpers/file_service.dart';
 import 'package:fsda_cli/infrastructure/services/helpers/mason_generator_service.dart';
 import 'package:fsda_cli/infrastructure/services/helpers/operation_report_service.dart';
 import 'package:fsda_cli/infrastructure/services/helpers/process_service.dart';
-import 'package:mason/mason.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 class MockConfigService extends Mock implements ConfigService {}
@@ -25,171 +26,184 @@ class MockFileService extends Mock implements FileService {}
 
 class MockMasonGeneratorService extends Mock implements MasonGeneratorService {}
 
-class FakeMasonBundle extends Fake implements MasonBundle {}
-
 void main() {
-  group('AppService', () {
-    late MockConfigService mockConfigService;
-    late MockProcessService mockProcessService;
-    late MockOperationReportService mockReportService;
-    late MockDirectoryService mockDirectoryService;
-    late MockFileService mockFileService;
-    late MockMasonGeneratorService mockGeneratorService;
-    late AppService appService;
+  late MockConfigService mockConfigService;
+  late MockProcessService mockProcessService;
+  late MockOperationReportService mockReportService;
+  late MockDirectoryService mockDirectoryService;
+  late MockFileService mockFileService;
+  late MockMasonGeneratorService mockGeneratorService;
+  late AppService appService;
 
-    setUpAll(() {
-      registerFallbackValue(FakeMasonBundle());
-    });
+  const sampleParam = GenAppParam(
+    appName: 'portal_app',
+    appTitle: 'Portal App',
+    org: 'com.fdelux',
+    orgName: 'Flutter Delux',
+    workspaceName: 'my_workspace',
+    workspacePath: '/projects/my_workspace',
+  );
 
-    setUp(() {
-      mockConfigService = MockConfigService();
-      mockProcessService = MockProcessService();
-      mockReportService = MockOperationReportService();
-      mockDirectoryService = MockDirectoryService();
-      mockFileService = MockFileService();
-      mockGeneratorService = MockMasonGeneratorService();
+  const sampleConfig = ConfigModel(
+    workspaceName: 'my_workspace',
+    workspacePath: '/projects/my_workspace',
+    cliVersion: '1.0.0',
+    dartSdk: '^3.8.0',
+    android: ConfigAndroidModel(minSdk: 23, targetSdk: 35, compileSdk: 35),
+  );
 
-      appService = AppService(
-        configService: mockConfigService,
-        processService: mockProcessService,
-        reportService: mockReportService,
-        directoryService: mockDirectoryService,
-        fileService: mockFileService,
-        generatorService: mockGeneratorService,
-      );
-    });
+  final expectedAppPath = p.join(
+    '/projects/my_workspace',
+    'apps',
+    'portal_app',
+  );
+  final expectedTestPath = p.join(expectedAppPath, 'test');
+  final expectedGradlePath = p.join(
+    expectedAppPath,
+    'android',
+    'app',
+    'build.gradle.kts',
+  );
 
-    const tAppParam = AppParam(
-      projectName: 'portalapp',
-      projectPath: '/workspace/portalapp',
-      org: 'com.fdelux',
-      appName: 'Portal App',
-      orgName: 'Flutter Delux',
+  setUpAll(() {
+    registerFallbackValue(appBundle);
+  });
+
+  setUp(() {
+    mockConfigService = MockConfigService();
+    mockProcessService = MockProcessService();
+    mockReportService = MockOperationReportService();
+    mockDirectoryService = MockDirectoryService();
+    mockFileService = MockFileService();
+    mockGeneratorService = MockMasonGeneratorService();
+
+    appService = AppService(
+      configService: mockConfigService,
+      processService: mockProcessService,
+      reportService: mockReportService,
+      directoryService: mockDirectoryService,
+      fileService: mockFileService,
+      generatorService: mockGeneratorService,
     );
 
-    const tAndroidConfig = ConfigAndroidModel(
-      minSdk: 21,
-      targetSdk: 33,
-      compileSdk: 33,
-    );
+    when(
+      () => mockConfigService.loadConfig(),
+    ).thenAnswer((_) async => sampleConfig);
+    when(
+      () => mockProcessService.run(any(), any(), any()),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockGeneratorService.generate(
+        bundle: any(named: 'bundle'),
+        targetPath: any(named: 'targetPath'),
+        vars: any(named: 'vars'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockFileService.writeAsString(
+        path: any(named: 'path'),
+        content: any(named: 'content'),
+      ),
+    ).thenAnswer((_) async {});
+  });
 
-    const tConfig = ConfigModel(
-      workspaceName: 'workspace',
-      workspacePath: '/workspace/',
-      cliVersion: '2.0.0-beta.1',
-      sdkVersion: '3.0.0',
-      android: tAndroidConfig,
-    );
-
+  group('AppService.generateApp', () {
     test(
-      'Given a valid AppParam and configuration, '
-      'When generateApp is called successfully, '
-      'Then it executes flutter create, deletes test dir, generates bundle, updates gradle, and installs dependencies in order',
+      'GIVEN valid GenAppParam with existing test directory and build.gradle.kts '
+      'WHEN generateApp is called '
+      'THEN executes full generation workflow, updates Android SDKs, installs dependencies, and reports progress',
       () async {
-        // Arrange (Given)
-        final progressMessages = <String>[];
-        final gradlePath = '/workspace/portalapp/android/app/build.gradle.kts';
+        // Given
+        final progressLogs = <String>[];
+        const initialGradleContent = '''
+android {
+    compileSdk = flutter.compileSdkVersion
+    defaultConfig {
+        minSdk = flutter.minSdkVersion
+        targetSdk = flutter.targetSdkVersion
+    }
+}
+''';
 
         when(
-          () => mockConfigService.loadConfig(),
-        ).thenAnswer((_) async => tConfig);
-        when(
-          () => mockProcessService.run(any(), any(), any()),
-        ).thenAnswer((_) async {});
-        when(
-          () => mockDirectoryService.exists(any()),
+          () => mockDirectoryService.exists(expectedTestPath),
         ).thenAnswer((_) async => true);
-        when(() => mockDirectoryService.delete(any())).thenAnswer((_) async {});
         when(
-          () => mockGeneratorService.generate(
-            bundle: any(named: 'bundle'),
-            targetPath: any(named: 'targetPath'),
-            vars: any(named: 'vars'),
-          ),
+          () => mockDirectoryService.delete(expectedTestPath),
         ).thenAnswer((_) async {});
         when(
-          () => mockFileService.exists(gradlePath),
+          () => mockFileService.exists(expectedGradlePath),
         ).thenAnswer((_) async => true);
-        when(() => mockFileService.readAsString(gradlePath)).thenAnswer(
-          (_) async => 'compileSdk = 30\nminSdk = 16\ntargetSdk = 30\n',
-        );
         when(
-          () => mockFileService.writeAsString(
-            path: any(named: 'path'),
-            content: any(named: 'content'),
-          ),
-        ).thenAnswer((_) async {});
+          () => mockFileService.readAsString(expectedGradlePath),
+        ).thenAnswer((_) async => initialGradleContent);
 
-        // Act (When)
-        await appService.generateApp(
-          app: tAppParam,
-          onProgress: (msg) => progressMessages.add(msg),
+        // When
+        await appService.generate(
+          genApp: sampleParam,
+          onProgress: progressLogs.add,
         );
 
-        // Assert (Then)
-        expect(progressMessages, contains('Reading FSDA configuration...'));
-        expect(
-          progressMessages,
-          contains('Running flutter create for "portalapp"...'),
-        );
-        expect(
-          progressMessages,
-          contains('Cleaning up default test directory...'),
-        );
-        expect(progressMessages, contains('Copying app bundle...'));
-        expect(
-          progressMessages,
-          contains('Configuring Android SDK versions in build.gradle.kts...'),
-        );
-        expect(
-          progressMessages,
-          contains('Installing package dependencies...'),
-        );
+        // Then
+        expect(progressLogs, [
+          'Reading FSDA configuration...',
+          'Running flutter create for "portal_app"...',
+          'Cleaning up default test directory...',
+          'Copying app bundle...',
+          'Configuring Android SDK versions in build.gradle.kts...',
+          'Installing package dependencies...',
+        ]);
 
-        verify(() => mockConfigService.loadConfig()).called(1);
+        // Verify flutter create & report
         verify(
           () => mockProcessService.run('flutter', [
             'create',
             '--org',
-            tAppParam.org,
-            tAppParam.projectName,
-          ], '/workspace'),
+            'com.fdelux',
+            'portal_app',
+          ], p.dirname(expectedAppPath)),
         ).called(1);
-        verify(
-          () => mockReportService.addCreated(tAppParam.projectPath),
-        ).called(1);
-        verify(
-          () => mockDirectoryService.exists('/workspace/portalapp/test'),
-        ).called(1);
-        verify(
-          () => mockDirectoryService.delete('/workspace/portalapp/test'),
-        ).called(1);
-        verify(
-          () => mockReportService.addRemoved('/workspace/portalapp/test'),
-        ).called(1);
+        verify(() => mockReportService.addCreated(expectedAppPath)).called(1);
+
+        // Verify test directory cleanup & report
+        verify(() => mockDirectoryService.delete(expectedTestPath)).called(1);
+        verify(() => mockReportService.addRemoved(expectedTestPath)).called(1);
+
+        // Verify Mason bundle generation
         verify(
           () => mockGeneratorService.generate(
-            bundle: any(named: 'bundle'),
-            targetPath: tAppParam.projectPath,
+            bundle: appBundle,
+            targetPath: expectedAppPath,
             vars: {
-              'app': tAppParam.projectName,
-              'app_name': tAppParam.appName,
-              'org': tAppParam.org,
-              'org_name': tAppParam.orgName,
-              'dart_sdk': tConfig.sdkVersion,
-              'android_min_sdk': tConfig.android.minSdk,
+              'app': 'portal_app',
+              'project_id': 'portalapp',
+              'app_title': 'Portal App',
+              'org': 'com.fdelux',
+              'org_name': 'Flutter Delux',
+              'dart_sdk': '^3.8.0',
+              'android_min_sdk': 23,
             },
           ),
         ).called(1);
-        verify(() => mockFileService.exists(gradlePath)).called(1);
-        verify(() => mockFileService.readAsString(gradlePath)).called(1);
+
+        // Verify build.gradle.kts update & report
+        final capturedGradle =
+            verify(
+                  () => mockFileService.writeAsString(
+                    path: expectedGradlePath,
+                    content: captureAny(named: 'content'),
+                  ),
+                ).captured.single
+                as String;
+
+        expect(capturedGradle, contains('compileSdk = 35'));
+        expect(capturedGradle, contains('minSdk = 23'));
+        expect(capturedGradle, contains('targetSdk = 35'));
         verify(
-          () => mockFileService.writeAsString(
-            path: gradlePath,
-            content: any(named: 'content'),
-          ),
+          () => mockReportService.addInjected(expectedGradlePath),
         ).called(1);
-        verify(() => mockReportService.addInjected(gradlePath)).called(1);
+
+        // Verify pub add calls
         verify(
           () => mockProcessService.run('dart', [
             'pub',
@@ -203,9 +217,8 @@ void main() {
             'go_router',
             'collection',
             'intl',
-          ], tAppParam.projectPath),
+          ], expectedAppPath),
         ).called(1);
-
         verify(
           () => mockProcessService.run('dart', [
             'pub',
@@ -214,26 +227,39 @@ void main() {
             'flutter_lints',
             'flutter_launcher_icons',
             'package_rename',
-          ], tAppParam.projectPath),
+          ], expectedAppPath),
         ).called(1);
       },
     );
 
-    test('Given an exception occurs during configuration loading, '
-        'When generateApp is called, '
-        'Then it throws an Exception and aborts the process', () async {
-      // Arrange (Given)
-      when(
-        () => mockConfigService.loadConfig(),
-      ).thenThrow(Exception('Config error'));
+    test(
+      'GIVEN test directory and build.gradle.kts do not exist '
+      'WHEN generateApp is called '
+      'THEN skips test deletion and gradle modification without throwing',
+      () async {
+        // Given
+        when(
+          () => mockDirectoryService.exists(expectedTestPath),
+        ).thenAnswer((_) async => false);
+        when(
+          () => mockFileService.exists(expectedGradlePath),
+        ).thenAnswer((_) async => false);
 
-      // Act & Assert (When & Then)
-      expect(
-        () => appService.generateApp(app: tAppParam, onProgress: (_) {}),
-        throwsA(isA<Exception>()),
-      );
+        // When
+        await appService.generate(genApp: sampleParam, onProgress: (_) {});
 
-      verifyNever(() => mockProcessService.run(any(), any(), any()));
-    });
+        // Then
+        verifyNever(() => mockDirectoryService.delete(any()));
+        verifyNever(() => mockReportService.addRemoved(any()));
+        verifyNever(() => mockFileService.readAsString(any()));
+        verifyNever(
+          () => mockFileService.writeAsString(
+            path: any(named: 'path'),
+            content: any(named: 'content'),
+          ),
+        );
+        verifyNever(() => mockReportService.addInjected(any()));
+      },
+    );
   });
 }

@@ -3,32 +3,37 @@ import '../../../core/extensions/logic_uc_x.dart';
 import '../../../core/extensions/uc_type_x.dart';
 import '../../../domain/enums/logic_flow_type.dart';
 import '../../../domain/models/artifact_generation_model.dart';
+import '../../../domain/models/logic_uc_model.dart';
 import '../../../domain/params/logic_flow_param.dart';
 
 abstract final class RiverpodFlowTemplate {
-  static ArtifactGenerationModel build(LogicFlowParam logic) {
+  static ArtifactGenerationModel build({
+    required LogicFlowParam logic,
+    required LogicUcModel uc,
+  }) {
     return ArtifactGenerationModel(
       name: logic.controllerPascal,
       path: logic.controllerPath,
-      content: logic.uc.type.isStream
-          ? _streamLogic(logic)
+      content: uc.type.isStream
+          ? _streamLogic(logic: logic, uc: uc)
           : switch (logic.type) {
-              LogicFlowType.mutation => _mutationLogic(logic),
-              LogicFlowType.retrieval => _retrievalLogic(logic),
-              LogicFlowType.pagination => _paginationLogic(logic),
+              LogicFlowType.mutation => _mutationLogic(logic: logic, uc: uc),
+              LogicFlowType.retrieval => _retrievalLogic(logic: logic, uc: uc),
+              LogicFlowType.pagination => _paginationLogic(
+                logic: logic,
+                uc: uc,
+              ),
             },
-      typesToImport: {
-        logic.statePascal,
-        logic.uc.ucPascal,
-        ?logic.uc.paramType,
-      },
+      typesToImport: {logic.statePascal, uc.ucPascal, ?uc.paramType},
       needToExport: true,
     );
   }
 }
 
-String _mutationLogic(LogicFlowParam logic) {
-  final uc = logic.uc;
+String _mutationLogic({
+  required LogicFlowParam logic,
+  required LogicUcModel uc,
+}) {
   final hasParam = uc.type.hasParam;
   final hasReturn = uc.type.hasReturn;
   final isAsync = uc.type.isAsync;
@@ -57,7 +62,7 @@ class ${logic.controllerPascal} extends Notifier<${logic.statePascal}> {
     return const ${logic.statePascal}.initial();
   }
 
-  $returnTypeModifier ${uc.method}($methodParam) $asyncModifier{
+  $returnTypeModifier ${uc.repoMethod}($methodParam) $asyncModifier{
     state = const ${logic.statePascal}.loading();
     final result = ${awaitKeyword}_${uc.ucCamel}($callArg);
     state = result.when(
@@ -69,8 +74,10 @@ class ${logic.controllerPascal} extends Notifier<${logic.statePascal}> {
 ''';
 }
 
-String _retrievalLogic(LogicFlowParam logic) {
-  final uc = logic.uc;
+String _retrievalLogic({
+  required LogicFlowParam logic,
+  required LogicUcModel uc,
+}) {
   final hasParam = uc.type.hasParam;
   final isAsync = uc.type.isAsync;
 
@@ -98,7 +105,7 @@ class ${logic.controllerPascal} extends Notifier<${logic.statePascal}> {
     return const ${logic.statePascal}.initial();
   }
 
-  $returnTypeModifier ${uc.method}($methodParam) $asyncModifier {
+  $returnTypeModifier ${uc.repoMethod}($methodParam) $asyncModifier {
     state = const ${logic.statePascal}.loading();
     final result = ${awaitKeyword}_${uc.ucCamel}($callArg);
     state = result.when(
@@ -110,8 +117,10 @@ class ${logic.controllerPascal} extends Notifier<${logic.statePascal}> {
 ''';
 }
 
-String _paginationLogic(LogicFlowParam logic) {
-  final uc = logic.uc;
+String _paginationLogic({
+  required LogicFlowParam logic,
+  required LogicUcModel uc,
+}) {
   final isAsync = uc.type.isAsync;
   final awaitKeyword = isAsync ? 'await ' : '';
 
@@ -169,8 +178,7 @@ class ${logic.controllerPascal} extends Notifier<${logic.statePascal}> {
 ''';
 }
 
-String _streamLogic(LogicFlowParam logic) {
-  final uc = logic.uc;
+String _streamLogic({required LogicFlowParam logic, required LogicUcModel uc}) {
   final hasParam = uc.type.hasParam;
 
   final paramType = uc.paramType;
@@ -200,7 +208,7 @@ class ${logic.controllerPascal} extends Notifier<${logic.statePascal}> {
     return const ${logic.statePascal}.initial();
   }
 
-  void ${uc.method}($methodParam) {
+  void ${uc.repoMethod}($methodParam) {
     state = const ${logic.statePascal}.loading();
 
     _subscription?.cancel();

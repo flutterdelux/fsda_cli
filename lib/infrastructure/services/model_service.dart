@@ -1,7 +1,9 @@
 import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:path/path.dart' as p;
 
-import '../../core/extensions/feature_gate_param_x.dart';
+import '../../core/extensions/feature_param_x.dart';
+import '../../core/extensions/model_param_x.dart';
+import '../../core/extensions/module_param_x.dart';
 import '../../domain/models/prop_model.dart';
 import '../../domain/params/model_param.dart';
 import '../templates/feature_template.dart';
@@ -36,7 +38,7 @@ class ModelService {
        _importResolverService = importResolverService,
        _importService = importService;
 
-  Future<void> generateModel({
+  Future<void> generate({
     required ModelParam model,
     required Function(String) onProgress,
   }) async {
@@ -51,13 +53,13 @@ class ModelService {
       await _exportModel(model);
     }
 
-    if (model.isInjectL10n && model.type == .entity) {
+    if (model.isL10n && model.type == .entity) {
       onProgress('Injecting localization keys into ARB files...');
       await _injectModelArb(model);
     }
   }
 
-  Future<void> removeModel({
+  Future<void> remove({
     required ModelParam model,
     required Function(String) onProgress,
   }) async {
@@ -102,7 +104,7 @@ class ModelService {
       .response => ModelTemplate.buildResponse(model),
     };
 
-    final path = model.path;
+    final path = model.modelPath;
     await _fileService.writeAsString(path: path, content: content);
     _reportService.addCreated(path);
   }
@@ -114,16 +116,16 @@ class ModelService {
     };
     final imports = await _importResolverService.resolve(
       rawTypes: rawTypes,
-      targetFilePath: model.path,
+      targetFilePath: model.modelPath,
       modulePath: model.modulePath,
     );
-    await _importService.injectImport(path: model.path, imports: imports);
+    await _importService.injectImport(path: model.modelPath, imports: imports);
   }
 
   Future<void> _exportModel(ModelParam model) async {
     final barrelPath = model.featureBarrelPath;
     if (!await _fileService.exists(barrelPath)) return;
-    final relativePath = p.relative(model.path, from: model.featurePath);
+    final relativePath = p.relative(model.modelPath, from: model.featurePath);
     await _exportService.inject(
       barrelPath: barrelPath,
       exportLines: ["export '${relativePath.replaceAll(r'\', '/')}';"],
@@ -149,10 +151,10 @@ class ModelService {
   // ===================== Remove Helper =========================
 
   Future<void> _removeModel(ModelParam model) async {
-    final basePath = model.path;
+    final basePath = model.modelPath;
     if (await _fileService.exists(basePath)) {
       await _fileService.delete(basePath);
-      _reportService.addRemoved(model.path);
+      _reportService.addRemoved(model.modelPath);
     }
 
     // Also delete generated files
@@ -167,7 +169,7 @@ class ModelService {
 
   Future<void> _unjectExportModel(ModelParam model) async {
     final barrelPath = model.featureBarrelPath;
-    final relativePath = p.relative(model.path, from: model.featurePath);
+    final relativePath = p.relative(model.modelPath, from: model.featurePath);
     await _exportService.unject(
       barrelPath: barrelPath,
       exportLines: ["export '${relativePath.replaceAll(r'\', '/')}';"],

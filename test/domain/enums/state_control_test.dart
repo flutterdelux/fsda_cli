@@ -1,45 +1,97 @@
-import 'package:fsda_cli/domain/enums/state_control.dart'; // Sesuaikan path import dengan project Anda
+import 'package:fsda_cli/domain/enums/state_control.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('StateControl Enum', () {
-    test('Given valid and invalid string values, '
-        'When tryParse is called, '
-        'Then it returns the correct StateControl instance or null', () {
-      // Act & Assert (Given & When & Then)
-      expect(StateControl.tryParse('cubit'), equals(StateControl.cubit));
-      expect(StateControl.tryParse('getx'), equals(StateControl.getx));
-      expect(StateControl.tryParse('provider'), equals(StateControl.provider));
-      expect(StateControl.tryParse('riverpod'), equals(StateControl.riverpod));
-      expect(StateControl.tryParse('unknown'), isNull);
-      expect(StateControl.tryParse(null), isNull);
+  group('StateControl', () {
+    group('Enum Values & available Getter', () {
+      test('GIVEN all defined StateControl enum constants '
+          'WHEN value getter is accessed '
+          'THEN returns corresponding lowercase string representation', () {
+        // Given & When & Then
+        expect(StateControl.values, hasLength(4));
+        expect(StateControl.cubit.value, 'cubit');
+        expect(StateControl.getx.value, 'getx');
+        expect(StateControl.provider.value, 'provider');
+        expect(StateControl.riverpod.value, 'riverpod');
+      });
+
+      test('GIVEN StateControl enum '
+          'WHEN available getter is accessed '
+          'THEN returns comma-separated list of all enum values', () {
+        // When
+        final result = StateControl.available;
+
+        // Then
+        expect(result, 'cubit, getx, provider, riverpod');
+      });
     });
 
-    test('Given known and unknown parent class names, '
-        'When parseFromExtends is called, '
-        'Then it returns the corresponding StateControl or null', () {
-      expect(
-        StateControl.parseFromExtends('Cubit'),
-        equals(StateControl.cubit),
-      );
-      expect(
-        StateControl.parseFromExtends('GetxController'),
-        equals(StateControl.getx),
-      );
-      expect(
-        StateControl.parseFromExtends('ChangeNotifier'),
-        equals(StateControl.provider),
-      );
-      expect(
-        StateControl.parseFromExtends('Notifier'),
-        equals(StateControl.riverpod),
-      );
-      expect(StateControl.parseFromExtends('UnknownClass'), isNull);
+    group('tryParse', () {
+      test('GIVEN valid lowercase strings matching StateControl values '
+          'WHEN tryParse is called '
+          'THEN returns the corresponding StateControl enum constant', () {
+        // Given
+        const inputs = {
+          'cubit': StateControl.cubit,
+          'getx': StateControl.getx,
+          'provider': StateControl.provider,
+          'riverpod': StateControl.riverpod,
+        };
+
+        // When & Then
+        inputs.forEach((rawValue, expectedEnum) {
+          expect(StateControl.tryParse(rawValue), expectedEnum);
+        });
+      });
+
+      test('GIVEN null, empty, uppercase, or unknown string '
+          'WHEN tryParse is called '
+          'THEN returns null', () {
+        // Given
+        const invalidInputs = [null, '', 'CUBIT', 'bloc', ' cubit '];
+
+        // When & Then
+        for (final input in invalidInputs) {
+          expect(StateControl.tryParse(input), isNull);
+        }
+      });
     });
 
-    test('When available getter is called, '
-        'Then it returns a comma-separated string of all enum values', () {
-      expect(StateControl.available, equals('cubit, getx, provider, riverpod'));
+    group('parseFromExtends', () {
+      test('GIVEN supported parent class names '
+          'WHEN parseFromExtends is called '
+          'THEN returns the matching StateControl enum constant', () {
+        // Given
+        const parentClassCases = {
+          'Cubit': StateControl.cubit,
+          'GetxController': StateControl.getx,
+          'ChangeNotifier': StateControl.provider,
+          'Notifier': StateControl.riverpod,
+        };
+
+        // When & Then
+        parentClassCases.forEach((parentClass, expectedEnum) {
+          expect(StateControl.parseFromExtends(parentClass), expectedEnum);
+        });
+      });
+
+      test('GIVEN unsupported, lowercase, or empty parent class name '
+          'WHEN parseFromExtends is called '
+          'THEN returns null', () {
+        // Given
+        const invalidParentClasses = [
+          'Bloc',
+          'cubit',
+          'StateNotifier',
+          'StatelessWidget',
+          '',
+        ];
+
+        // When & Then
+        for (final parentClass in invalidParentClasses) {
+          expect(StateControl.parseFromExtends(parentClass), isNull);
+        }
+      });
     });
   });
 }

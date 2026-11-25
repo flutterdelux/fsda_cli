@@ -1,18 +1,18 @@
 import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
 
-import '../../../core/extensions/feature_gate_param_x.dart';
-import '../../../core/extensions/module_gate_param_x.dart';
-import '../../../core/extensions/slice_gate_param_x.dart';
+import '../../../core/extensions/feature_param_x.dart';
+import '../../../core/extensions/module_param_x.dart';
+import '../../../core/extensions/slice_param_x.dart';
 import '../../../core/extensions/ui_gate_param_x.dart';
 import '../../../domain/models/artifact_generation_model.dart';
 import '../../../domain/models/prop_model.dart';
-import '../../../domain/params/ui/ui_lsh_param.dart';
+import '../../../domain/params/ui_param.dart';
 import '../../text_modifiers/string_extension.dart';
 
 abstract final class UiLshTemplate {
   static ArtifactGenerationModel buildItem({
-    required UiLshParam ui,
+    required UiParam ui,
     required List<PropModel> props,
   }) {
     final className = '${ui.featurePascal}${ui.slicePascal}Item';
@@ -100,12 +100,14 @@ class $className extends StatelessWidget {
                   Text(
                     $title,
                     maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: textTheme.titleMedium?.copyWith(color: Colors.white),
                   ),
                   AppGap.xs,
                   Text(
                     $subtitle,
                     maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: textTheme.bodySmall?.copyWith(color: Colors.white70),
                   ),
                 ],
@@ -121,7 +123,7 @@ class $className extends StatelessWidget {
     );
   }
 
-  static ArtifactGenerationModel buildItemSkeleton(UiLshParam ui) {
+  static ArtifactGenerationModel buildItemSkeleton(UiParam ui) {
     final className = '${ui.featurePascal}${ui.slicePascal}ItemSkeleton';
     final itemClassName = '${ui.featurePascal}${ui.slicePascal}Item';
     return ArtifactGenerationModel(
@@ -185,7 +187,7 @@ class $className extends StatelessWidget {
     );
   }
 
-  static ArtifactGenerationModel buildContent(UiLshParam ui) {
+  static ArtifactGenerationModel buildContent(UiParam ui) {
     final className = '${ui.featurePascal}${ui.slicePascal}Content';
     final itemClassName = '${ui.featurePascal}${ui.slicePascal}Item';
     return ArtifactGenerationModel(
@@ -242,7 +244,7 @@ class $className extends StatelessWidget {
     );
   }
 
-  static ArtifactGenerationModel buildSkeleton(UiLshParam ui) {
+  static ArtifactGenerationModel buildSkeleton(UiParam ui) {
     final className = '${ui.featurePascal}${ui.slicePascal}Skeleton';
     final contentClassName = '${ui.featurePascal}${ui.slicePascal}Content';
     final itemSkeletonClassName =
@@ -291,7 +293,7 @@ class $className extends StatelessWidget {
     );
   }
 
-  static ArtifactGenerationModel buildErrorFeedback(UiLshParam ui) {
+  static ArtifactGenerationModel buildErrorFeedback(UiParam ui) {
     final className = '${ui.featurePascal}${ui.slicePascal}ErrorFeedback';
     return ArtifactGenerationModel(
       name: className,
@@ -336,7 +338,7 @@ class $className extends StatelessWidget {
     );
   }
 
-  static ArtifactGenerationModel buildEmptyFeedback(UiLshParam ui) {
+  static ArtifactGenerationModel buildEmptyFeedback(UiParam ui) {
     final className = '${ui.featurePascal}${ui.slicePascal}EmptyFeedback';
     return ArtifactGenerationModel(
       name: className,
@@ -376,7 +378,7 @@ class $className extends StatelessWidget {
     );
   }
 
-  static Map<String, dynamic> buildArbEntries(UiLshParam ui) {
+  static Map<String, dynamic> buildArbEntries(UiParam ui) {
     final entries = <String, dynamic>{};
 
     final prefixKey = '${ui.featureCamel}${ui.slicePascal}';

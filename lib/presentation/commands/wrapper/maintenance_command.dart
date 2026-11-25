@@ -2,6 +2,7 @@ import 'package:path/path.dart' as p;
 
 import '../../../core/constants/rules.dart';
 import '../../../domain/models/target_maintenance_model.dart';
+import '../../../domain/params/workspace_param.dart';
 import 'workspace_guard_command.dart';
 
 abstract class MaintenanceCommand extends WorkspaceGuardCommand {
@@ -24,7 +25,7 @@ abstract class MaintenanceCommand extends WorkspaceGuardCommand {
   }
 
   @override
-  Future<int> handle() async {
+  Future<int> handle(WorkspaceParam workspace) async {
     final rest = argResults?.rest ?? [];
     if (rest.isNotEmpty) {
       logger.error('Invalid command.');
@@ -33,9 +34,9 @@ abstract class MaintenanceCommand extends WorkspaceGuardCommand {
     }
 
     final moduleName = argResults?['module'] as String?;
-    final appProjectName = argResults?['app'] as String?;
+    final appName = argResults?['app'] as String?;
 
-    if (moduleName == null && appProjectName == null) {
+    if (moduleName == null && appName == null) {
       logger.error(
         'Please specify at least one target: --module (-m) or --app (-a).',
       );
@@ -73,10 +74,10 @@ abstract class MaintenanceCommand extends WorkspaceGuardCommand {
       );
     }
 
-    if (appProjectName != null) {
-      if (!Rules.appProjectNameRegExp.hasMatch(appProjectName)) {
-        logger.error('Invalid app project name: "$appProjectName".');
-        logger.log(Rules.appProjectNameDescription);
+    if (appName != null) {
+      if (!Rules.appNameRegExp.hasMatch(appName)) {
+        logger.error('Invalid app project name: "$appName".');
+        logger.log(Rules.appNameDescription);
         logger.log('Usage: $invocation');
         return errorUsage;
       }
@@ -84,20 +85,16 @@ abstract class MaintenanceCommand extends WorkspaceGuardCommand {
       final appProjectPath = p.join(
         directoryService.currentPath,
         'apps',
-        appProjectName,
+        appName,
       );
       if (!await directoryService.exists(appProjectPath)) {
-        logger.error('App "$appProjectName" not found at $appProjectPath');
+        logger.error('App "$appName" not found at $appProjectPath');
         logger.log('Usage: $invocation');
         return errorUsage;
       }
 
       targets.add(
-        TargetMaintenanceModel(
-          type: .app,
-          name: appProjectName,
-          path: appProjectPath,
-        ),
+        TargetMaintenanceModel(type: .app, name: appName, path: appProjectPath),
       );
     }
 

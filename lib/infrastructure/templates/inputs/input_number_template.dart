@@ -1,15 +1,15 @@
-import '../../../domain/params/inputs/input_number_param.dart';
+import '../../../domain/params/input_param.dart';
 import '../../text_modifiers/string_extension.dart';
 
 abstract final class InputNumberTemplate {
-  static String build(InputNumberParam input) {
+  static String build(InputParam input) {
     final featurePascal = input.featureName.pascalCase;
     final fieldPascal = input.field.pascalCase;
     final modulePascal = input.moduleName.pascalCase;
     final l10nKey = '${input.featureName.camelCase}Field$fieldPascal';
     final className = '$featurePascal${fieldPascal}Field';
 
-    final type = input.type;
+    final type = input.dataType;
     final isIntegerType = type == 'int';
     final isDecimalType = type == 'double';
 
@@ -55,7 +55,7 @@ $extraInputConfig
 ''';
   }
 
-  static Map<String, dynamic> buildArbEntries(InputNumberParam input) {
+  static Map<String, dynamic> buildArbEntries(InputParam input) {
     final entries = <String, dynamic>{};
     final featureCamel = input.featureName.camelCase;
     final featureSentence = input.featureName.sentenceCase;

@@ -1,11 +1,9 @@
 import 'package:path/path.dart' as p;
 
 import '../../domain/params/ds_param.dart';
+import 'feature_param_x.dart';
 
 extension DsParamX on DsParam {
-  String get featureBarrelPath =>
-      p.join(featurePath, '${featureName}_feature.dart');
-
   String get interfacePath => p.join(
     featurePath,
     'data',

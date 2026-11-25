@@ -10,7 +10,7 @@ void main() {
         name: 'get_user_profile',
         path: 'domain/usecases/get_user_profile_uc.dart',
         type: UcType.returnUc,
-        method: 'execute',
+        repoMethod: 'execute',
       );
 
       expect(model.ucSnake, 'get_user_profile');
@@ -25,7 +25,7 @@ void main() {
           name: 'get_user',
           path: 'path',
           type: UcType.returnUc,
-          method: 'execute',
+          repoMethod: 'execute',
           returnType: 'user_entity',
         );
 
@@ -42,7 +42,7 @@ void main() {
           name: 'void_uc',
           path: 'path',
           type: UcType.paramUc,
-          method: 'execute',
+          repoMethod: 'execute',
           returnType: null,
         );
 
@@ -59,7 +59,7 @@ void main() {
           name: 'update_user',
           path: 'path',
           type: UcType.paramUc,
-          method: 'execute',
+          repoMethod: 'execute',
           paramType: 'update_user_param',
         );
 
@@ -74,7 +74,7 @@ void main() {
         name: 'simple_uc',
         path: 'path',
         type: UcType.returnUc,
-        method: 'execute',
+        repoMethod: 'execute',
         paramType: null,
       );
 

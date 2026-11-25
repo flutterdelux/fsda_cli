@@ -1,46 +1,57 @@
-import 'package:fsda_cli/core/extensions/slice_gate_param_x.dart';
-import 'package:fsda_cli/domain/params/feature_gate_param.dart';
-import 'package:fsda_cli/domain/params/slice_gate_param.dart';
+import 'package:fsda_cli/core/extensions/slice_param_x.dart';
+import 'package:fsda_cli/domain/params/slice_param.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
-  group('SliceGateParam & SliceGateParamX Tests', () {
+  group('SliceGateParamX', () {
+    const param = SliceParam(
+      sliceName: 'task_detail_view',
+      featureName: 'task',
+      moduleName: 'project_management',
+      workspaceName: 'my_workspace',
+      workspacePath: '/projects/my_workspace',
+    );
+
     test(
-      'should initialize SliceGateParam and test factory constructor fromFeatureGate',
+      'GIVEN a SliceGateParam instance with snake_case slice '
+      'WHEN case-conversion getters are accessed '
+      'THEN returns snake_case, camelCase, PascalCase, and Title Case variants accurately',
       () {
-        const featureGate = FeatureGateParam(
-          featureName: 'auth',
-          featurePath: '/modules/auth/lib/src/features/auth',
-          moduleName: 'auth_module',
-          modulePath: '/modules/auth',
-        );
-
-        final param = SliceGateParam.fromFeatureGate(
-          featureGate: featureGate,
-          slice: 'user_profile_slice',
-        );
-
-        expect(param.featureName, 'auth');
-        expect(param.featurePath, '/modules/auth/lib/src/features/auth');
-        expect(param.moduleName, 'auth_module');
-        expect(param.modulePath, '/modules/auth');
-        expect(param.slice, 'user_profile_slice');
+        // When & Then
+        expect(param.sliceSnake, 'task_detail_view');
+        expect(param.sliceCamel, 'taskDetailView');
+        expect(param.slicePascal, 'TaskDetailView');
+        expect(param.sliceTitle, 'Task Detail View');
       },
     );
 
-    test('should format casing for slice string correctly', () {
-      const param = SliceGateParam(
-        featureName: 'auth',
-        featurePath: '/path',
-        moduleName: 'module',
-        modulePath: '/path',
-        slice: 'user_profile_slice',
-      );
+    test(
+      'GIVEN a SliceGateParam instance '
+      'WHEN logicSlicePath and uiSlicePath getters are accessed '
+      'THEN returns joined logic and ui slice directories under featurePath',
+      () {
+        // Given
+        final expectedFeaturePath = p.join(
+          '/projects/my_workspace',
+          'modules',
+          'project_management',
+          'lib',
+          'src',
+          'features',
+          'task',
+        );
 
-      expect(param.sliceSnake, 'user_profile_slice');
-      expect(param.sliceCamel, 'userProfileSlice');
-      expect(param.slicePascal, 'UserProfileSlice');
-      expect(param.sliceTitle, 'User Profile Slice');
-    });
+        // When & Then
+        expect(
+          param.logicSlicePath,
+          p.join(expectedFeaturePath, 'logic', 'task_detail_view'),
+        );
+        expect(
+          param.uiSlicePath,
+          p.join(expectedFeaturePath, 'ui', 'task_detail_view'),
+        );
+      },
+    );
   });
 }

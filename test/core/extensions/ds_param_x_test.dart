@@ -1,48 +1,91 @@
 import 'package:fsda_cli/core/extensions/ds_param_x.dart';
 import 'package:fsda_cli/domain/enums/ds_mode.dart';
 import 'package:fsda_cli/domain/params/ds_param.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
-  group('DsParamX Tests', () {
-    test('should generate correct paths for local and remote data sources', () {
-      final localParam = const DsParam(
-        moduleName: 'auth',
-        modulePath: '/modules/auth',
-        featureName: 'login',
-        featurePath: '/modules/auth/lib/src/features/login',
-        mode: DsMode.local,
-      );
+  group('DsParamX', () {
+    final expectedFeaturePath = p.join(
+      '/projects/my_workspace',
+      'modules',
+      'auth',
+      'lib',
+      'src',
+      'features',
+      'authentication',
+    );
 
-      expect(
-        localParam.featureBarrelPath,
-        '/modules/auth/lib/src/features/login/login_feature.dart',
-      );
-      expect(
-        localParam.interfacePath,
-        '/modules/auth/lib/src/features/login/data/datasources/login_local_data_source.dart',
-      );
-      expect(
-        localParam.implPath,
-        '/modules/auth/lib/src/features/login/data/datasources/login_local_data_source_impl.dart',
-      );
+    test(
+      'GIVEN a DsParam instance with DsMode.remote '
+      'WHEN interfacePath and implPath getters are accessed '
+      'THEN returns remote data source interface and implementation paths accurately',
+      () {
+        // Given
+        const param = DsParam(
+          mode: DsMode.remote,
+          featureName: 'authentication',
+          moduleName: 'auth',
+          workspaceName: 'my_workspace',
+          workspacePath: '/projects/my_workspace',
+        );
 
-      final remoteParam = const DsParam(
-        moduleName: 'auth',
-        modulePath: '/modules/auth',
-        featureName: 'login',
-        featurePath: '/modules/auth/lib/src/features/login',
-        mode: DsMode.remote,
-      );
+        // When & Then
+        expect(
+          param.interfacePath,
+          p.join(
+            expectedFeaturePath,
+            'data',
+            'datasources',
+            'authentication_remote_data_source.dart',
+          ),
+        );
+        expect(
+          param.implPath,
+          p.join(
+            expectedFeaturePath,
+            'data',
+            'datasources',
+            'authentication_remote_data_source_impl.dart',
+          ),
+        );
+      },
+    );
 
-      expect(
-        remoteParam.interfacePath,
-        '/modules/auth/lib/src/features/login/data/datasources/login_remote_data_source.dart',
-      );
-      expect(
-        remoteParam.implPath,
-        '/modules/auth/lib/src/features/login/data/datasources/login_remote_data_source_impl.dart',
-      );
-    });
+    test(
+      'GIVEN a DsParam instance with DsMode.local '
+      'WHEN interfacePath and implPath getters are accessed '
+      'THEN returns local data source interface and implementation paths accurately',
+      () {
+        // Given
+        const param = DsParam(
+          mode: DsMode.local,
+          featureName: 'authentication',
+          moduleName: 'auth',
+          workspaceName: 'my_workspace',
+          workspacePath: '/projects/my_workspace',
+        );
+
+        // When & Then
+        expect(
+          param.interfacePath,
+          p.join(
+            expectedFeaturePath,
+            'data',
+            'datasources',
+            'authentication_local_data_source.dart',
+          ),
+        );
+        expect(
+          param.implPath,
+          p.join(
+            expectedFeaturePath,
+            'data',
+            'datasources',
+            'authentication_local_data_source_impl.dart',
+          ),
+        );
+      },
+    );
   });
 }

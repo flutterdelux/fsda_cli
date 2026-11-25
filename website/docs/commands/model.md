@@ -6,7 +6,7 @@ title: Model
 ## gen-model
 
 ```bash
-fsda gen-model <name_type> -p "<type>:<name>[:default[:converter]]" -f <feature> -m <module> [--l10n] [--with-dto] [--with-request]
+fsda gen-model -n <name_type> -p "<type>:<name>[:default[:converter]]" -f <feature> -m <module> [--l10n] [--with-dto] [--with-request]
 ```
 
 Generates a Freezed-backed data model class tailored to its architectural layer. The model type is automatically detected from the suffix of the model name (e.g., `_entity`, `_dto`, `_request`, `_param`, `_response`). It automatically handles property annotations, default values, JSON serialization, auto-importing local/global dependencies, barrel file exports, optional paired model creation, and localization entries.
@@ -44,24 +44,27 @@ Properties are passed using the multi-flag `--prop` option. Each property follow
 #### Examples
 
 ```bash
-# Simple Entity with L10n using multi-flag --prop
-fsda gen-model task_entity \
-  --prop "String:id" \
-  --prop "String:title" \
-  --prop "bool:is_completed:false" \
+# Simple Entity with L10n using multi-flag --prop (-p)
+fsda gen-model \
+  -n task_entity \
+  -p "String:id" \
+  -p "String:title" \
+  -p "bool:is_completed:false" \
   -f task -m todo --l10n
 
 # Generate Paired Entity & DTO simultaneously with complex properties & converters
-fsda gen-model task_entity \
-  --prop "String:id" \
-  --prop "TaskStatus:status:TaskStatus.pending" \
-  --prop "DateTime:created_at::UtcDateTimeConverter" \
+fsda gen-model \
+  -n task_entity \
+  -p "String:id" \
+  -p "TaskStatus:status:TaskStatus.pending" \
+  -p "DateTime:created_at::UtcDateTimeConverter" \
   --with-dto \
   -f task -m todo
 ```
 
 ### Options
 
+* `-n`, `--name <name_type>`: **(Required)** Model name with a supported type suffix.
 * `-p`, `--prop <property>`: **(Required)** Defines a property specification (supports multi-flag usage for clean multi-line commands).
 * `-f`, `--feature <name>`: **(Required)** Target feature name under `lib/src/features/`.
 * `-m`, `--module <name>`: **(Required)** Target module name under `modules/`.
@@ -71,7 +74,7 @@ fsda gen-model task_entity \
 
 ### Workspace Guard
 
-Must be executed inside an FSDA workspace root directory where `fsda.yaml` is present. If executed outside, the command will abort immediately with an error.
+Must be executed inside an FSDA workspace root directory where `.fsda/config.yaml` is present. If executed outside, the command will abort immediately with an error.
 
 ### What Happens
 
@@ -79,7 +82,7 @@ Must be executed inside an FSDA workspace root directory where `fsda.yaml` is pr
 2. **Directory & Fail-Fast Existence Checks**: Verifies that the target module and feature exist physically on disk, and ensures that neither the primary model nor the paired model file already exists.
 3. **Smart Auto-Import Resolution**: Automatically resolves and organizes required imports without manual intervention for both primary and paired models:
 * **Dart Built-ins**: Ignores `dart:core` types; automatically adds `import 'dart:typed_data';` or `import 'dart:io';` for special types.
-* **Global Dependencies**: Resolves shared classes defined in `fsda.yaml` under `import_types_related_to.app_core`.
+* **Global Dependencies**: Resolves shared types exposed by workspace packages such as `app_core`.
 * **Local Dependencies**: Automatically scans local `enums`, `entities`, `params`, `dtos`, `requests`, `responses`, and `converters` directories within the feature and resolves relative import paths.
 * **Import Ordering**: Sorts imports systematically into 3 distinct tiers (`dart:*` $\rightarrow$ `package:*` $\rightarrow$ relative paths `../`).
 4. **Scaffolds Model Files**: Generates Freezed class structures for specified target models.
@@ -96,7 +99,7 @@ Must be executed inside an FSDA workspace root directory where `fsda.yaml` is pr
 ## rm-model
 
 ```bash
-fsda rm-model <name_type> -f <feature> -m <module>
+fsda rm-model -n <name_type> -f <feature> -m <module>
 ```
 
 Removes an existing model file along with its generated part files (`.freezed.dart`, `.g.dart`), cleans up barrel file exports (for entities and params), and automatically uninjects associated localization keys from the module's ARB files based on the model properties prior to deletion.
@@ -108,6 +111,7 @@ Removes an existing model file along with its generated part files (`.freezed.da
 
 ### Options
 
+* `-n`, `--name <name_type>`: **(Required)** Complete model name with a valid suffix.
 * `-f`, `--feature <name>`: **(Required)** Target feature name under `lib/src/features/`.
 * `-m`, `--module <name>`: **(Required)** Target module name under `modules/`.
 
@@ -115,15 +119,15 @@ Removes an existing model file along with its generated part files (`.freezed.da
 
 ```bash
 # Remove an Entity and clean up its ARB keys & barrel exports
-fsda rm-model task_entity -f task -m todo
+fsda rm-model -n task_entity -f task -m todo
 
 # Remove a DTO
-fsda rm-model task_dto -f task -m todo
+fsda rm-model -n task_dto -f task -m todo
 ```
 
 ### Workspace Guard
 
-Must be executed inside an FSDA workspace root directory where `fsda.yaml` is present.
+Must be executed inside an FSDA workspace root directory where `.fsda/config.yaml` is present.
 
 ### What Happens
 

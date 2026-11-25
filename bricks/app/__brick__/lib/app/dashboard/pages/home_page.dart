@@ -21,7 +21,7 @@ class HomePage extends StatelessWidget {
             ),
           ),
         ),
-        title: const Text('{{app_name}}'),
+        title: const Text('{{app_title}}'),
       ),
       body: ListView(children: []),
     );

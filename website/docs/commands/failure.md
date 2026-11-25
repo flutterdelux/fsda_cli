@@ -7,10 +7,10 @@ These commands inject and manage typed failures, exception factories, failure ma
 
 ---
 
-## gen-failure
+## Generate module failures
 
 ```bash
-fsda gen-failure "<name>:<message>" -m <module>
+fsda gen -m <module> --failure "<name>:<message>" [--failure "<name>:<message>"]
 ```
 
 Injects a new failure option into the target module's exception class, failure enum, localization extension, and ARB localization files.
@@ -27,7 +27,7 @@ Injects a new failure option into the target module's exception class, failure e
 
 ### Workspace Guard
 
-Must be executed inside an FSDA workspace root directory where `fsda.yaml` is present. If executed outside, the command will abort immediately with an error.
+Must be executed inside an FSDA workspace root directory where `.fsda/config.yaml` is present. If executed outside, the command will abort immediately with an error.
 
 ### What Happens
 
@@ -45,7 +45,7 @@ Must be executed inside an FSDA workspace root directory where `fsda.yaml` is pr
 
 ### Rerun Behavior
 
-> ⚠️ **WARNING**: `gen-failure` purely performs code injections and **does not create new artifact files**. Executing this command multiple times with the same `<name>:<message>` argument will result in **duplicate code injections** across your exception, failure enum, and extension files.
+> This operation injects entries into existing module failure files; it does not scaffold the module's failure files. Check the affected-path report after applying a plan, especially if a previous application stopped partway through.
 
 * If the target module's required files (`<module>_exception.dart`, `<module>_failure.dart`, `<module>_failure_x.dart`) do not exist, the command halts execution immediately with an error.
 * If rerun on an existing setup, it will append duplicate entries to all target files without skipping previously injected names. Make sure to review or revert your changes if you accidentally rerun the command.

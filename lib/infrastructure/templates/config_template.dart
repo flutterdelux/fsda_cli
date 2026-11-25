@@ -2,9 +2,14 @@ import '../../core/constants/app_config.dart';
 import '../../core/constants/cli_info.dart';
 
 abstract final class ConfigTemplate {
-  static const mandatoryPackages = ['app_core', 'app_l10n', 'app_ui'];
+  static const mandatoryPackages = [
+    'app_core',
+    'app_l10n',
+    'app_ui',
+    'infra_logging',
+  ];
 
-  static String buildFsda({
+  static String buildConfig({
     required String workspaceName,
     required List<String> packages,
   }) {
@@ -16,7 +21,7 @@ name: $workspaceName
 fsda_cli: "${CliInfo.version}"
 
 # Dart SDK for pubspec in (packages, modules, apps)
-sdk_version: ${CliInfo.sdkVersion}
+dart_sdk: ${CliInfo.dartSdk}
 
 android:
   min_sdk: ${AppConfig.androidMinSdk}
@@ -26,15 +31,8 @@ android:
 # app_core, app_l10n, and app_ui are mandatory for some generation like gen-module
 packages:''');
 
-    final sortedPackages = [...packages]
-      ..sort((a, b) {
-        if (a == 'app_core') return -1;
-        if (b == 'app_core') return 1;
-        return a.compareTo(b);
-      });
-
-    for (final pkg in sortedPackages) {
-      if (mandatoryPackages.contains(pkg)) {
+    for (final pkg in mandatoryPackages) {
+      if (packages.contains(pkg)) {
         buffer.writeln('  - $pkg');
       }
     }

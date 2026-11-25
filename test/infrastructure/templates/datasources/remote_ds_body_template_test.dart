@@ -2,84 +2,76 @@ import 'package:fsda_cli/domain/enums/action.dart';
 import 'package:fsda_cli/domain/enums/ds_mode.dart';
 import 'package:fsda_cli/domain/enums/flow_type.dart';
 import 'package:fsda_cli/domain/params/sequence_param.dart';
+import 'package:fsda_cli/infrastructure/templates/datasources/remote_ds_body_async_template.dart';
+import 'package:fsda_cli/infrastructure/templates/datasources/remote_ds_body_stream_template.dart';
 import 'package:fsda_cli/infrastructure/templates/datasources/remote_ds_body_template.dart';
 import 'package:test/test.dart';
 
 void main() {
+  SequenceParam createParam({
+    required FlowType flow,
+    String? entity,
+    String? dto,
+  }) {
+    return SequenceParam(
+      action: Action.get,
+      usecase: 'task_fetch_use_case',
+      method: 'fetch_task',
+      flow: flow,
+      dsMode: DsMode.remote,
+      entity: entity,
+      dto: dto,
+      featureName: 'task',
+      moduleName: 'project_management',
+      workspaceName: 'my_workspace',
+      workspacePath: '/projects/my_workspace',
+    );
+  }
+
   group('RemoteDsBodyTemplate', () {
-    test('Given sequence with asynchronous flow, '
-        'When build is called, '
-        'Then it delegates generation to RemoteDsBodyAsyncTemplate', () {
-      // Arrange (Given)
-      const sequence = SequenceParam(
-        action: Action.post,
-        usecase: 'logout_use_case',
-        usecasePath: '',
-        method: 'logout',
+    test('GIVEN a SequenceParam with FlowType.asynchronous '
+        'WHEN build is called '
+        'THEN delegates generation to RemoteDsBodyAsyncTemplate', () {
+      // Given
+      final sequence = createParam(
         flow: FlowType.asynchronous,
-        dsMode: DsMode.remote,
-        featureName: 'session',
-        featurePath: '',
-        moduleName: 'auth',
-        modulePath: '',
+        entity: 'task_entity',
+        dto: 'task_dto',
       );
 
-      // Act (When)
+      // When
       final result = RemoteDsBodyTemplate.build(sequence);
 
-      // Assert (Then)
-      expect(result, contains('final path = _basePath;'));
-      expect(result, contains('_apiClient.post<Map<String, dynamic>>(path);'));
+      // Then
+      expect(result, RemoteDsBodyAsyncTemplate.build(sequence));
     });
 
-    test('Given sequence with stream flow, '
-        'When build is called, '
-        'Then it delegates generation to RemoteDsBodyStreamTemplate', () {
-      // Arrange (Given)
-      const sequence = SequenceParam(
-        action: Action.get,
-        usecase: 'watch_items_use_case',
-        usecasePath: '',
-        method: 'watch_items',
+    test('GIVEN a SequenceParam with FlowType.stream '
+        'WHEN build is called '
+        'THEN delegates generation to RemoteDsBodyStreamTemplate', () {
+      // Given
+      final sequence = createParam(
         flow: FlowType.stream,
-        dsMode: DsMode.remote,
-        isList: true,
-        entity: 'item_entity',
-        dto: 'item_dto',
-        featureName: 'item',
-        featurePath: '',
-        moduleName: 'catalog',
-        modulePath: '',
+        entity: 'task_entity',
+        dto: 'task_dto',
       );
 
-      // Act (When)
+      // When
       final result = RemoteDsBodyTemplate.build(sequence);
 
-      // Assert (Then)
-      expect(result, contains("final path = '\$_basePath/stream';"));
-      expect(result, contains('_apiClient.stream<List>(path)'));
+      // Then
+      expect(result, RemoteDsBodyStreamTemplate.build(sequence));
     });
 
     test(
-      'Given sequence with synchronous flow, '
-      'When build is called, '
-      'Then it throws an Exception because synchronous flow with remote source is not available',
+      'GIVEN a SequenceParam with FlowType.synchronous '
+      'WHEN build is called '
+      'THEN throws an Exception indicating synchronous flow is unavailable for remote source',
       () {
-        // Arrange (Given)
-        const sequence = SequenceParam(
-          action: Action.get,
-          usecase: 'get_sync_use_case',
-          usecasePath: '',
-          method: 'get_sync',
-          flow: FlowType.synchronous,
-          dsMode: DsMode.remote,
-          featureName: 'user',
-          featurePath: '',
-          moduleName: 'auth',
-          modulePath: '',
-        );
+        // Given
+        final sequence = createParam(flow: FlowType.synchronous);
 
-        // Act & Assert (When & Then)
+        // When & Then
         expect(
           () => RemoteDsBodyTemplate.build(sequence),
           throwsA(

@@ -1,4 +1,5 @@
 import '../../../domain/models/artifact_generation_model.dart';
+import '../../../domain/models/logic_uc_model.dart';
 import '../../../domain/params/logic_flow_param.dart';
 import '../../../domain/params/logic_param.dart';
 import 'cubit_flow_template.dart';
@@ -20,12 +21,15 @@ abstract final class LogicTemplate {
     };
   }
 
-  static ArtifactGenerationModel buildFlow(LogicFlowParam logic) {
+  static ArtifactGenerationModel buildFlow({
+    required LogicFlowParam logic,
+    required LogicUcModel uc,
+  }) {
     return switch (logic.control) {
-      .cubit => CubitFlowTemplate.build(logic),
-      .getx => GetxFlowTemplate.build(logic),
-      .provider => ProviderFlowTemplate.build(logic),
-      .riverpod => RiverpodFlowTemplate.build(logic),
+      .cubit => CubitFlowTemplate.build(logic: logic, uc: uc),
+      .getx => GetxFlowTemplate.build(logic: logic, uc: uc),
+      .provider => ProviderFlowTemplate.build(logic: logic, uc: uc),
+      .riverpod => RiverpodFlowTemplate.build(logic: logic, uc: uc),
     };
   }
 }

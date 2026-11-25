@@ -6,7 +6,7 @@ class ConfigModel {
   final String workspacePath;
   final String cliVersion;
   final List<String> activePackages;
-  final String sdkVersion;
+  final String dartSdk;
   final ConfigAndroidModel android;
 
   const ConfigModel({
@@ -14,7 +14,7 @@ class ConfigModel {
     required this.workspacePath,
     required this.cliVersion,
     this.activePackages = const [],
-    this.sdkVersion = CliInfo.sdkVersion,
+    this.dartSdk = CliInfo.dartSdk,
     this.android = const ConfigAndroidModel(),
   });
 }

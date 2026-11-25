@@ -1,4 +1,4 @@
-import '../../../core/extensions/app_integration_param_x.dart';
+import '../../../core/extensions/feature_param_x.dart';
 import '../../../domain/models/dependency_metadata.dart';
 import '../../../domain/models/feature_metadata.dart';
 import '../../../domain/params/app_integration/reg_feature_param.dart';

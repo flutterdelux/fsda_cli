@@ -7,21 +7,13 @@ enum ModelType {
   request('request'),
   response('response');
 
-  final String value;
+  final String suffix;
 
-  const ModelType(this.value);
+  const ModelType(this.suffix);
 
-  static ModelType? fromValue(String value) {
-    return values.firstWhereOrNull((e) => e.value == value);
+  static ModelType? tryParse(String value) {
+    return values.firstWhereOrNull((e) => e.suffix == value);
   }
 
-  String resolveParentDirUnderFeature() {
-    return switch (this) {
-      .entity => 'domain/entities',
-      .param => 'domain/params',
-      .dto => 'data/dtos',
-      .request => 'data/requests',
-      .response => 'data/responses',
-    };
-  }
+  static String get available => values.map((e) => e.suffix).join(', ');
 }

@@ -1,8 +1,8 @@
-import '../../../domain/params/inputs/input_text_param.dart';
+import '../../../domain/params/input_param.dart';
 import '../../text_modifiers/string_extension.dart';
 
 abstract final class InputTextTemplate {
-  static String build(InputTextParam input) {
+  static String build(InputParam input) {
     final featurePascal = input.featureName.pascalCase;
     final fieldPascal = input.field.pascalCase;
     final modulePascal = input.moduleName.pascalCase;
@@ -37,7 +37,7 @@ class $className extends StatelessWidget {
 ''';
   }
 
-  static Map<String, dynamic> buildArbEntries(InputTextParam input) {
+  static Map<String, dynamic> buildArbEntries(InputParam input) {
     final entries = <String, dynamic>{};
     final featureCamel = input.featureName.camelCase;
     final featureSentence = input.featureName.sentenceCase;

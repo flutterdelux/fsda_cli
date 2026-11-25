@@ -1,6 +1,8 @@
 import 'package:path/path.dart' as p;
 
-import '../../core/extensions/feature_gate_param_x.dart';
+import '../../core/extensions/feature_param_x.dart';
+import '../../core/extensions/logic_flow_param_x.dart';
+import '../../core/extensions/module_param_x.dart';
 import '../../domain/models/artifact_generation_model.dart';
 import '../../domain/params/logic_flow_param.dart';
 import '../../domain/params/logic_param.dart';
@@ -11,6 +13,7 @@ import 'helpers/export_service.dart';
 import 'helpers/file_service.dart';
 import 'helpers/import_resolver_service.dart';
 import 'helpers/import_service.dart';
+import 'helpers/logic_uc_service.dart';
 import 'helpers/operation_report_service.dart';
 
 class LogicService {
@@ -19,6 +22,7 @@ class LogicService {
   final ImportService _importService;
   final ImportResolverService _importResolverService;
   final ExportService _exportService;
+  final LogicUcService _logicUcService;
 
   const LogicService({
     required OperationReportService reportService,
@@ -26,11 +30,13 @@ class LogicService {
     required ImportService importService,
     required ImportResolverService importResolverService,
     required ExportService exportService,
+    required LogicUcService logicUcService,
   }) : _reportService = reportService,
        _fileService = fileService,
        _importService = importService,
        _importResolverService = importResolverService,
-       _exportService = exportService;
+       _exportService = exportService,
+       _logicUcService = logicUcService;
 
   Future<void> generate({
     required LogicParam logic,
@@ -63,7 +69,10 @@ class LogicService {
     required LogicFlowParam logic,
     required void Function(String) onProgress,
   }) async {
-    final stateArtifact = StateFlowTemplate.build(logic);
+    onProgress('Inspecting use case metadata...');
+    final uc = await _logicUcService.inspectUseCase(logic.ucPath);
+
+    final stateArtifact = StateFlowTemplate.build(logic: logic, uc: uc);
     if (!await _fileService.exists(stateArtifact.path)) {
       onProgress(
         'Creating state file, resolve import and export to feature barrel...',
@@ -78,7 +87,7 @@ class LogicService {
     onProgress(
       'Creating logic file, resolve import and export to feature barrel...',
     );
-    final logicArtifact = LogicTemplate.buildFlow(logic);
+    final logicArtifact = LogicTemplate.buildFlow(logic: logic, uc: uc);
     await _createFileResolveImportAndExport(
       artifact: logicArtifact,
       modulePath: logic.modulePath,

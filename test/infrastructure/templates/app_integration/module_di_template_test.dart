@@ -5,22 +5,21 @@ import 'package:fsda_cli/infrastructure/templates/app_integration/module_di_temp
 import 'package:test/test.dart';
 
 void main() {
-  group('ModuleDiTemplate', () {
-    const tRegParam = RegFeatureParam(
-      appName: 'my_app',
-      appPath: '/app',
-      moduleName: 'auth',
-      modulePath: '/modules/auth',
-      featureName: 'auth',
-      featurePath: '/modules/auth/lib/src/features/auth',
-    );
+  const regFeatureParam = RegFeatureParam(
+    featureName: 'user_profile',
+    moduleName: 'account',
+    appName: 'portal_app',
+    workspaceName: 'my_workspace',
+    workspacePath: '/projects/my_workspace',
+  );
 
+  group('ModuleDiTemplate', () {
     test(
-      'Given empty metadata lists for all dependencies, '
-      'When buildFeatureDiMethod is called, '
-      'Then it generates DI registration method with placeholder comments',
-      () async {
-        // Arrange (Given)
+      'GIVEN an empty FeatureMetadata '
+      'WHEN buildFeatureDiMethod is called '
+      'THEN generates static _<featureCamel>Di method with section comment headers only',
+      () {
+        // Given
         const metadata = FeatureMetadata(
           datasources: [],
           repositories: [],
@@ -28,213 +27,242 @@ void main() {
           logics: [],
         );
 
-        // Act (When)
+        // When
         final result = ModuleDiTemplate.buildFeatureDiMethod(
-          param: tRegParam,
+          param: regFeatureParam,
           metadata: metadata,
         );
 
-        // Assert (Then)
-        expect(result, contains('static void _authDi() {'));
-        expect(result, contains('// Datasources'));
-        expect(result, contains('// Repositories'));
-        expect(result, contains('// Usecases'));
-        expect(result, contains('// Logic'));
+        // Then
+        expect(result, '''
+  static void _userProfileDi() {
+    // Datasources
+
+    // Repositories
+
+    // Usecases
+
+    // Logic
+  }
+''');
       },
     );
 
     test(
-      'Given datasource metadata with ApiClient and regular parameters, '
-      'When buildFeatureDiMethod is called, '
-      'Then it generates lazy singleton registrations with proper argument injections',
-      () async {
-        // Arrange (Given)
-        final metadata = const FeatureMetadata(
+      'GIVEN FeatureMetadata with datasources, repositories, useCases, and standard logics '
+      'WHEN buildFeatureDiMethod is called '
+      'THEN generates complete GetIt registration blocks with AppLogger param1 and registerFactory',
+      () {
+        // Given
+        const metadata = FeatureMetadata(
           datasources: [
             DependencyMetadata(
-              className: 'AuthRemoteDatasourceImpl',
+              className: 'UserProfileRemoteDataSourceImpl',
               parameters: [
                 DependencyParamMetadata(
-                  name: 'client',
+                  name: 'apiClient',
                   type: 'ApiClient',
                   isNamed: true,
                 ),
+              ],
+            ),
+            DependencyMetadata(
+              className: 'UserProfileLocalDataSourceImpl',
+              parameters: [
                 DependencyParamMetadata(
-                  name: 'logger',
-                  type: 'OtherService',
+                  name: 'localStorage',
+                  type: 'LocalStorage',
                   isNamed: false,
                 ),
               ],
             ),
           ],
-          repositories: [],
-          useCases: [],
-          logics: [],
-        );
-
-        // Act (When)
-        final result = ModuleDiTemplate.buildFeatureDiMethod(
-          param: tRegParam,
-          metadata: metadata,
-        );
-
-        // Assert (Then)
-        expect(
-          result,
-          contains('sl.registerLazySingleton<AuthRemoteDatasource>('),
-        );
-        expect(result, contains('client: sl()'));
-        expect(result, contains('sl()'));
-      },
-    );
-
-    test(
-      'Given repository metadata with AppLogger parameter, '
-      'When buildFeatureDiMethod is called, '
-      'Then it generates lazy singleton registrations with parameterized logger injection',
-      () async {
-        // Arrange (Given)
-        final metadata = const FeatureMetadata(
-          datasources: [],
           repositories: [
             DependencyMetadata(
-              className: 'AuthRepositoryImpl',
+              className: 'UserProfileRepositoryImpl',
               parameters: [
                 DependencyParamMetadata(
                   name: 'appLogger',
                   type: 'AppLogger',
                   isNamed: true,
                 ),
+                DependencyParamMetadata(
+                  name: 'remoteDataSource',
+                  type: 'UserProfileRemoteDataSource',
+                  isNamed: true,
+                ),
+                DependencyParamMetadata(
+                  name: 'localDataSource',
+                  type: 'UserProfileLocalDataSource',
+                  isNamed: false,
+                ),
               ],
             ),
           ],
-          useCases: [],
-          logics: [],
-        );
-
-        // Act (When)
-        final result = ModuleDiTemplate.buildFeatureDiMethod(
-          param: tRegParam,
-          metadata: metadata,
-        );
-
-        // Assert (Then)
-        expect(result, contains('sl.registerLazySingleton<AuthRepository>('));
-        expect(result, contains("appLogger: sl(param1: 'AuthRepository')"));
-      },
-    );
-
-    test(
-      'Given usecases metadata, '
-      'When buildFeatureDiMethod is called, '
-      'Then it generates lazy singleton registrations for usecases',
-      () async {
-        // Arrange (Given)
-        final metadata = const FeatureMetadata(
-          datasources: [],
-          repositories: [],
           useCases: [
             DependencyMetadata(
-              className: 'LoginUseCase',
+              className: 'GetUserProfileUseCase',
+              parameters: [
+                DependencyParamMetadata(
+                  name: 'userProfileRepository',
+                  type: 'UserProfileRepository',
+                  isNamed: true,
+                ),
+              ],
+            ),
+            DependencyMetadata(
+              className: 'SyncUserProfileUseCase',
               parameters: [
                 DependencyParamMetadata(
                   name: 'repository',
-                  type: 'AuthRepository',
+                  type: 'UserProfileRepository',
+                  isNamed: false,
+                ),
+              ],
+            ),
+          ],
+          logics: [
+            DependencyMetadata(
+              className: 'UserProfileListCubit',
+              parameters: [
+                DependencyParamMetadata(
+                  name: 'getUserProfileUseCase',
+                  type: 'GetUserProfileUseCase',
                   isNamed: true,
                 ),
               ],
             ),
           ],
-          logics: [],
         );
 
-        // Act (When)
+        // When
         final result = ModuleDiTemplate.buildFeatureDiMethod(
-          param: tRegParam,
+          param: regFeatureParam,
           metadata: metadata,
         );
 
-        // Assert (Then)
-        expect(result, contains('sl.registerLazySingleton('));
-        expect(result, contains('() => LoginUseCase('));
-        expect(result, contains('repository: sl()'));
+        // Then
+        expect(result, '''
+  static void _userProfileDi() {
+    // Datasources
+    sl.registerLazySingleton<UserProfileRemoteDataSource>(
+      () => UserProfileRemoteDataSourceImpl(
+        apiClient: sl(),
+      ),
+    );
+    sl.registerLazySingleton<UserProfileLocalDataSource>(
+      () => UserProfileLocalDataSourceImpl(
+        sl(),
+      ),
+    );
+
+    // Repositories
+    sl.registerLazySingleton<UserProfileRepository>(
+      () => UserProfileRepositoryImpl(
+        appLogger: sl(param1: 'UserProfileRepository'),
+        remoteDataSource: sl(),
+        sl(),
+      ),
+    );
+
+    // Usecases
+    sl.registerLazySingleton(
+      () => GetUserProfileUseCase(
+        userProfileRepository: sl(),
+      ),
+    );
+    sl.registerLazySingleton(
+      () => SyncUserProfileUseCase(
+        sl(),
+      ),
+    );
+
+    // Logic
+    sl.registerFactory(
+      () => UserProfileListCubit(
+        getUserProfileUseCase: sl()
+      ),
+    );
+  }
+''');
       },
     );
 
-    test('Given logic metadata with external Param or Entity, '
-        'When buildFeatureDiMethod is called, '
-        'Then it generates registerFactoryParam registrations', () async {
-      // Arrange (Given)
-      final metadata = const FeatureMetadata(
-        datasources: [],
-        repositories: [],
-        useCases: [],
-        logics: [
-          DependencyMetadata(
-            className: 'AuthCubit',
-            parameters: [
-              DependencyParamMetadata(
-                name: 'useCase',
-                type: 'LoginUseCase',
-                isNamed: false,
-              ),
-              DependencyParamMetadata(
-                name: 'param',
-                type: 'LoginParam',
-                isNamed: true,
-              ),
-            ],
-          ),
-        ],
-      );
+    test(
+      'GIVEN FeatureMetadata with logics requiring *Param or *Entity constructor arguments '
+      'WHEN buildFeatureDiMethod is called '
+      'THEN generates sl.registerFactoryParam passing external param to constructor',
+      () {
+        // Given
+        const metadata = FeatureMetadata(
+          datasources: [],
+          repositories: [],
+          useCases: [],
+          logics: [
+            DependencyMetadata(
+              className: 'UserProfileDetailCubit',
+              parameters: [
+                DependencyParamMetadata(
+                  name: 'getUserDetailUseCase',
+                  type: 'GetUserDetailUseCase',
+                  isNamed: true,
+                ),
+                DependencyParamMetadata(
+                  name: 'param',
+                  type: 'UserDetailParam',
+                  isNamed: true,
+                ),
+              ],
+            ),
+            DependencyMetadata(
+              className: 'UserProfileEditCubit',
+              parameters: [
+                DependencyParamMetadata(
+                  name: 'updateUserUseCase',
+                  type: 'UpdateUserUseCase',
+                  isNamed: false,
+                ),
+                DependencyParamMetadata(
+                  name: 'initialUser',
+                  type: 'UserEntity',
+                  isNamed: false,
+                ),
+              ],
+            ),
+          ],
+        );
 
-      // Act (When)
-      final result = ModuleDiTemplate.buildFeatureDiMethod(
-        param: tRegParam,
-        metadata: metadata,
-      );
+        // When
+        final result = ModuleDiTemplate.buildFeatureDiMethod(
+          param: regFeatureParam,
+          metadata: metadata,
+        );
 
-      // Assert (Then)
-      expect(
-        result,
-        contains('sl.registerFactoryParam<AuthCubit, LoginParam, void>('),
-      );
-      expect(result, contains('(param, _) => AuthCubit('));
-      expect(result, contains('param: param'));
-    });
+        // Then
+        expect(result, '''
+  static void _userProfileDi() {
+    // Datasources
 
-    test('Given standard logic metadata without external parameters, '
-        'When buildFeatureDiMethod is called, '
-        'Then it generates standard registerFactory registrations', () async {
-      // Arrange (Given)
-      final metadata = const FeatureMetadata(
-        datasources: [],
-        repositories: [],
-        useCases: [],
-        logics: [
-          DependencyMetadata(
-            className: 'SimpleCubit',
-            parameters: [
-              DependencyParamMetadata(
-                name: 'useCase',
-                type: 'LoginUseCase',
-                isNamed: false,
-              ),
-            ],
-          ),
-        ],
-      );
+    // Repositories
 
-      // Act (When)
-      final result = ModuleDiTemplate.buildFeatureDiMethod(
-        param: tRegParam,
-        metadata: metadata,
-      );
+    // Usecases
 
-      // Assert (Then)
-      expect(result, contains('sl.registerFactory('));
-      expect(result, contains('() => SimpleCubit('));
-      expect(result, contains('sl()'));
-    });
+    // Logic
+    sl.registerFactoryParam<UserProfileDetailCubit, UserDetailParam, void>(
+      (param, _) => UserProfileDetailCubit(
+        getUserDetailUseCase: sl(),
+        param: param,
+      ),
+    );
+    sl.registerFactoryParam<UserProfileEditCubit, UserEntity, void>(
+      (param, _) => UserProfileEditCubit(
+        sl(),
+        param,
+      ),
+    );
+  }
+''');
+      },
+    );
   });
 }

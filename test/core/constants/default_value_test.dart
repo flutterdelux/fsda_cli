@@ -10,7 +10,7 @@ void main() {
         'Then it returns the correct default value string',
         () {
           // Act & Assert (Given & When & Then disatukan karena berupa lookup sederhana)
-          expect(DefaultValue.fromType('String'), equals(''));
+          expect(DefaultValue.fromType('String'), equals("''"));
           expect(DefaultValue.fromType('int'), equals('0'));
           expect(DefaultValue.fromType('double'), equals('0.0'));
           expect(DefaultValue.fromType('bool'), equals('false'));

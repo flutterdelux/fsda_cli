@@ -6,291 +6,287 @@ import 'package:fsda_cli/infrastructure/templates/datasources/remote_ds_body_asy
 import 'package:test/test.dart';
 
 void main() {
+  SequenceParam createParam({
+    Action action = Action.get,
+    bool isList = false,
+    String? entity,
+    String? dto,
+    String? param,
+    String? request,
+    String? response,
+  }) {
+    return SequenceParam(
+      action: action,
+      usecase: 'task_action_use_case',
+      method: 'execute_task_action',
+      flow: FlowType.asynchronous,
+      dsMode: DsMode.remote,
+      isList: isList,
+      entity: entity,
+      dto: dto,
+      param: param,
+      request: request,
+      response: response,
+      featureName: 'task',
+      moduleName: 'project_management',
+      workspaceName: 'my_workspace',
+      workspacePath: '/projects/my_workspace',
+    );
+  }
+
   group('RemoteDsBodyAsyncTemplate', () {
-    group('Return + Param combinations', () {
+    group('ReturnParam Combination (isReturnParam)', () {
       test(
-        'Given sequence with isReturnParam true, Action.post (useBodyRequest), and response model, '
-        'When build is called, '
-        'Then it generates remote async body with body payload and response DTO parsing',
+        'GIVEN Action.post with entity, dto, param, request, and response wrapper '
+        'WHEN build is called '
+        'THEN generates body request, status 201 check, and response wrapper parsing',
         () {
-          // Arrange (Given)
-          const sequence = SequenceParam(
+          // Given
+          final sequence = createParam(
             action: Action.post,
-            usecase: 'create_user_use_case',
-            usecasePath: '',
-            method: 'create_user',
-            flow: FlowType.asynchronous,
-            dsMode: DsMode.remote,
-            entity: 'user_entity',
-            dto: 'user_dto',
-            response: 'user_response',
-            param: 'create_user_param',
-            request: 'create_user_request',
-            featureName: 'user_profile',
-            featurePath: '',
-            moduleName: 'auth',
-            modulePath: '',
+            entity: 'task_entity',
+            dto: 'task_dto',
+            param: 'task_create_param',
+            request: 'task_create_request',
+            response: 'task_response',
           );
 
-          // Act (When)
+          // When
           final result = RemoteDsBodyAsyncTemplate.build(sequence);
 
-          // Assert (Then)
-          expect(result, contains(r"final path = '$_basePath/${request.id}';"));
-          expect(result, contains('await _apiClient.post'));
-          expect(result, contains('body: request.toJson(),'));
-          expect(
-            result,
-            contains(
-              'final response = UserResponse.fromJson(apiResponse.body);',
-            ),
-          );
-          expect(
-            result,
-            contains('if (response.data != null) return response.data!;'),
-          );
-          expect(result, contains("msg: 'User Profile is null',"));
-          expect(result, contains('throw AuthException.fromApiResponse('));
+          // Then
+          expect(result, '''
+    final path = _basePath;
+    final apiResponse = await _apiClient.post<Map<String, dynamic>>(
+      path,
+      body: request.toJson(),
+    );
+
+    if (apiResponse.statusCode == 201) {
+      final response = TaskResponse.fromJson(apiResponse.body);
+      if (response.data != null) return response.data!;
+
+      throw CoreException.serverError(
+        msg: 'Task is null',
+        st: StackTrace.current,
+      );
+    }
+
+    throw ProjectManagementException.fromApiResponse(apiResponse, st: StackTrace.current);
+''');
         },
       );
 
       test(
-        'Given sequence with isReturnParam true, Action.get (useQueryParam), and direct single DTO (no response wrapper), '
-        'When build is called, '
-        'Then it generates remote async body with queryParameters and direct Map DTO parsing',
+        'GIVEN Action.get with entity, dto, param, and request without response wrapper '
+        'WHEN build is called '
+        'THEN generates queryParameters, status 200 check, and direct Map DTO parsing',
         () {
-          // Arrange (Given)
-          const sequence = SequenceParam(
+          // Given
+          final sequence = createParam(
             action: Action.get,
-            usecase: 'get_user_detail_use_case',
-            usecasePath: '',
-            method: 'get_user_detail',
-            flow: FlowType.asynchronous,
-            dsMode: DsMode.remote,
-            entity: 'user_entity',
-            dto: 'user_dto',
-            response: null,
-            param: 'get_user_param',
-            request: 'get_user_request',
-            featureName: 'user',
-            featurePath: '',
-            moduleName: 'account',
-            modulePath: '',
+            entity: 'task_entity',
+            dto: 'task_dto',
+            param: 'task_detail_param',
+            request: 'task_detail_request',
           );
 
-          // Act (When)
+          // When
           final result = RemoteDsBodyAsyncTemplate.build(sequence);
 
-          // Assert (Then)
-          expect(result, contains('await _apiClient.get'));
-          expect(result, contains('queryParameters: request.toJson(),'));
-          expect(result, contains("final data = apiResponse.body['data'];"));
-          expect(result, contains('if (data is Map) {'));
-          expect(
-            result,
-            contains('return UserDto.fromJson(data as Map<String, dynamic>);'),
-          );
-          expect(result, contains('throw AccountException.fromApiResponse('));
+          // Then
+          expect(result, '''
+    final path = '\$_basePath/\${request.id}';
+    final apiResponse = await _apiClient.get<Map<String, dynamic>>(
+      path,
+      queryParameters: request.toJson(),
+    );
+
+    if (apiResponse.statusCode == 200) {
+      final data = apiResponse.body['data'];
+      if (data is Map) {
+        return TaskDto.fromJson(data as Map<String, dynamic>);
+      }
+
+      throw CoreException.serverError(
+        msg: 'Task is null',
+        st: StackTrace.current,
+      );
+    }
+
+    throw ProjectManagementException.fromApiResponse(apiResponse, st: StackTrace.current);
+''');
         },
       );
 
       test(
-        'Given sequence with isReturnParam true, Action.delete (neither body nor query param), and isList true, '
-        'When build is called, '
-        'Then it generates remote async body without request payload and with List DTO parsing',
+        'GIVEN Action.delete with entity, dto, param, request, and isList true '
+        'WHEN build is called '
+        'THEN generates empty queryParamStr, status 204 check, and direct List DTO parsing',
         () {
-          // Arrange (Given)
-          const sequence = SequenceParam(
+          // Given
+          final sequence = createParam(
             action: Action.delete,
-            usecase: 'delete_user_use_case',
-            usecasePath: '',
-            method: 'delete_user',
-            flow: FlowType.asynchronous,
-            dsMode: DsMode.remote,
             isList: true,
-            entity: 'user_entity',
-            dto: 'user_dto',
-            response: null,
-            param: 'delete_user_param',
-            request: 'delete_user_request',
-            featureName: 'user',
-            featurePath: '',
-            moduleName: 'account',
-            modulePath: '',
+            entity: 'task_entity',
+            dto: 'task_dto',
+            param: 'task_delete_param',
+            request: 'task_delete_request',
           );
 
-          // Act (When)
+          // When
           final result = RemoteDsBodyAsyncTemplate.build(sequence);
 
-          // Assert (Then)
-          expect(result, contains('await _apiClient.delete'));
-          expect(result, isNot(contains('body: request.toJson(),')));
-          expect(result, isNot(contains('queryParameters: request.toJson(),')));
-          expect(result, contains('if (data is List) {'));
-          expect(
-            result,
-            contains(
-              '.map((item) => UserDto.fromJson(item as Map<String, dynamic>))',
-            ),
-          );
+          // Then
+          expect(result, '''
+    final path = '\$_basePath/\${request.id}';
+    final apiResponse = await _apiClient.delete(
+      path,
+      
+    );
+
+    if (apiResponse.statusCode == 204) {
+      final data = apiResponse.body['data'];
+      if (data is List) {
+        return data
+            .map((item) => TaskDto.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+
+      throw CoreException.serverError(
+        msg: 'Task is null',
+        st: StackTrace.current,
+      );
+    }
+
+    throw ProjectManagementException.fromApiResponse(apiResponse, st: StackTrace.current);
+''');
         },
       );
     });
 
-    group('Return only combinations', () {
+    group('Return Combination (isReturn)', () {
       test(
-        'Given sequence with isReturn true and response model, '
-        'When build is called, '
-        'Then it generates remote async get body using _basePath and response wrapper',
+        'GIVEN Action.get with entity, dto, and isList true without response wrapper '
+        'WHEN build is called '
+        'THEN calls _basePath directly and maps List data to DTO list',
         () {
-          // Arrange (Given)
-          const sequence = SequenceParam(
+          // Given
+          final sequence = createParam(
             action: Action.get,
-            usecase: 'get_profile_use_case',
-            usecasePath: '',
-            method: 'get_profile',
-            flow: FlowType.asynchronous,
-            dsMode: DsMode.remote,
-            entity: 'profile_entity',
-            dto: 'profile_dto',
-            response: 'profile_response',
-            featureName: 'profile',
-            featurePath: '',
-            moduleName: 'user',
-            modulePath: '',
-          );
-
-          // Act (When)
-          final result = RemoteDsBodyAsyncTemplate.build(sequence);
-
-          // Assert (Then)
-          expect(result, contains('final path = _basePath;'));
-          expect(
-            result,
-            contains(
-              'final apiResponse = await _apiClient.get<Map<String, dynamic>>(path);',
-            ),
-          );
-          expect(
-            result,
-            contains(
-              'final response = ProfileResponse.fromJson(apiResponse.body);',
-            ),
-          );
-          expect(result, contains("msg: 'Profile is null',"));
-          expect(result, contains('throw UserException.fromApiResponse('));
-        },
-      );
-
-      test(
-        'Given sequence with isReturn true, isList true, and direct DTO (no response wrapper), '
-        'When build is called, '
-        'Then it generates remote async get body with direct List DTO mapping',
-        () {
-          // Arrange (Given)
-          const sequence = SequenceParam(
-            action: Action.get,
-            usecase: 'get_items_use_case',
-            usecasePath: '',
-            method: 'get_items',
-            flow: FlowType.asynchronous,
-            dsMode: DsMode.remote,
             isList: true,
-            entity: 'item_entity',
-            dto: 'item_dto',
-            response: null,
-            featureName: 'item',
-            featurePath: '',
-            moduleName: 'catalog',
-            modulePath: '',
+            entity: 'task_entity',
+            dto: 'task_dto',
           );
 
-          // Act (When)
+          // When
           final result = RemoteDsBodyAsyncTemplate.build(sequence);
 
-          // Assert (Then)
-          expect(result, contains('final path = _basePath;'));
-          expect(result, contains('if (data is List) {'));
-          expect(
-            result,
-            contains(
-              '.map((item) => ItemDto.fromJson(item as Map<String, dynamic>))',
-            ),
-          );
-        },
+          // Then
+          expect(result, '''
+    final path = _basePath;
+    final apiResponse = await _apiClient.get<Map<String, dynamic>>(path);
+
+    if (apiResponse.statusCode == 200) {
+      final data = apiResponse.body['data'];
+      if (data is List) {
+        return data
+            .map((item) => TaskDto.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+
+      throw CoreException.serverError(
+        msg: 'Task is null',
+        st: StackTrace.current,
       );
-    });
+    }
 
-    group('Param only & Void combinations', () {
-      test(
-        'Given sequence with isParam true, '
-        'When build is called, '
-        'Then it generates remote async mutation body with request.id path and body payload',
-        () {
-          // Arrange (Given)
-          const sequence = SequenceParam(
-            action: Action.put,
-            usecase: 'update_user_use_case',
-            usecasePath: '',
-            method: 'update_user',
-            flow: FlowType.asynchronous,
-            dsMode: DsMode.remote,
-            param: 'update_user_param',
-            request: 'update_user_request',
-            featureName: 'user',
-            featurePath: '',
-            moduleName: 'auth',
-            modulePath: '',
-          );
-
-          // Act (When)
-          final result = RemoteDsBodyAsyncTemplate.build(sequence);
-
-          // Assert (Then)
-          expect(result, contains(r"final path = '$_basePath/${request.id}';"));
-          expect(
-            result,
-            contains('await _apiClient.put<Map<String, dynamic>>'),
-          );
-          expect(result, contains('body: request.toJson(),'));
-          expect(
-            result,
-            contains('if (apiResponse.statusCode == 200) return;'),
-          );
-          expect(result, contains('throw AuthException.fromApiResponse('));
+    throw ProjectManagementException.fromApiResponse(apiResponse, st: StackTrace.current);
+''');
         },
       );
 
-      test('Given sequence with isVoid true, '
-          'When build is called, '
-          'Then it generates remote async void body using _basePath', () {
-        // Arrange (Given)
-        const sequence = SequenceParam(
-          action: Action.post,
-          usecase: 'logout_use_case',
-          usecasePath: '',
-          method: 'logout',
-          flow: FlowType.asynchronous,
-          dsMode: DsMode.remote,
-          featureName: 'session',
-          featurePath: '',
-          moduleName: 'auth',
-          modulePath: '',
+      test('GIVEN Action.get with entity, dto, and response wrapper '
+          'WHEN build is called '
+          'THEN calls _basePath and extracts data using response wrapper', () {
+        // Given
+        final sequence = createParam(
+          action: Action.get,
+          entity: 'task_entity',
+          dto: 'task_dto',
+          response: 'task_response',
         );
 
-        // Act (When)
+        // When
         final result = RemoteDsBodyAsyncTemplate.build(sequence);
 
-        // Assert (Then)
-        expect(result, contains('final path = _basePath;'));
-        expect(
-          result,
-          contains(
-            'final apiResponse = await _apiClient.post<Map<String, dynamic>>(path);',
-          ),
-        );
-        expect(result, contains('if (apiResponse.statusCode == 201) return;'));
-        expect(result, contains('throw AuthException.fromApiResponse('));
+        // Then
+        expect(result, '''
+    final path = _basePath;
+    final apiResponse = await _apiClient.get<Map<String, dynamic>>(path);
+
+    if (apiResponse.statusCode == 200) {
+      final response = TaskResponse.fromJson(apiResponse.body);
+      if (response.data != null) return response.data!;
+
+      throw CoreException.serverError(
+        msg: 'Task is null',
+        st: StackTrace.current,
+      );
+    }
+
+    throw ProjectManagementException.fromApiResponse(apiResponse, st: StackTrace.current);
+''');
+      });
+    });
+
+    group('Param Combination (isParam)', () {
+      test(
+        'GIVEN Action.put with param and request only '
+        'WHEN build is called '
+        'THEN sends body request to path with id and returns early on matching httpStatus',
+        () {
+          // Given
+          final sequence = createParam(
+            action: Action.put,
+            param: 'task_update_param',
+            request: 'task_update_request',
+          );
+
+          // When
+          final result = RemoteDsBodyAsyncTemplate.build(sequence);
+
+          // Then
+          expect(result, '''
+    final path = '\$_basePath/\${request.id}';
+    final apiResponse = await _apiClient.put<Map<String, dynamic>>(
+      path,
+      body: request.toJson(),
+    );
+    if (apiResponse.statusCode == 200) return;
+    throw ProjectManagementException.fromApiResponse(apiResponse, st: StackTrace.current);
+''');
+        },
+      );
+    });
+
+    group('Void Combination (isVoid)', () {
+      test('GIVEN Action.post with no models '
+          'WHEN build is called '
+          'THEN calls _basePath directly and returns early on status 201', () {
+        // Given
+        final sequence = createParam(action: Action.post);
+
+        // When
+        final result = RemoteDsBodyAsyncTemplate.build(sequence);
+
+        // Then
+        expect(result, '''
+    final path = _basePath;
+    final apiResponse = await _apiClient.post<Map<String, dynamic>>(path);
+    if (apiResponse.statusCode == 201) return;
+    throw ProjectManagementException.fromApiResponse(apiResponse, st: StackTrace.current);
+''');
       });
     });
   });

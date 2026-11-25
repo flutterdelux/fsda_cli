@@ -69,7 +69,10 @@ class CreateWorkspaceCommand extends BaseCommand {
       return errorUsage;
     }
 
-    final workspace = WorkspaceParam(name: workspaceName, path: workspacePath);
+    final workspace = WorkspaceParam(
+      workspaceName: workspaceName,
+      workspacePath: workspacePath,
+    );
 
     final progress = _logger.progress('Creating workspace "$workspaceName"...');
 

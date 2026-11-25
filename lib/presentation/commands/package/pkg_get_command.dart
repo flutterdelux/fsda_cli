@@ -1,3 +1,4 @@
+import '../../../domain/params/workspace_param.dart';
 import '../../../infrastructure/services/package_sync_service.dart';
 import '../wrapper/workspace_guard_command.dart';
 
@@ -23,14 +24,7 @@ class PkgGetCommand extends WorkspaceGuardCommand {
   String get invocation => 'fsda pkg get';
 
   @override
-  Future<int> handle() async {
-    final rest = argResults?.rest ?? [];
-    if (rest.isNotEmpty) {
-      logger.error('Invalid command.');
-      logger.log('Usage: $invocation');
-      return errorUsage;
-    }
-
+  Future<int> handle(WorkspaceParam workspace) async {
     final progress = logger.progress('Synchronizing packages...');
 
     try {

@@ -1,8 +1,8 @@
-import 'package:path/path.dart' as p;
-
-import '../../../core/constants/rules.dart';
-import '../../../domain/params/feature_gate_param.dart';
-import '../../../domain/params/module_gate_param.dart';
+import '../../../core/extensions/arg_results_x.dart';
+import '../../../core/extensions/feature_param_x.dart';
+import '../../../domain/params/feature_param.dart';
+import '../../../domain/params/module_param.dart';
+import '../../resolvers/feature_resolver.dart';
 import 'module_gate_command.dart';
 
 abstract class FeatureGateCommand extends ModuleGateCommand {
@@ -13,50 +13,49 @@ abstract class FeatureGateCommand extends ModuleGateCommand {
     required super.directoryService,
   }) {
     argParser.addOption(
-      'feature',
+      FeatureResolverKeys.feature,
       abbr: 'f',
       help: 'Target feature name under lib/src/features/.',
     );
   }
 
   @override
-  Future<int> handleModuleGate(ModuleGateParam moduleGate) async {
-    final featureArg = argResults?['feature'] as String?;
+  bool get moduleShouldExists => true;
 
-    if (featureArg == null || featureArg.isEmpty) {
-      logger.error('Missing required options (--module, --feature).');
+  @override
+  Future<int> handleModuleGate(ModuleParam module) async {
+    FeatureParam feature;
+    try {
+      feature = FeatureResolver.resolve(
+        module: module,
+        data: argResults?.toMap() ?? {},
+      );
+    } catch (e) {
+      logger.error(e is FormatException ? e.message : e.toString());
       logger.log('Usage: $invocation');
       return errorUsage;
     }
 
-    if (!Rules.featureRegExp.hasMatch(featureArg)) {
-      logger.error('Invalid feature name: "$featureArg".');
-      logger.log(Rules.featureDescription);
-      logger.log('Usage: $invocation');
+    final featureFound = await directoryService.exists(feature.featurePath);
+
+    if (featureShouldExists && !featureFound) {
+      logger.error(
+        'Feature "${feature.featureName}" not found at ${feature.featurePath}',
+      );
       return errorUsage;
     }
 
-    final resolvedFeaturePath = p.join(
-      moduleGate.modulePath,
-      'lib',
-      'src',
-      'features',
-      featureArg,
-    );
-    if (!await directoryService.exists(resolvedFeaturePath)) {
-      logger.error('Feature "$featureArg" not found at $resolvedFeaturePath');
+    if (!featureShouldExists && featureFound) {
+      logger.error(
+        'Feature "${feature.featureName}" already exists at ${feature.featurePath}',
+      );
       return errorUsage;
     }
 
-    return handleFeatureGate(
-      FeatureGateParam(
-        featureName: featureArg,
-        featurePath: resolvedFeaturePath,
-        moduleName: moduleGate.moduleName,
-        modulePath: moduleGate.modulePath,
-      ),
-    );
+    return handleFeatureGate(feature);
   }
 
-  Future<int> handleFeatureGate(FeatureGateParam featureGateParam);
+  bool get featureShouldExists;
+
+  Future<int> handleFeatureGate(FeatureParam feature);
 }

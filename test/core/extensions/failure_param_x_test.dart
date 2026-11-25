@@ -1,46 +1,81 @@
 import 'package:fsda_cli/core/extensions/failure_param_x.dart';
 import 'package:fsda_cli/domain/params/failure_param.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 void main() {
-  group('FailureParamX Tests', () {
-    test(
-      'should generate correct shared error paths based on moduleName and modulePath',
-      () {
-        const param = FailureParam(
-          moduleName: 'auth',
-          modulePath: '/modules/auth',
-          name: 'invalid_credentials',
-          message: 'Invalid credentials provided',
-        );
+  group('FailureParamX', () {
+    const param = FailureParam(
+      name: 'invalid_payment_method',
+      message: 'The selected payment method is not supported.',
+      moduleName: 'payment',
+      workspaceName: 'my_workspace',
+      workspacePath: '/projects/my_workspace',
+    );
 
-        expect(
-          param.exceptionPath,
-          '/modules/auth/lib/src/shared/data/errors/auth_exception.dart',
-        );
-        expect(
-          param.failurePath,
-          '/modules/auth/lib/src/shared/domain/errors/auth_failure.dart',
-        );
-        expect(
-          param.extensionPath,
-          '/modules/auth/lib/src/shared/ui/extensions/auth_failure_x.dart',
-        );
+    test(
+      'GIVEN a FailureParam instance with snake_case name '
+      'WHEN case-conversion getters are accessed '
+      'THEN returns snake_case, camelCase, PascalCase, and SCREAMING_SNAKE_CASE variants accurately',
+      () {
+        // When & Then
+        expect(param.nameSnake, 'invalid_payment_method');
+        expect(param.nameCamel, 'invalidPaymentMethod');
+        expect(param.namePascal, 'InvalidPaymentMethod');
+        expect(param.nameScreaming, 'INVALID_PAYMENT_METHOD');
       },
     );
 
-    test('should format name casing and uppercase code correctly', () {
-      const param = FailureParam(
-        moduleName: 'auth',
-        modulePath: '/modules/auth',
-        name: 'token_expired',
-        message: 'Token has expired',
-      );
+    test(
+      'GIVEN a FailureParam instance '
+      'WHEN error path getters are accessed '
+      'THEN returns accurate exceptionPath, failurePath, and extensionPath under module shared directory',
+      () {
+        // Given
+        final expectedModulePath = p.join(
+          '/projects/my_workspace',
+          'modules',
+          'payment',
+        );
 
-      expect(param.nameSnake, 'token_expired');
-      expect(param.nameCamel, 'tokenExpired');
-      expect(param.namePascal, 'TokenExpired');
-      expect(param.nameCode, 'TOKEN_EXPIRED');
-    });
+        // When & Then
+        expect(
+          param.exceptionPath,
+          p.join(
+            expectedModulePath,
+            'lib',
+            'src',
+            'shared',
+            'data',
+            'errors',
+            'payment_exception.dart',
+          ),
+        );
+        expect(
+          param.failurePath,
+          p.join(
+            expectedModulePath,
+            'lib',
+            'src',
+            'shared',
+            'domain',
+            'errors',
+            'payment_failure.dart',
+          ),
+        );
+        expect(
+          param.extensionPath,
+          p.join(
+            expectedModulePath,
+            'lib',
+            'src',
+            'shared',
+            'ui',
+            'extensions',
+            'payment_failure_x.dart',
+          ),
+        );
+      },
+    );
   });
 }

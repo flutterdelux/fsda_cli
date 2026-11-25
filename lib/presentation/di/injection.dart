@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 
 import '../../infrastructure/services/app_service.dart';
+import '../../infrastructure/services/apply_service.dart';
 import '../../infrastructure/services/compose_service.dart';
 import '../../infrastructure/services/configure_app_service.dart';
 import '../../infrastructure/services/data_source_service.dart';
@@ -30,6 +31,7 @@ import '../../infrastructure/services/maintenance/refresh_service.dart';
 import '../../infrastructure/services/model_service.dart';
 import '../../infrastructure/services/module_service.dart';
 import '../../infrastructure/services/package_sync_service.dart';
+import '../../infrastructure/services/plan_service.dart';
 import '../../infrastructure/services/reg_feature_service.dart';
 import '../../infrastructure/services/reg_module_service.dart';
 import '../../infrastructure/services/sequence_service.dart';
@@ -214,6 +216,7 @@ void configureDependencies() {
       importService: sl(),
       importResolverService: sl(),
       exportService: sl(),
+      logicUcService: sl(),
     ),
   );
 
@@ -262,6 +265,33 @@ void configureDependencies() {
       fileService: sl(),
       reportService: sl(),
       directoryService: sl(),
+      fileFinderService: sl(),
+      modelService: sl(),
+      importService: sl(),
+    ),
+  );
+
+  sl.registerLazySingleton(
+    () => PlanService(fileService: sl(), reportService: sl()),
+  );
+  sl.registerLazySingleton(
+    () => ApplyService(
+      fileService: sl(),
+      reportService: sl(),
+      directoryService: sl(),
+      moduleService: sl(),
+      featureService: sl(),
+      failureService: sl(),
+      dataSourceService: sl(),
+      enumService: sl(),
+      modelService: sl(),
+      sequenceService: sl(),
+      logicService: sl(),
+      inputService: sl(),
+      uiService: sl(),
+      composeService: sl(),
+      appService: sl(),
+      configureAppService: sl(),
     ),
   );
 }

@@ -1,13 +1,10 @@
-import '../../core/extensions/app_integration_param_x.dart';
-import '../../domain/params/app_integration/app_integration_param.dart';
 import '../../domain/params/app_integration/reg_feature_param.dart';
 import '../../infrastructure/services/helpers/file_service.dart';
 import '../../infrastructure/services/reg_feature_service.dart';
-import 'wrapper/app_integration_command.dart';
+import 'wrapper/reg_feature_gate_command.dart';
 
-class RegFeatureCommand extends AppIntegrationCommand {
+class RegFeatureCommand extends RegFeatureGateCommand {
   final RegFeatureService _regFeatureService;
-  final FileService _fileService;
 
   RegFeatureCommand({
     required RegFeatureService regFeatureService,
@@ -16,46 +13,24 @@ class RegFeatureCommand extends AppIntegrationCommand {
     required super.logger,
     required super.reportService,
     required super.directoryService,
-  }) : _regFeatureService = regFeatureService,
-       _fileService = fileService;
+  }) : _regFeatureService = regFeatureService;
 
   @override
-  String get name => 'reg-feature';
+  String get name => 'feature';
 
   @override
   String get description =>
       'Registers and injects a feature configuration (DI, Routes, Pages/Widgets scaffolding) into a target module within an app.';
 
   @override
-  String get invocation => 'fsda reg-feature -f <feature> -m <module> -a <app>';
+  String get invocation => 'fsda reg -f <feature> -m <module> -a <app>';
 
   @override
-  Future<int> handleAppIntegration(AppIntegrationParam appIntegration) async {
-    final param = RegFeatureParam.fromAppIntegration(appIntegration);
-
-    final featureName = param.featureName;
-    if (featureName == null || featureName.isEmpty) {
-      logger.error('Missing required option: -f, --feature.');
-      logger.log('Usage: $invocation');
-      return errorUsage;
-    }
-
-    if (!await _fileService.exists(param.appModuleDiPath)) {
-      logger.error(
-        'Module DI file not found at ${param.appModuleDiPath}. Make sure the module is registered via reg-module first.',
-      );
-      return errorUsage;
-    }
-
-    if (!await _fileService.exists(param.appModuleRoutePath)) {
-      logger.error(
-        'Module Route file not found at ${param.appModuleRoutePath}.',
-      );
-      return errorUsage;
-    }
+  Future<int> handleRegFeature(RegFeatureParam regFeature) async {
+    final param = regFeature;
 
     final progress = logger.progress(
-      'Registering feature "$featureName" into module "${param.moduleName}" (app: "${param.appName}")...',
+      'Registering feature "${param.featureName}" into "${param.appName}/${param.moduleName}"...',
     );
 
     try {
@@ -65,7 +40,7 @@ class RegFeatureCommand extends AppIntegrationCommand {
       );
 
       progress.complete(
-        'Feature "$featureName" successfully registered into module "${param.moduleName}"!',
+        'Feature "${param.featureName}" successfully registered into module "${param.appName}/${param.moduleName}"!',
       );
 
       final reportBuffer = reportService.generateReport(

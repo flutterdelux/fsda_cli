@@ -3,14 +3,10 @@ id: commands-enum
 title: Enum
 ---
 
-These commands manage and generate typed Enums, Converters, UI Extensions, and localization entries inside specific features within your FSDA workspace.
-
----
-
 ## gen-enum
 
 ```bash
-fsda gen-enum <name> --values <value_1>,<value_2>,... -f <feature> -m <module> [--lower]
+fsda gen-enum -n <name> -v "<value_1>,<value_2>,..." -f <feature> -m <module> [--lower]
 ```
 
 Generates a complete Enum structure (including data converters and UI extensions) and automatically injects exports and localization entries into the target feature and module.
@@ -30,11 +26,8 @@ Generates a complete Enum structure (including data converters and UI extensions
 ### Examples
 
 ```bash
-# Default uppercase converter constants (e.g., 'IN_PROGRESS', 'COMPLETED')
-fsda gen-enum task_status --values in_progress,completed -f task -m todo
-
-# Lowercase converter constants (e.g., 'in_progress', 'completed')
-fsda gen-enum task_status --values in_progress,completed -f task -m todo --lower
+fsda gen-enum -n task_status -v "in_progress,completed" -f task -m todo
+fsda gen-enum -n task_status -v "in_progress,completed" -f task -m todo --lower
 ```
 
 ### Workspace Guard
@@ -62,7 +55,7 @@ Must be executed inside an FSDA workspace root directory where `fsda.yaml` is pr
 ## rm-enum
 
 ```bash
-fsda rm-enum <name> -f <feature> -m <module>
+fsda rm-enum -n <name> -f <feature> -m <module>
 ```
 
 Removes an existing Enum structure, including its converter, UI extension, barrel export declarations, and localization entries.

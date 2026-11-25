@@ -1,232 +1,221 @@
 import 'package:fsda_cli/domain/enums/action.dart';
-import 'package:fsda_cli/domain/enums/ds_mode.dart';
 import 'package:fsda_cli/domain/enums/flow_type.dart';
 import 'package:fsda_cli/domain/params/sequence_param.dart';
 import 'package:fsda_cli/infrastructure/templates/repositories/repository_template.dart';
 import 'package:test/test.dart';
 
 void main() {
+  SequenceParam createParam({
+    String method = 'get_task_list',
+    FlowType flow = FlowType.asynchronous,
+    bool isList = false,
+    String? entity,
+    String? param,
+  }) {
+    return SequenceParam(
+      action: Action.get,
+      usecase: 'task_list_get_use_case',
+      method: method,
+      flow: flow,
+      isList: isList,
+      entity: entity,
+      param: param,
+      featureName: 'task',
+      moduleName: 'project_management',
+      workspaceName: 'my_workspace',
+      workspacePath: '/projects/my_workspace',
+    );
+  }
+
   group('RepositoryTemplate', () {
-    // Helper untuk membuat SequenceParam dasar sesuai rule snake_case
-    SequenceParam createTestParam({
-      Action action = Action.get,
-      String usecase = 'get_user_use_case',
-      String usecasePath = 'path',
-      String method = 'get_user',
-      FlowType flow = FlowType.asynchronous,
-      DsMode dsMode = DsMode.remote,
-      bool isList = false,
-      String? entity,
-      String? entityPath,
-      String? param,
-      String? paramPath,
-      String? dto,
-      String? dtoPath,
-      String? request,
-      String? requestPath,
-      String? response,
-      String? responsePath,
-    }) {
-      return SequenceParam(
-        action: action,
-        usecase: usecase,
-        usecasePath: usecasePath,
-        method: method,
-        flow: flow,
-        dsMode: dsMode,
-        isList: isList,
-        entity: entity,
-        entityPath: entityPath,
-        param: param,
-        paramPath: paramPath,
-        dto: dto,
-        dtoPath: dtoPath,
-        request: request,
-        requestPath: requestPath,
-        response: response,
-        responsePath: responsePath,
-        featureName: 'user',
-        featurePath: 'user',
-        moduleName: 'core',
-        modulePath: 'core',
+    group('Injection Markers', () {
+      test('GIVEN RepositoryTemplate constants '
+          'WHEN marker constants are accessed '
+          'THEN returns expected injection placeholder comments', () {
+        // When & Then
+        expect(RepositoryTemplate.markDsField, '// [_FIELD]');
+        expect(RepositoryTemplate.markDsParam, '// [_PARAM]');
+        expect(RepositoryTemplate.markDsInit, '// [_INIT]');
+      });
+    });
+
+    group('interfaceClass', () {
+      test(
+        'GIVEN snake_case feature name '
+        'WHEN interfaceClass is called '
+        'THEN generates abstract interface Repository class with app_core import',
+        () {
+          // When
+          final result = RepositoryTemplate.interfaceClass('user_profile');
+
+          // Then
+          expect(result, '''
+import 'package:app_core/app_core.dart';
+
+abstract interface class UserProfileRepository {}
+''');
+        },
       );
-    }
+    });
 
-    test(
-      'Given feature name, '
-      'When generating interface class, '
-      'Then it should return correct abstract interface repository code template',
-      () {
-        // Given
-        const feature = 'user_profile';
+    group('implClass', () {
+      test(
+        'GIVEN snake_case feature name '
+        'WHEN implClass is called '
+        'THEN generates RepositoryImpl class with RepositoryExceptionHandler mixin, AppLogger, and injection markers',
+        () {
+          // When
+          final result = RepositoryTemplate.implClass('task');
 
-        // When
-        final result = RepositoryTemplate.interfaceClass(feature);
+          // Then
+          expect(result, '''
+import 'package:app_core/app_core.dart';
 
-        // Then
-        expect(result, contains("import 'package:app_core/app_core.dart';"));
-        expect(
-          result,
-          contains('abstract interface class UserProfileRepository {}'),
-        );
-      },
-    );
+import '../../domain/repositories/task_repository.dart';
 
-    test(
-      'Given feature name, '
-      'When generating implementation class, '
-      'Then it should return repository implementation class code template with mixin and logger',
-      () {
-        // Given
-        const feature = 'user_profile';
+class TaskRepositoryImpl
+    with RepositoryExceptionHandler
+    implements TaskRepository {
+  final AppLogger _log;
+  // [_FIELD]
 
-        // When
-        final result = RepositoryTemplate.implClass(feature);
+  const TaskRepositoryImpl({
+    required AppLogger appLogger,
+    // [_PARAM]
+  }) : // [_INIT]
+       _log = appLogger;
 
-        // Then
-        expect(result, contains("import 'package:app_core/app_core.dart';"));
-        expect(
-          result,
-          contains(
-            "import '../../domain/repositories/user_profile_repository.dart';",
-          ),
-        );
-        expect(result, contains('class UserProfileRepositoryImpl'));
-        expect(result, contains('with RepositoryExceptionHandler'));
-        expect(result, contains('implements UserProfileRepository'));
-        expect(result, contains('final AppLogger _log;'));
-        expect(result, contains('AppLogger get log => _log;'));
-      },
-    );
+  @override
+  AppLogger get log => _log;
+}
+''');
+        },
+      );
+    });
 
-    test(
-      'Given sequence param with synchronous flow and list entity, '
-      'When generating interface method, '
-      'Then it should return correct synchronous method signature with Result<List<Entity>>',
-      () {
-        // Given
-        final sequence = createTestParam(
-          method: 'get_users',
-          flow: FlowType.synchronous,
-          entity: 'user_entity',
-          isList: true,
-          param: 'user_param',
-        );
+    group('interfaceMethod', () {
+      test(
+        'GIVEN SequenceParam instances across synchronous, asynchronous, and stream flows '
+        'WHEN interfaceMethod is called '
+        'THEN generates accurate method signatures for Result, AsyncResult, and StreamResult',
+        () {
+          // Synchronous void without param
+          expect(
+            RepositoryTemplate.interfaceMethod(
+              createParam(method: 'clear_cache', flow: FlowType.synchronous),
+            ),
+            '  Result<void> clearCache();',
+          );
 
-        // When
-        final result = RepositoryTemplate.interfaceMethod(sequence);
+          // Asynchronous single entity with param
+          expect(
+            RepositoryTemplate.interfaceMethod(
+              createParam(
+                method: 'create_task',
+                flow: FlowType.asynchronous,
+                entity: 'task_entity',
+                param: 'task_create_param',
+              ),
+            ),
+            '  AsyncResult<TaskEntity> createTask(TaskCreateParam param);',
+          );
 
-        // Then
-        expect(
-          result,
-          equals('  Result<List<UserEntity>> getUsers(UserParam param);'),
-        );
-      },
-    );
+          // Stream List<Entity> with param
+          expect(
+            RepositoryTemplate.interfaceMethod(
+              createParam(
+                method: 'watch_task_list',
+                flow: FlowType.stream,
+                isList: true,
+                entity: 'task_entity',
+                param: 'task_filter_param',
+              ),
+            ),
+            '  StreamResult<List<TaskEntity>> watchTaskList(TaskFilterParam param);',
+          );
+        },
+      );
+    });
 
-    test(
-      'Given sequence param with asynchronous flow and single entity, '
-      'When generating interface method, '
-      'Then it should return correct asynchronous method signature with AsyncResult<Entity>',
-      () {
-        // Given
-        final sequence = createTestParam(
-          method: 'get_user',
-          flow: FlowType.asynchronous,
-          entity: 'user_entity',
-          isList: false,
-        );
+    group('implMethod', () {
+      test(
+        'GIVEN synchronous SequenceParam '
+        'WHEN implMethod is called '
+        'THEN generates @override Result method without async modifier and trims trailing body whitespace',
+        () {
+          // Given
+          final sequence = createParam(
+            method: 'get_cached_task',
+            flow: FlowType.synchronous,
+            entity: 'task_entity',
+          );
 
-        // When
-        final result = RepositoryTemplate.interfaceMethod(sequence);
+          // When
+          final result = RepositoryTemplate.implMethod(
+            sequence: sequence,
+            body: '    return Result.success(TaskEntity());\n   ',
+          );
 
-        // Then
-        expect(result, equals('  AsyncResult<UserEntity> getUser();'));
-      },
-    );
+          // Then
+          expect(result, '''  @override
+  Result<TaskEntity> getCachedTask() {
+    return Result.success(TaskEntity());
+  }''');
+        },
+      );
 
-    test(
-      'Given sequence param with stream flow and void/null entity, '
-      'When generating interface method, '
-      'Then it should return correct stream method signature with StreamResult<void>',
-      () {
-        // Given
-        final sequence = createTestParam(
-          method: 'watch_status',
-          flow: FlowType.stream,
-          entity: null,
-          isList: false,
-        );
+      test(
+        'GIVEN asynchronous SequenceParam with param and List<Entity> '
+        'WHEN implMethod is called '
+        'THEN generates @override AsyncResult<List<Entity>> method with async modifier',
+        () {
+          // Given
+          final sequence = createParam(
+            method: 'get_task_list',
+            flow: FlowType.asynchronous,
+            isList: true,
+            entity: 'task_entity',
+            param: 'task_filter_param',
+          );
 
-        // When
-        final result = RepositoryTemplate.interfaceMethod(sequence);
+          // When
+          final result = RepositoryTemplate.implMethod(
+            sequence: sequence,
+            body: '    return Result.success([]);',
+          );
 
-        // Then
-        expect(result, equals('  StreamResult<void> watchStatus();'));
-      },
-    );
+          // Then
+          expect(result, '''  @override
+  AsyncResult<List<TaskEntity>> getTaskList(TaskFilterParam param) async {
+    return Result.success([]);
+  }''');
+        },
+      );
 
-    test(
-      'Given sequence param with asynchronous flow and custom body, '
-      'When generating implementation method, '
-      'Then it should return complete overridden method implementation with async modifier and body content',
-      () {
-        // Given
-        final sequence = createTestParam(
-          method: 'update_user',
-          flow: FlowType.asynchronous,
-          entity: 'user_entity',
-          isList: false,
-          param: 'user_param',
-        );
-        const body = '    return const Result.success(null);';
+      test(
+        'GIVEN stream SequenceParam '
+        'WHEN implMethod is called '
+        'THEN generates @override StreamResult<void> method with async* modifier',
+        () {
+          // Given
+          final sequence = createParam(
+            method: 'observe_task_updates',
+            flow: FlowType.stream,
+          );
 
-        // When
-        final result = RepositoryTemplate.implMethod(
-          sequence: sequence,
-          body: body,
-        );
+          // When
+          final result = RepositoryTemplate.implMethod(
+            sequence: sequence,
+            body: '    yield const Result.success(null);',
+          );
 
-        // Then
-        expect(result, contains('@override'));
-        expect(
-          result,
-          contains(
-            'AsyncResult<UserEntity> updateUser(UserParam param) async {',
-          ),
-        );
-        expect(result, contains('    return const Result.success(null);'));
-      },
-    );
-
-    test(
-      'Given sequence param with stream flow and custom body, '
-      'When generating implementation method, '
-      'Then it should return complete overridden method implementation with async* modifier',
-      () {
-        // Given
-        final sequence = createTestParam(
-          method: 'stream_users',
-          flow: FlowType.stream,
-          entity: 'user_entity',
-          isList: true,
-        );
-        const body = '    yield const Result.success([]);';
-
-        // When
-        final result = RepositoryTemplate.implMethod(
-          sequence: sequence,
-          body: body,
-        );
-
-        // Then
-        expect(result, contains('@override'));
-        expect(
-          result,
-          contains('StreamResult<List<UserEntity>> streamUsers() async* {'),
-        );
-        expect(result, contains('    yield const Result.success([]);'));
-      },
-    );
+          // Then
+          expect(result, '''  @override
+  StreamResult<void> observeTaskUpdates() async* {
+    yield const Result.success(null);
+  }''');
+        },
+      );
+    });
   });
 }

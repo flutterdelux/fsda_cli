@@ -8,6 +8,7 @@ class LogicVisitor extends RecursiveAstVisitor<void> {
   String? extendsClass;
   String? method;
   final List<DependencyParamMetadata> parameters = [];
+  final List<DependencyParamMetadata> methodParameters = [];
 
   final Map<String, String> _fieldTypes = {};
 
@@ -45,6 +46,7 @@ class LogicVisitor extends RecursiveAstVisitor<void> {
         !methodName.startsWith('_') &&
         methodName != 'build') {
       method = methodName;
+      methodParameters.addAll(_extractFormalParams(node.parameters));
     }
 
     super.visitMethodDeclaration(node);
@@ -53,44 +55,58 @@ class LogicVisitor extends RecursiveAstVisitor<void> {
   @override
   void visitConstructorDeclaration(ConstructorDeclaration node) {
     if (node.name == null || node.name?.lexeme == '') {
-      for (final formalParam in node.parameters.parameters) {
-        String? defaultValue;
-        FormalParameter param = formalParam;
-
-        if (formalParam is DefaultFormalParameter) {
-          defaultValue = formalParam.defaultValue?.toSource();
-          param = formalParam.parameter;
-        }
-
-        String name = '';
-        String type = 'dynamic';
-        final bool isNamed = formalParam.isNamed;
-
-        if (param is FieldFormalParameter) {
-          name = param.name.lexeme;
-          type = param.type?.toSource() ?? _fieldTypes[name] ?? 'dynamic';
-        } else if (param is SuperFormalParameter) {
-          name = param.name.lexeme;
-          type = param.type?.toSource() ?? 'dynamic';
-        } else if (param is SimpleFormalParameter) {
-          name = param.name?.lexeme ?? '';
-          type = param.type?.toSource() ?? 'dynamic';
-        }
-
-        if (name == 'key') continue;
-
-        if (name.isNotEmpty) {
-          parameters.add(
-            DependencyParamMetadata(
-              name: name,
-              type: type,
-              isNamed: isNamed,
-              defaultValue: defaultValue,
-            ),
-          );
-        }
-      }
+      parameters.addAll(
+        _extractFormalParams(node.parameters, excludeNames: const {'key'}),
+      );
     }
     super.visitConstructorDeclaration(node);
+  }
+
+  List<DependencyParamMetadata> _extractFormalParams(
+    FormalParameterList? paramList, {
+    Set<String> excludeNames = const {},
+  }) {
+    if (paramList == null) return const [];
+    final result = <DependencyParamMetadata>[];
+
+    for (final formalParam in paramList.parameters) {
+      String? defaultValue;
+      FormalParameter param = formalParam;
+
+      if (formalParam is DefaultFormalParameter) {
+        defaultValue = formalParam.defaultValue?.toSource();
+        param = formalParam.parameter;
+      }
+
+      String name = '';
+      String type = 'dynamic';
+      final bool isNamed = formalParam.isNamed;
+
+      if (param is FieldFormalParameter) {
+        name = param.name.lexeme;
+        type = param.type?.toSource() ?? _fieldTypes[name] ?? 'dynamic';
+      } else if (param is SuperFormalParameter) {
+        name = param.name.lexeme;
+        type = param.type?.toSource() ?? 'dynamic';
+      } else if (param is SimpleFormalParameter) {
+        name = param.name?.lexeme ?? '';
+        type = param.type?.toSource() ?? 'dynamic';
+      }
+
+      if (excludeNames.contains(name)) continue;
+
+      if (name.isNotEmpty) {
+        result.add(
+          DependencyParamMetadata(
+            name: name,
+            type: type,
+            isNamed: isNamed,
+            defaultValue: defaultValue,
+          ),
+        );
+      }
+    }
+
+    return result;
   }
 }

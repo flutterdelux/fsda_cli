@@ -1,9 +1,10 @@
-import '../../core/constants/rules.dart';
+import '../../core/extensions/arg_results_x.dart';
 import '../../core/extensions/failure_param_x.dart';
 import '../../domain/params/failure_param.dart';
-import '../../domain/params/module_gate_param.dart';
+import '../../domain/params/module_param.dart';
 import '../../infrastructure/services/failure_service.dart';
 import '../../infrastructure/services/helpers/file_service.dart';
+import '../resolvers/failure_resolver.dart';
 import 'wrapper/module_gate_command.dart';
 
 class GenFailureCommand extends ModuleGateCommand {
@@ -18,101 +19,76 @@ class GenFailureCommand extends ModuleGateCommand {
     required super.reportService,
     required super.directoryService,
   }) : _failureService = failureService,
-       _fileService = fileService;
+       _fileService = fileService {
+    argParser.addMultiOption(
+      FailureResolverKeys.failure,
+      help:
+          'Define failure option (e.g., --failure "not_found:Resource not found").',
+    );
+  }
 
   @override
-  String get name => 'gen-failure';
+  String get name => 'failure';
 
   @override
   String get description =>
-      'Injects a new failure option into module exception, failure, extension, and ARB files.';
+      'Injects failure options into module exception, failure, extension, and ARB files.';
 
   @override
-  String get invocation => 'fsda gen-failure "<name>:<message>" -m <module>';
+  String get invocation =>
+      'fsda gen -m <module> --failure "<name>:<message>" [--failure "<name>:<message>"]';
 
   @override
-  Future<int> handleModuleGate(ModuleGateParam moduleGate) async {
-    final rest = argResults?.rest;
-    if (rest == null || rest.isEmpty) {
-      logger.error(
-        'Failure definition argument "<name>:<message>" is required.',
+  bool get moduleShouldExists => true;
+
+  @override
+  Future<int> handleModuleGate(ModuleParam module) async {
+    List<FailureParam> failures;
+    try {
+      failures = FailureResolver.resolveAll(
+        module: module,
+        data: argResults?.toMap() ?? {},
       );
+    } catch (e) {
+      logger.error(e is FormatException ? e.message : e.toString());
       logger.log('Usage: $invocation');
       return errorUsage;
     }
 
-    if (rest.length > 1) {
-      logger.error(
-        'Invalid arguments: "$rest". Expected single argument format "<name>:<message>".',
-      );
-      logger.log('Usage: $invocation');
-      return errorUsage;
-    }
-
-    final argString = rest.first;
-    final colonIndex = argString.indexOf(':');
-
-    if (colonIndex == -1 ||
-        colonIndex == 0 ||
-        colonIndex == argString.length - 1) {
-      logger.error(
-        'Invalid format: "$argString". Expected format "<name>:<message>".',
-      );
-      logger.log('Usage: $invocation');
-      return errorUsage;
-    }
-
-    final failureName = argString.substring(0, colonIndex).trim();
-    final failureMessage = argString.substring(colonIndex + 1).trim();
-
-    if (!Rules.failureNameRegExp.hasMatch(failureName)) {
-      logger.error('Invalid failure name format: "$failureName".');
-      logger.log(Rules.failureNameDescription);
-      logger.log('Usage: $invocation');
-      return errorUsage;
-    }
-
-    if (failureMessage.isEmpty) {
-      logger.error('Failure message cannot be empty.');
-      logger.log('Usage: $invocation');
-      return errorUsage;
-    }
-
-    final failureParam = FailureParam(
-      moduleName: moduleGate.moduleName,
-      modulePath: moduleGate.modulePath,
-      name: failureName,
-      message: failureMessage,
-    );
-
-    if (!await _fileService.exists(failureParam.exceptionPath)) {
-      logger.error('Exception file not found at ${failureParam.exceptionPath}');
+    final sample = failures.first;
+    if (!await _fileService.exists(sample.exceptionPath)) {
+      logger.error('Exception file not found at ${sample.exceptionPath}');
       return errorSystem;
     }
 
-    if (!await _fileService.exists(failureParam.failurePath)) {
-      logger.error('Failure file not found at ${failureParam.failurePath}');
+    if (!await _fileService.exists(sample.failurePath)) {
+      logger.error('Failure file not found at ${sample.failurePath}');
       return errorSystem;
     }
 
-    if (!await _fileService.exists(failureParam.extensionPath)) {
+    if (!await _fileService.exists(sample.extensionPath)) {
       logger.error(
-        'Failure extension file not found at ${failureParam.exceptionPath}',
+        'Failure extension file not found at ${sample.extensionPath}',
       );
       return errorSystem;
     }
 
     final progress = logger.progress(
-      'Injecting failure "$failureName" into module "${moduleGate.moduleName}"...',
+      'Injecting ${failures.length} failure(s) into module "${module.moduleName}"...',
     );
 
     try {
-      await _failureService.generateFailure(
-        failureParam: failureParam,
-        onProgress: (msg) => progress.update(msg),
-      );
+      for (final failure in failures) {
+        progress.update('Injecting failure "${failure.name}"...');
+        await _failureService.generate(
+          failureParam: failure,
+          onProgress: (msg) => progress.update(msg),
+        );
+      }
 
-      progress.complete('Failure "$failureName" successfully injected!');
+      progress.complete(
+        'Successfully injected ${failures.length} failure(s) into "${module.moduleName}"!',
+      );
 
       final reportBuffer = reportService.generateReport(
         operationLabel: 'Failure Injection Summary',
@@ -121,7 +97,7 @@ class GenFailureCommand extends ModuleGateCommand {
 
       return successCode;
     } catch (e) {
-      progress.fail('Failed to inject failure $failureName: $e');
+      progress.fail('Failed to inject failures: $e');
       return errorSystem;
     }
   }

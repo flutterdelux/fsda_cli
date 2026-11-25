@@ -1,8 +1,8 @@
 import '../enums/state_control.dart';
 import '../models/prop_model.dart';
-import 'slice_gate_param.dart';
+import 'slice_param.dart';
 
-class LogicParam extends SliceGateParam {
+class LogicParam extends SliceParam {
   final List<PropModel> props;
   final StateControl control;
 
@@ -10,25 +10,25 @@ class LogicParam extends SliceGateParam {
     required this.props,
     this.control = .cubit,
     required super.featureName,
-    required super.featurePath,
     required super.moduleName,
-    required super.modulePath,
-    required super.slice,
+    required super.sliceName,
+    required super.workspaceName,
+    required super.workspacePath,
   });
 
   factory LogicParam.fromSliceGate({
-    required SliceGateParam sliceGate,
+    required SliceParam slice,
     required List<PropModel> props,
-    StateControl control = StateControl.cubit,
+    required StateControl control,
   }) {
     return LogicParam(
       props: props,
       control: control,
-      featureName: sliceGate.featureName,
-      featurePath: sliceGate.featurePath,
-      moduleName: sliceGate.moduleName,
-      modulePath: sliceGate.modulePath,
-      slice: sliceGate.slice,
+      featureName: slice.featureName,
+      moduleName: slice.moduleName,
+      sliceName: slice.sliceName,
+      workspaceName: slice.workspaceName,
+      workspacePath: slice.workspacePath,
     );
   }
 }

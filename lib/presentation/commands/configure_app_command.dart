@@ -1,11 +1,8 @@
-import 'package:path/path.dart' as p;
-
-import '../../core/constants/rules.dart';
-import '../../domain/params/configure_app_param.dart';
+import '../../domain/params/app_param.dart';
 import '../../infrastructure/services/configure_app_service.dart';
-import 'wrapper/workspace_guard_command.dart';
+import 'wrapper/app_gate_command.dart';
 
-class ConfigureAppCommand extends WorkspaceGuardCommand {
+class ConfigureAppCommand extends AppGateCommand {
   final ConfigureAppService _configureAppService;
 
   ConfigureAppCommand({
@@ -17,59 +14,25 @@ class ConfigureAppCommand extends WorkspaceGuardCommand {
   }) : _configureAppService = configureAppService;
 
   @override
-  String get name => 'configure-app';
+  String get name => 'app';
 
   @override
   String get description =>
-      'Generates a new Flutter application project inside apps/ using flutter create and app bundle blueprint.';
+      'Configures an existing Flutter application project inside apps/.';
 
   @override
-  String get invocation => 'fsda $name <project>';
+  String get invocation => 'fsda configure -a <app>';
 
   @override
-  Future<int> handle() async {
-    final rest = argResults?.rest;
-    if (rest == null || rest.isEmpty) {
-      logger.error('App project name is required.\nUsage: $invocation');
-      return errorUsage;
-    }
+  bool get appShouldExists => true;
 
-    if (rest.length > 1) {
-      logger.error('Invalid app project name: "$rest".');
-      logger.log(Rules.appProjectNameDescription);
-      logger.log('Usage: $invocation');
-      return errorUsage;
-    }
-
-    final appProjectName = rest.first;
-    if (!Rules.appProjectNameRegExp.hasMatch(appProjectName)) {
-      logger.error('Invalid app project name: "$appProjectName".');
-      logger.log(Rules.appProjectNameDescription);
-      logger.log('Usage: $invocation');
-      return errorUsage;
-    }
-
-    final appProjectPath = p.join(
-      directoryService.currentPath,
-      'apps',
-      appProjectName,
-    );
-    if (!await directoryService.exists(appProjectPath)) {
-      logger.error('App "$appProjectName" not found at $appProjectPath');
-      logger.log('Usage: $invocation');
-      return errorUsage;
-    }
-
-    final configureApp = ConfigureAppParam(
-      projectName: appProjectName,
-      projectPath: appProjectPath,
-    );
-
-    final progress = logger.progress('Configure app "$appProjectName"...');
+  @override
+  Future<int> handleAppGate(AppParam app) async {
+    final progress = logger.progress('Configure app "${app.appName}"...');
 
     try {
       await _configureAppService.configure(
-        app: configureApp,
+        app: app,
         onProgress: (msg) => progress.update(msg),
       );
       progress.update('Generating report...');
@@ -78,13 +41,13 @@ class ConfigureAppCommand extends WorkspaceGuardCommand {
       );
 
       progress.complete(
-        'App "$appProjectName" successfully configure under apps/$appProjectName!',
+        'App "${app.appName}" successfully configured under apps/${app.appName}!',
       );
       logger.log(reportBuffer.toString());
 
       return successCode;
     } catch (e) {
-      progress.fail('Failed to generate app $appProjectName: $e');
+      progress.fail('Failed to configure app ${app.appName}: $e');
       return errorSystem;
     }
   }

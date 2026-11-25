@@ -6,9 +6,13 @@ environment:
 vars:
   app:
     type: string
+    description: The snake_case name of the app (e.g. fsda_demo)
+    prompt: App directory name (e.g. fsda_demo)
+  project_id:
+    type: string
     description: The lowercase name of the app (e.g. fsdademo)
     prompt: What is the name for app id?
-  app_name:
+  app_title:
     type: string
     description: Title or Label App (e.g. Fsda Demo)
     prompt: What is the app name?

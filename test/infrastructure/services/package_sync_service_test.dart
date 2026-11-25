@@ -65,7 +65,7 @@ void main() {
             workspaceName: 'ws',
             workspacePath: '/ws',
             cliVersion: '1.0',
-            sdkVersion: '3.0',
+            dartSdk: '3.0',
             android: const ConfigAndroidModel(
               minSdk: 21,
               compileSdk: 34,
@@ -142,7 +142,7 @@ void main() {
           workspaceName: 'ws',
           workspacePath: '/ws',
           cliVersion: '1.0',
-          sdkVersion: '3.0',
+          dartSdk: '3.0',
           android: const ConfigAndroidModel(
             minSdk: 21,
             compileSdk: 34,

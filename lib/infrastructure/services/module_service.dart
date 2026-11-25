@@ -1,3 +1,4 @@
+import '../../core/extensions/module_param_x.dart';
 import '../../domain/params/module_param.dart';
 import '../bundles/module_bundle.dart';
 import 'helpers/config_service.dart';
@@ -62,8 +63,8 @@ class ModuleService {
     onProgress('Copying module bundle...');
     await _generatorService.generate(
       bundle: moduleBundle,
-      targetPath: module.path,
-      vars: {'module': module.name, 'dart_sdk': config.sdkVersion},
+      targetPath: module.modulePath,
+      vars: {'module': module.moduleName, 'dart_sdk': config.dartSdk},
     );
 
     onProgress('Installing package dependencies...');
@@ -71,19 +72,19 @@ class ModuleService {
 
     onProgress('Generating module builder...');
     await _buildRunnerService.runBuildRunner(
-      module.path,
+      module.modulePath,
       onProgress: onProgress,
     );
 
     onProgress('Generating module locatization...');
-    await _l10nService.runL10n(module.path, onProgress: onProgress);
+    await _l10nService.runL10n(module.modulePath, onProgress: onProgress);
   }
 
   // ================== Generation Helper ==================
 
   Future<void> _createModuleDirectory(ModuleParam module) async {
-    await _directoryService.create(module.path);
-    _reportService.addCreated(module.path);
+    await _directoryService.create(module.modulePath);
+    _reportService.addCreated(module.modulePath);
   }
 
   Future<void> _installDependencies(ModuleParam module) async {
@@ -92,7 +93,7 @@ class ModuleService {
         'pub',
         'add',
         ..._dependencies,
-      ], module.path);
+      ], module.modulePath);
     }
 
     if (_devDependencies.isNotEmpty) {
@@ -100,7 +101,7 @@ class ModuleService {
         'pub',
         'add',
         ..._devDependencies,
-      ], module.path);
+      ], module.modulePath);
     }
   }
 }

@@ -1,23 +1,18 @@
-import 'app_integration_param.dart';
+import '../feature_param.dart';
+import 'reg_module_param.dart';
 
-class RegFeatureParam extends AppIntegrationParam {
+class RegFeatureParam extends RegModuleParam implements FeatureParam {
+  final bool force;
+
   const RegFeatureParam({
-    required super.appName,
-    required super.appPath,
+    required this.featureName,
     required super.moduleName,
-    required super.modulePath,
-    required super.featureName,
-    required super.featurePath,
+    required super.appName,
+    required super.workspaceName,
+    required super.workspacePath,
+    this.force = false,
   });
 
-  factory RegFeatureParam.fromAppIntegration(AppIntegrationParam param) {
-    return RegFeatureParam(
-      appName: param.appName,
-      appPath: param.appPath,
-      moduleName: param.moduleName,
-      modulePath: param.modulePath,
-      featureName: param.featureName,
-      featurePath: param.featurePath,
-    );
-  }
+  @override
+  final String featureName;
 }

@@ -1,34 +1,49 @@
-import 'app_integration_param.dart';
+import '../../enums/compose_type.dart';
+import 'reg_feature_param.dart';
 
-class ComposeParam extends AppIntegrationParam {
+class ComposeParam extends RegFeatureParam {
+  final ComposeType type;
   final String target;
   final String logicFlowSlice;
+  final String? uiSlice;
+  final String? logicSlice;
+  final bool withRoute;
 
   const ComposeParam({
-    required super.appName,
-    required super.appPath,
-    required super.moduleName,
-    required super.modulePath,
-    required super.featureName,
-    required super.featurePath,
-    required this.logicFlowSlice,
+    required this.type,
     required this.target,
+    required this.logicFlowSlice,
+    this.uiSlice,
+    this.logicSlice,
+    this.withRoute = false,
+    required super.appName,
+    required super.featureName,
+    required super.moduleName,
+    required super.workspaceName,
+    required super.workspacePath,
   });
 
-  factory ComposeParam.fromAppIntegration({
-    required AppIntegrationParam param,
-    required String logicFlowSlice,
+  factory ComposeParam.fromRegFeature({
+    required RegFeatureParam regFeature,
+    required ComposeType type,
     required String target,
+    required String logicFlowSlice,
+    String? uiSlice,
+    String? logicSlice,
+    required bool withRoute,
   }) {
     return ComposeParam(
-      appName: param.appName,
-      appPath: param.appPath,
-      moduleName: param.moduleName,
-      modulePath: param.modulePath,
-      featureName: param.featureName,
-      featurePath: param.featurePath,
-      logicFlowSlice: logicFlowSlice,
+      type: type,
       target: target,
+      logicFlowSlice: logicFlowSlice,
+      uiSlice: uiSlice,
+      logicSlice: logicSlice,
+      appName: regFeature.appName,
+      moduleName: regFeature.moduleName,
+      featureName: regFeature.featureName,
+      workspaceName: regFeature.workspaceName,
+      workspacePath: regFeature.workspacePath,
+      withRoute: withRoute,
     );
   }
 }

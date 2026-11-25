@@ -9,7 +9,9 @@ enum FlowType {
 
   const FlowType(this.value);
 
-  static FlowType? fromValue(String value) {
+  static FlowType? tryParse(String value) {
     return values.firstWhereOrNull((e) => e.value == value);
   }
+
+  static String get available => values.map((e) => e.value).join(', ');
 }

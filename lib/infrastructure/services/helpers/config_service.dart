@@ -6,6 +6,7 @@ import '../../../core/constants/app_config.dart';
 import '../../../core/constants/cli_info.dart';
 import '../../../domain/models/config_android_model.dart';
 import '../../../domain/models/config_model.dart';
+import '../../../domain/params/workspace_param.dart';
 import '../../templates/config_template.dart';
 import 'directory_service.dart';
 import 'file_service.dart';
@@ -20,27 +21,39 @@ class ConfigService {
   }) : _directoryService = directoryService,
        _fileService = fileService;
 
-  String get _fsdaPath => p.join(_directoryService.currentPath, 'fsda.yaml');
+  String get fsdaDirPath =>
+      p.join(_directoryService.currentPath, CliInfo.fsdaDirName);
+  String get plansDirPath => p.join(fsdaDirPath, CliInfo.plansDirName);
+  String get configPath => p.join(fsdaDirPath, CliInfo.configFileName);
 
-  Future<String> get _fsdaContent async {
-    return await _fileService.readAsString(_fsdaPath);
+  Future<String> get _configContent async {
+    return await _fileService.readAsString(configPath);
   }
 
-  Future<bool> get validateWorkspaceRoot => _fileService.exists(_fsdaPath);
+  Future<WorkspaceParam?> get fsdaWorkspace async {
+    final exists = await _fileService.exists(configPath);
+    if (exists) {
+      final rootPath = _directoryService.currentPath;
+      return WorkspaceParam(
+        workspaceName: p.basename(rootPath),
+        workspacePath: rootPath,
+      );
+    }
+    return null;
+  }
 
   Future<ConfigModel> loadConfig() async {
-    if (!await validateWorkspaceRoot) {
+    final workspace = await fsdaWorkspace;
+    if (workspace == null) {
       throw Exception(
-        'Not inside an FSDA workspace. File "fsda.yaml" was not found.',
+        'Not inside an FSDA workspace. File "${CliInfo.fsdaDirName}/${CliInfo.configFileName}" was not found.',
       );
     }
 
-    final yamlMap = loadYaml(await _fsdaContent) as YamlMap?;
+    final yamlMap = loadYaml(await _configContent) as YamlMap?;
 
-    final workspaceName = yamlMap?['workspace']?.toString() ?? '';
     final cliVersion = yamlMap?['fsda_cli']?.toString() ?? '';
-    final sdkVersion =
-        yamlMap?['sdk_version']?.toString() ?? CliInfo.sdkVersion;
+    final sdkVersion = yamlMap?['dart_sdk']?.toString() ?? CliInfo.dartSdk;
 
     final packagesYaml = yamlMap?['packages'] as YamlList?;
     final activePackages = packagesYaml != null
@@ -63,48 +76,43 @@ class ConfigService {
         : const ConfigAndroidModel();
 
     return ConfigModel(
-      workspaceName: workspaceName,
-      workspacePath: _directoryService.currentPath,
+      workspaceName: workspace.workspaceName,
+      workspacePath: workspace.workspacePath,
       cliVersion: cliVersion,
       activePackages: activePackages,
-      sdkVersion: sdkVersion,
+      dartSdk: sdkVersion,
       android: android,
     );
   }
 
   Future<void> addPackages(List<String> packageNames) async {
-    final editor = YamlEditor(await _fsdaContent);
+    final editor = YamlEditor(await _configContent);
     final currentConfig = await loadConfig();
 
-    // Gabungkan paket lama dan paket baru
     final combined = [...currentConfig.activePackages, ...packageNames];
-
-    // Urutkan menggunakan helper
     final sortedPackages = _sortPackages(combined);
 
     editor.update(['packages'], sortedPackages);
     await _fileService.writeAsString(
-      path: _fsdaPath,
+      path: configPath,
       content: editor.toString(),
     );
   }
 
   Future<void> removePackages(List<String> packageNames) async {
-    final editor = YamlEditor(await _fsdaContent);
+    final editor = YamlEditor(await _configContent);
     final currentConfig = await loadConfig();
 
-    // Filter sisa paket yang tidak dihapus
     final targetSet = packageNames.toSet();
     final remainingPackages = currentConfig.activePackages
         .where((pkg) => !targetSet.contains(pkg))
         .toList();
 
-    // Urutkan ulang sisa paket menggunakan helper
     final sortedPackages = _sortPackages(remainingPackages);
 
     editor.update(['packages'], sortedPackages);
     await _fileService.writeAsString(
-      path: _fsdaPath,
+      path: configPath,
       content: editor.toString(),
     );
   }
@@ -114,7 +122,6 @@ class ConfigService {
   List<String> _sortPackages(List<String> packages) {
     const mandatoryPackages = ConfigTemplate.mandatoryPackages;
 
-    // Pastikan unik (bebas duplikat) dengan mengonversi ke Set lalu ke List
     final sortedList = packages.toSet().toList();
 
     sortedList.sort((a, b) {
@@ -124,20 +131,16 @@ class ConfigService {
       final isMandatoryA = indexA != -1;
       final isMandatoryB = indexB != -1;
 
-      // 1. Jika keduanya adalah paket wajib, urutkan sesuai posisi di mandatoryPackages
       if (isMandatoryA && isMandatoryB) {
         return indexA.compareTo(indexB);
       }
-      // 2. Jika hanya A yang wajib, prioritaskan A di atas
       if (isMandatoryA) {
         return -1;
       }
-      // 3. Jika hanya B yang wajib, prioritaskan B di atas
       if (isMandatoryB) {
         return 1;
       }
 
-      // 4. Jika keduanya bukan paket wajib, urutkan secara alfabetis (A-Z)
       return a.compareTo(b);
     });
 

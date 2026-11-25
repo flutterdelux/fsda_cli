@@ -1,6 +1,7 @@
 import 'package:path/path.dart' as p;
 
 import '../../core/extensions/ds_param_x.dart';
+import '../../core/extensions/feature_param_x.dart';
 import '../../domain/params/ds_param.dart';
 import '../../domain/params/local_ds_param.dart';
 import '../../domain/params/remote_ds_param.dart';

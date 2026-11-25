@@ -1,15 +1,13 @@
 import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:path/path.dart' as p;
 
-import '../../core/extensions/feature_gate_param_x.dart';
+import '../../core/extensions/feature_param_x.dart';
+import '../../core/extensions/module_param_x.dart';
+import '../../domain/enums/ui_type.dart';
 import '../../domain/models/artifact_generation_model.dart';
 import '../../domain/models/prop_model.dart';
-import '../../domain/params/slice_gate_param.dart';
-import '../../domain/params/ui/ui_form_param.dart';
-import '../../domain/params/ui/ui_lsh_param.dart';
-import '../../domain/params/ui/ui_lsv_param.dart';
-import '../../domain/params/ui/ui_pag_param.dart';
-import '../../domain/params/ui/ui_param.dart';
+import '../../domain/params/slice_param.dart';
+import '../../domain/params/ui_param.dart';
 import '../templates/feature_template.dart';
 import '../templates/ui/ui_form_template.dart';
 import '../templates/ui/ui_lsh_template.dart';
@@ -60,140 +58,60 @@ class UiService {
       modulePath: ui.modulePath,
     );
 
-    final variants = [
-      UiTemplate.buildContent(ui: ui, props: props),
-      UiTemplate.buildSkeleton(ui: ui, props: props),
-      UiTemplate.buildErrorFeedback(ui),
-    ];
+    final variants = switch (ui.type) {
+      UiType.standard => [
+        UiTemplate.buildContent(ui: ui, props: props),
+        UiTemplate.buildSkeleton(ui: ui, props: props),
+        UiTemplate.buildErrorFeedback(ui),
+      ],
+      UiType.form => [UiFormTemplate.build(ui: ui, props: props)],
+      UiType.lsv => [
+        UiLsvTemplate.buildItem(ui: ui, props: props),
+        UiLsvTemplate.buildItemSkeleton(ui),
+        UiLsvTemplate.buildContent(ui),
+        UiLsvTemplate.buildSkeleton(ui),
+        UiLsvTemplate.buildErrorFeedback(ui),
+        UiLsvTemplate.buildEmptyFeedback(ui),
+      ],
+      UiType.lsh => [
+        UiLshTemplate.buildItem(ui: ui, props: props),
+        UiLshTemplate.buildItemSkeleton(ui),
+        UiLshTemplate.buildContent(ui),
+        UiLshTemplate.buildSkeleton(ui),
+        UiLshTemplate.buildErrorFeedback(ui),
+        UiLshTemplate.buildEmptyFeedback(ui),
+      ],
+      UiType.pag => [
+        UiPagTemplate.buildItem(ui: ui, props: props),
+        UiPagTemplate.buildItemSkeleton(ui),
+        UiPagTemplate.buildContent(ui),
+        UiPagTemplate.buildSkeleton(ui),
+        UiPagTemplate.buildErrorFeedback(ui),
+        UiPagTemplate.buildEmptyFeedback(ui),
+      ],
+    };
 
-    onProgress('Generating widget variants...');
+    onProgress('Generating ${ui.type.value} UI widget variants...');
     await _generateFiles(param: ui, variants: variants);
 
     onProgress('Injecting export widget variants...');
     await _injectExportWidgetVariants(param: ui, variants: variants);
 
     onProgress('Injecting localization entries...');
-    final arbEntries = UiTemplate.buildArbEntries(ui);
-    await _injectArbEntries(param: ui, arbEntries: arbEntries);
-  }
-
-  Future<void> generateLsv({
-    required UiLsvParam ui,
-    required void Function(String msg) onProgress,
-  }) async {
-    onProgress('Inspecting model props...');
-    final props = await _getPropsFromModelFile(
-      model: ui.model,
-      modulePath: ui.modulePath,
-    );
-
-    final variants = [
-      UiLsvTemplate.buildItem(ui: ui, props: props),
-      UiLsvTemplate.buildItemSkeleton(ui),
-      UiLsvTemplate.buildContent(ui),
-      UiLsvTemplate.buildSkeleton(ui),
-      UiLsvTemplate.buildErrorFeedback(ui),
-      UiLsvTemplate.buildEmptyFeedback(ui),
-    ];
-
-    onProgress('Generating ListView widget variants...');
-    await _generateFiles(param: ui, variants: variants);
-
-    onProgress('Injecting export widget variants...');
-    await _injectExportWidgetVariants(param: ui, variants: variants);
-
-    onProgress('Injecting localization entries...');
-    final arbEntries = UiLsvTemplate.buildArbEntries(ui);
-    await _injectArbEntries(param: ui, arbEntries: arbEntries);
-  }
-
-  Future<void> generateLsh({
-    required UiLshParam ui,
-    required void Function(String msg) onProgress,
-  }) async {
-    onProgress('Inspecting model props...');
-    final props = await _getPropsFromModelFile(
-      model: ui.model,
-      modulePath: ui.modulePath,
-    );
-
-    final variants = [
-      UiLshTemplate.buildItem(ui: ui, props: props),
-      UiLshTemplate.buildItemSkeleton(ui),
-      UiLshTemplate.buildContent(ui),
-      UiLshTemplate.buildSkeleton(ui),
-      UiLshTemplate.buildErrorFeedback(ui),
-      UiLshTemplate.buildEmptyFeedback(ui),
-    ];
-
-    onProgress('Generating Horizontal ListView widget variants...');
-    await _generateFiles(param: ui, variants: variants);
-
-    onProgress('Injecting export widget variants...');
-    await _injectExportWidgetVariants(param: ui, variants: variants);
-
-    onProgress('Injecting localization entries...');
-    final arbEntries = UiLshTemplate.buildArbEntries(ui);
-    await _injectArbEntries(param: ui, arbEntries: arbEntries);
-  }
-
-  Future<void> generatePag({
-    required UiPagParam ui,
-    required void Function(String msg) onProgress,
-  }) async {
-    onProgress('Inspecting model props...');
-    final props = await _getPropsFromModelFile(
-      model: ui.model,
-      modulePath: ui.modulePath,
-    );
-
-    final variants = [
-      UiPagTemplate.buildItem(ui: ui, props: props),
-      UiPagTemplate.buildItemSkeleton(ui),
-      UiPagTemplate.buildContent(ui),
-      UiPagTemplate.buildSkeleton(ui),
-      UiPagTemplate.buildErrorFeedback(ui),
-      UiPagTemplate.buildEmptyFeedback(ui),
-    ];
-
-    onProgress('Generating Paginated ListView widget variants...');
-    await _generateFiles(param: ui, variants: variants);
-
-    onProgress('Injecting export widget variants...');
-    await _injectExportWidgetVariants(param: ui, variants: variants);
-
-    onProgress('Injecting localization entries...');
-    final arbEntries = UiPagTemplate.buildArbEntries(ui);
-    await _injectArbEntries(param: ui, arbEntries: arbEntries);
-  }
-
-  Future<void> generateForm({
-    required UiFormParam ui,
-    required void Function(String msg) onProgress,
-  }) async {
-    onProgress('Inspecting model props...');
-    final props = await _getPropsFromModelFile(
-      model: ui.model,
-      modulePath: ui.modulePath,
-    );
-
-    final variants = [UiFormTemplate.build(ui: ui, props: props)];
-
-    onProgress('Generating UI Form widget...');
-    await _generateFiles(param: ui, variants: variants);
-
-    onProgress('Injecting export widget variants...');
-    await _injectExportWidgetVariants(param: ui, variants: variants);
-
-    onProgress('Injecting localization entries...');
-    final arbEntries = UiFormTemplate.buildArbEntries(ui);
+    final arbEntries = switch (ui.type) {
+      UiType.standard => UiTemplate.buildArbEntries(ui),
+      UiType.form => UiFormTemplate.buildArbEntries(ui),
+      UiType.lsv => UiLsvTemplate.buildArbEntries(ui),
+      UiType.lsh => UiLshTemplate.buildArbEntries(ui),
+      UiType.pag => UiPagTemplate.buildArbEntries(ui),
+    };
     await _injectArbEntries(param: ui, arbEntries: arbEntries);
   }
 
   // =========== generation helpers ===========
 
   Future<void> _generateFiles({
-    required SliceGateParam param,
+    required SliceParam param,
     required List<ArtifactGenerationModel> variants,
   }) async {
     for (final artifact in variants) {
@@ -215,7 +133,7 @@ class UiService {
   }
 
   Future<void> _injectExportWidgetVariants({
-    required SliceGateParam param,
+    required SliceParam param,
     required List<ArtifactGenerationModel> variants,
   }) async {
     final exportLines = variants.where((e) => e.needToExport).map((e) {
@@ -231,7 +149,7 @@ class UiService {
   }
 
   Future<void> _injectArbEntries({
-    required SliceGateParam param,
+    required SliceParam param,
     required Map<String, dynamic> arbEntries,
   }) async {
     final endKey = FeatureTemplate.endDividerArbKey(param.featureName);

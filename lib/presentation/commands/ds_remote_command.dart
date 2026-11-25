@@ -1,8 +1,10 @@
+import '../../core/extensions/arg_results_x.dart';
 import '../../core/extensions/ds_param_x.dart';
-import '../../domain/params/feature_gate_param.dart';
+import '../../domain/params/feature_param.dart';
 import '../../domain/params/remote_ds_param.dart';
 import '../../infrastructure/services/data_source_service.dart';
 import '../../infrastructure/services/helpers/file_service.dart';
+import '../resolvers/remote_ds_resolver.dart';
 import 'wrapper/feature_gate_command.dart';
 
 class DsRemoteCommand extends FeatureGateCommand {
@@ -17,7 +19,13 @@ class DsRemoteCommand extends FeatureGateCommand {
     required super.reportService,
     required super.directoryService,
   }) : _dsService = dataSourceService,
-       _fileService = fileService;
+       _fileService = fileService {
+    argParser.addOption(
+      RemoteDsResolverKeys.basePath,
+      help:
+          'The base endpoint path for the remote data source (e.g., "/tasks").',
+    );
+  }
 
   @override
   String get name => 'ds-remote';
@@ -27,54 +35,47 @@ class DsRemoteCommand extends FeatureGateCommand {
       'Generates a remote data source interface and implementation for a feature.';
 
   @override
-  String get invocation => 'fsda $name "<base-path>" -f <feature> -m <module>';
+  String get invocation =>
+      'fsda $name --base-path "</base-path>" -f <feature> -m <module>';
 
   @override
-  Future<int> handleFeatureGate(FeatureGateParam param) async {
-    final rest = argResults?.rest;
-    if (rest == null || rest.isEmpty) {
-      logger.error('Base path argument is required.');
+  bool get featureShouldExists => true;
+
+  @override
+  Future<int> handleFeatureGate(FeatureParam feature) async {
+    RemoteDsParam remoteDs;
+    try {
+      remoteDs = RemoteDsResolver.resolve(
+        feature: feature,
+        data: argResults?.toMap() ?? {},
+      );
+    } catch (e) {
+      logger.error(e is FormatException ? e.message : e.toString());
       logger.log('Usage: $invocation');
       return errorUsage;
     }
 
-    if (rest.length > 1) {
-      logger.error('Invalid base path: "$rest".');
-      logger.log('Usage: $invocation');
-      return errorUsage;
-    }
-
-    final basePath = rest.first;
-
-    final dsParam = RemoteDsParam(
-      featureName: param.featureName,
-      featurePath: param.featurePath,
-      moduleName: param.moduleName,
-      modulePath: param.modulePath,
-      basePath: basePath,
-    );
-
-    if (await _fileService.exists(dsParam.interfacePath)) {
+    if (await _fileService.exists(remoteDs.interfacePath)) {
       logger.error(
-        'Remote data source interface already exists at ${dsParam.interfacePath}',
+        'Remote data source interface already exists at ${remoteDs.interfacePath}',
       );
       return errorUsage;
     }
 
-    if (await _fileService.exists(dsParam.implPath)) {
+    if (await _fileService.exists(remoteDs.implPath)) {
       logger.error(
-        'Remote data source implementation already exists at ${dsParam.implPath}',
+        'Remote data source implementation already exists at ${remoteDs.implPath}',
       );
       return errorUsage;
     }
 
     final progress = logger.progress(
-      'Generating remote data source for feature "${param.featureName}" (${param.moduleName})...',
+      'Generating remote data source for "${remoteDs.moduleName}/${remoteDs.featureName}"...',
     );
 
     try {
       await _dsService.generateRemoteDataSource(
-        remoteDs: dsParam,
+        remoteDs: remoteDs,
         onProgress: (msg) => progress.update(msg),
       );
 
@@ -83,7 +84,7 @@ class DsRemoteCommand extends FeatureGateCommand {
       );
 
       progress.complete(
-        'Remote data source successfully generated for feature "${param.featureName}" (${param.moduleName})!',
+        'Remote data source successfully generated for "${remoteDs.moduleName}/${remoteDs.featureName}"!',
       );
 
       logger.log(reportBuffer.toString());

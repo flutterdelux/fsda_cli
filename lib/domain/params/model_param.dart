@@ -1,44 +1,41 @@
 import '../enums/model_type.dart';
 import '../models/prop_model.dart';
-import 'feature_gate_param.dart';
+import 'feature_param.dart';
 
-class ModelParam extends FeatureGateParam {
-  final String name;
-  final String path;
+class ModelParam extends FeatureParam {
+  /// e.g. task_entity, task_dto, task_create_param
+  final String modelName;
   final ModelType type;
   final List<PropModel> props;
-  final bool isInjectL10n;
+  final bool isL10n;
 
   const ModelParam({
-    required this.name,
-    required this.path,
+    required this.modelName,
     required this.type,
     required this.props,
-    this.isInjectL10n = false,
+    this.isL10n = false,
     required super.featureName,
-    required super.featurePath,
     required super.moduleName,
-    required super.modulePath,
+    required super.workspaceName,
+    required super.workspacePath,
   });
 
-  factory ModelParam.fromFeatureGate({
-    required FeatureGateParam featureGate,
-    required String name,
-    required String path,
+  factory ModelParam.fromFeature({
+    required FeatureParam feature,
+    required String modelName,
     required ModelType type,
     required List<PropModel> props,
-    required bool isInjectL10n,
+    required bool isL10n,
   }) {
     return ModelParam(
-      name: name,
-      path: path,
+      modelName: modelName,
       type: type,
       props: props,
-      featureName: featureGate.featureName,
-      featurePath: featureGate.featurePath,
-      moduleName: featureGate.moduleName,
-      modulePath: featureGate.modulePath,
-      isInjectL10n: isInjectL10n,
+      isL10n: isL10n,
+      featureName: feature.featureName,
+      moduleName: feature.moduleName,
+      workspaceName: feature.workspaceName,
+      workspacePath: feature.workspacePath,
     );
   }
 }
