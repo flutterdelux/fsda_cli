@@ -1,3 +1,10 @@
+## 2.0.0-dev.10
+
+### Fix
+
+- Fix miss compose part for getx,provider,riverpod template
+- Fix logic object name at compose target (should be camelCase)
+
 ## 2.0.0-dev.9
 
 ### Improved

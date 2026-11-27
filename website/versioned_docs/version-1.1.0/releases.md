@@ -10,11 +10,11 @@ This page summarizes documentation channels and behavior changes that matter for
 
 | Channel | Meaning |
 | --- | --- |
-| `latest` | Current documentation for ongoing development on main branch. |
+| `dev` | Current documentation for ongoing development on main branch. |
 | `1.0.16` | Historical snapshot for CLI v1.0.16. |
 
 Use the version dropdown in the top-right navbar to switch channels.
-Until a dedicated docs version is cut, v1.1.0 behavior is documented under `latest`.
+Until a dedicated docs version is cut, v1.1.0 behavior is documented under `dev`.
 
 ## Migration Notes
 

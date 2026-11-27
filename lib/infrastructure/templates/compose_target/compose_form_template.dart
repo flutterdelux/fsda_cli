@@ -31,17 +31,23 @@ abstract final class ComposeFormTemplate {
           param: param,
           logicFlow: logicFlow,
           logic: logic,
+          initialDataType: initialDataType,
+          initialProps: initialProps,
         ),
         .provider => ComposeFormProviderTemplate.content(
           param: param,
           logicFlow: logicFlow,
           logic: logic,
+          initialDataType: initialDataType,
+          initialProps: initialProps,
         ),
 
         .riverpod => ComposeFormRiverpodTemplate.content(
           param: param,
           logicFlow: logicFlow,
           logic: logic,
+          initialDataType: initialDataType,
+          initialProps: initialProps,
         ),
       },
       typesToImport: {},

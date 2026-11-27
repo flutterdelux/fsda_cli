@@ -134,7 +134,7 @@ import '../../../management_route.dart';
           floatingActionButton: FloatingActionButton(
             onPressed: () {              
               ManagementRoute.toTaskCreate(context).then((value) {
-                if (value == 'refresh') _getTaskList(context);
+                if (value == 'refresh') _getTaskList();
               });              
             },
             child: const Icon(Icons.add),
@@ -157,7 +157,7 @@ import '../../../management_route.dart';
           onItemTap: (item) {
             // add-start
             ManagementRoute.toTaskDetail(context, id: item.id).then((value) {
-              if (value == 'refresh') _getTaskList(context);
+              if (value == 'refresh') _getTaskList();
             });
             // add-end
           },
@@ -208,10 +208,10 @@ import '../widgets/task_status_update_dialog.dart';
                     title: appL10n.update,
                     leadingIcon: const Icon(Icons.edit),
                     onTap: () {
-                      ManagementRoute.toTaskUpdate(context, id: id).then((
+                      ManagementRoute.toTaskUpdate(context, id: data.id).then((
                         value,
                       ) {
-                        if (value == 'refres') _getTaskDetail(context);
+                        if (value == 'refres') _getTaskDetail();
                       });
                     },
                   ),
@@ -219,10 +219,10 @@ import '../widgets/task_status_update_dialog.dart';
                     title: managementL10n.taskStatus,
                     leadingIcon: const Icon(Icons.edit),
                     onTap: () {
-                      TaskStatusUpdateDialog(id: id).show(context).then((
+                      TaskStatusUpdateDialog(id: data.id).show(context).then((
                         value,
                       ) {
-                        if (value == 'refresh') _getTaskDetail(context);
+                        if (value == 'refresh') _getTaskDetail();
                       });
                     },
                   ),
@@ -231,8 +231,8 @@ import '../widgets/task_status_update_dialog.dart';
                     leadingIcon: Icon(Icons.delete, color: colorScheme.error),
                     isDestructive: true,
                     onTap: () {
-                      TaskDeleteDialog(id: id).show(context).then((value) {
-                        if (value == 'refresh') _getTaskDetail(context);
+                      TaskDeleteDialog(id: data.id).show(context).then((value) {
+                        if (value == 'refresh') _getTaskDetail();
                       });
                     },
                   ),

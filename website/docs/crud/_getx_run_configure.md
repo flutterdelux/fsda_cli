@@ -40,6 +40,14 @@ fsda apply .fsda/plans/apps/crud_getx.yaml
 fsda fix-import \
     -a crud_getx \
     -m management
+
+cd modules/management
+dart pub add get
+cd ../../
+
+cd apps/crud_getx
+dart pub add get
+cd ../../
 ```
 
 2. Execute the script from the workspace root:

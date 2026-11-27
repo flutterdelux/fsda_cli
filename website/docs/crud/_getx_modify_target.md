@@ -4,7 +4,7 @@
 ```dart title="TaskUpdatePage"
 ...
 
-class TaskUpdatePage extends StatelessWidget with PageBlocMixin {
+class TaskUpdatePage extends StatefulWidget {
   final int id;
   // remove-start
   final String title;
@@ -18,43 +18,61 @@ class TaskUpdatePage extends StatelessWidget with PageBlocMixin {
     required this.title,
     required this.description,
     // remove-end
-  });  
+  });
+}
+
+class _TaskUpdatePageState extends State<TaskUpdatePage> {
+  ...
+  // add-next-line
+  late final TaskDetailController _taskDetailController;
 
   // add-start
-  void _getTaskDetail(BuildContext context) {
-    context.read<TaskDetailCubit>().getTaskDetail();
+  void _getTaskDetail() {
+    _taskDetailController.getTaskDetail();
   }
   // add-end
 
   ...
 
   @override
-  Widget build(BuildContext context) {
-    final managementL10n = ManagementLocalizations.of(context)!;
-    return buildPage(
-      providers: [
-        // add-start
-        BlocProvider<TaskDetailCubit>(
-          create: (_) =>
-              sl<TaskDetailCubit>(param1: TaskDetailParam(id: id))
-                ..getTaskDetail(),
-        ),
-        // add-end
-        BlocProvider<TaskUpdateCubit>(create: (_) => sl<TaskUpdateCubit>()),
-        BlocProvider<TaskUpdateFormCubit>(
-          create: (_) => sl<TaskUpdateFormCubit>(),
-        ),
-      ],
-      ...
+  void initState() {
+    super.initState();    
+    _taskUpdateController = Get.put(sl<TaskUpdateController>());
+    _taskUpdateFormController = Get.put(sl<TaskUpdateFormController>());
+    _taskUpdateControllerSubscription = _taskUpdateController.rxState.listen(
+      _taskUpdateListener,
+    );
+    // add-start
+    _taskDetailController = Get.put(
+      sl<TaskDetailController>(param1: TaskDetailParam(id: widget.id)),
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _getTaskDetail();
+    });
+    // add-end
+  }
+
+  @override
+  void dispose() {
+    _taskUpdateControllerSubscription.cancel();
+    Get.delete<TaskUpdateController>();
+    Get.delete<TaskUpdateFormController>();
+    // add-next-line
+    Get.delete<TaskDetailController>();
+    super.dispose();
+  }
+
+  ...
   
   // add-start
   Widget _buildContent(BuildContext context) {
-    return BlocBuilder<TaskDetailCubit, TaskDetailState>(
-      builder: (_, state) => state.maybeWhen(
+    return Obx(
+      () => _taskDetailController.state.maybeWhen(
         orElse: () => const AppLoading(),
         failure: (failure) => TaskDetailErrorFeedback(
           message: failure.localizeAny(context),
-          onRetry: () => _getTaskDetail(context),
+          onRetry: _getTaskDetail,
         ),
         loaded: (data) => TaskUpdateForm(
           initialData: TaskUpdateParam(
@@ -63,7 +81,7 @@ class TaskUpdatePage extends StatelessWidget with PageBlocMixin {
             description: data.description,
           ),
           onListen: (context, param, invalidMessage) {
-            context.read<TaskUpdateFormCubit>().updateState(
+            _taskUpdateFormController.updateState(
               param: param,
               invalidMessage: invalidMessage,
             );
@@ -82,7 +100,7 @@ class TaskUpdatePage extends StatelessWidget with PageBlocMixin {
 
 ```dart title="TaskStatusUpdatePage"
 ...
-class TaskStatusUpdateDialog extends StatelessWidget with PageBlocMixin {
+class TaskStatusUpdateDialog extends StatefulWidget {
   final int id;
   // remove-next-line
   final TaskStatus status;
@@ -94,48 +112,65 @@ class TaskStatusUpdateDialog extends StatelessWidget with PageBlocMixin {
     required this.status,
   });
 
+class _TaskStatusUpdateDialogState extends State<TaskStatusUpdateDialog> {
+  ...
+  // add-next-line
+  late final TaskDetailController _taskDetailController;
+
   // add-start
-  void _getTaskDetail(BuildContext context) {
-    context.read<TaskDetailCubit>().getTaskDetail();
+  void _getTaskDetail() {
+    _taskDetailController.getTaskDetail();
   }
   // add-end
 
   ...
 
   @override
-  Widget build(BuildContext context) {
-    final managementL10n = ManagementLocalizations.of(context)!;
-    return buildPage(
-      providers: [
-        // add-start
-        BlocProvider<TaskDetailCubit>(
-          create: (_) =>
-              sl<TaskDetailCubit>(param1: TaskDetailParam(id: id))
-                ..getTaskDetail(),
-        ),
-        // add-end
-        BlocProvider<TaskStatusUpdateCubit>(
-          create: (_) => sl<TaskStatusUpdateCubit>(),
-        ),
-        BlocProvider<TaskStatusUpdateFormCubit>(
-          create: (_) => sl<TaskStatusUpdateFormCubit>(),
-        ),
-      ],
-      ...
+  void initState() {
+    super.initState();
+    _taskStatusUpdateController = Get.put(sl<TaskStatusUpdateController>());
+    _taskStatusUpdateFormController = Get.put(
+      sl<TaskStatusUpdateFormController>(),
+    );
+    _taskStatusUpdateControllerSubscription = _taskStatusUpdateController
+        .rxState
+        .listen(_taskStatusUpdateListener);
+    // add-start
+    _taskDetailController = Get.put(
+      sl<TaskDetailController>(param1: TaskDetailParam(id: widget.id)),
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _getTaskDetail();
+    });
+    // add-end
+  }
+
+  @override
+  void dispose() {
+    _taskStatusUpdateControllerSubscription.cancel();
+    Get.delete<TaskStatusUpdateController>();
+    Get.delete<TaskStatusUpdateFormController>();
+    // add-next-line
+    Get.delete<TaskDetailController>();
+    super.dispose();
+  }
+
+  ...
   
   // add-start
   Widget _buildContent(BuildContext context) {
-    return BlocBuilder<TaskDetailCubit, TaskDetailState>(
-      builder: (_, state) => state.maybeWhen(
+    return Obx(
+      () => _taskDetailController.state.maybeWhen(
         orElse: () => const AppLoading(),
         failure: (failure) => TaskDetailErrorFeedback(
           message: failure.localizeAny(context),
-          onRetry: () => _getTaskDetail(context),
+          onRetry: _getTaskDetail,
         ),
         loaded: (data) => TaskStatusUpdateForm(
           initialData: TaskStatusUpdateParam(id: data.id, status: data.status),
           onListen: (context, param, invalidMessage) {
-            context.read<TaskStatusUpdateFormCubit>().updateState(
+            _taskStatusUpdateFormController.updateState(
               param: param,
               invalidMessage: invalidMessage,
             );

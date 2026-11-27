@@ -9,6 +9,11 @@ import GetxWorkspace from './crud/_getx_workspace.md';
 import ProviderWorkspace from './crud/_provider_workspace.md';
 import RiverpodWorkspace from './crud/_riverpod_workspace.md';
 
+import CubitPlan from './crud/_cubit_plan.md';
+import GetxPlan from './crud/_getx_plan.md';
+import ProviderPlan from './crud/_provider_plan.md';
+import RiverpodPlan from './crud/_riverpod_plan.md';
+
 import CubitSlice from './crud/_cubit_slice.md';
 import GetxSlice from './crud/_getx_slice.md';
 import ProviderSlice from './crud/_provider_slice.md';
@@ -51,7 +56,7 @@ Choose your preferred state management approach:
 
 Create a new FSDA workspace and open it in your IDE (such as VS Code):
 
-<Tabs groupId="state-management" className="sticky-tabs">
+<Tabs groupId="state-management">
 
   <TabItem value="cubit" label="Cubit">
   <CubitWorkspace />
@@ -79,17 +84,25 @@ Create the following YAML plan files under `.fsda/plans/` (or scaffold them firs
 
 Use these command to create plans then modify or copy-paste from code block below.
 
-```bash
-fsda plan -a crud_cubit --example
-fsda plan -m management --example
-fsda plan -m management -f task --example
-fsda plan -m management -f task -s list --example
-fsda plan -m management -f task -s detail --example
-fsda plan -m management -f task -s create --example
-fsda plan -m management -f task -s update --example
-fsda plan -m management -f task -s status_update --example
-fsda plan -m management -f task -s delete --example
-```
+<Tabs groupId="state-management">
+
+  <TabItem value="cubit" label="Cubit">
+  <CubitPlan />
+  </TabItem>
+
+  <TabItem value="getx" label="GetX">
+  <GetxPlan />
+  </TabItem>
+
+  <TabItem value="provider" label="Provider">
+  <ProviderPlan />
+  </TabItem>
+
+  <TabItem value="riverpod" label="Riverpod">
+  <RiverpodPlan />
+  </TabItem>
+
+</Tabs>
 
 ### Module Plan
 
