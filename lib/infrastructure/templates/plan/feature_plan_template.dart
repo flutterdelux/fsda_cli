@@ -87,7 +87,7 @@ ds:
 
 enum:
   - name: ${featureName}_status
-    values: draft, published, archived
+    values: todo, in_progress, completed
     lower: true
 
 model:

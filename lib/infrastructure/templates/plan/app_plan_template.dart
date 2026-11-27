@@ -28,7 +28,7 @@ compose:
     target: task_list_page
     logic-flow: list
     ui: list
-    bool: true
+    route: true
 
   - module: management
     feature: task
@@ -36,7 +36,7 @@ compose:
     target: task_detail_page
     logic-flow: detail
     ui: detail
-    bool: true
+    route: true
 
   - module: management
     feature: task
@@ -45,7 +45,7 @@ compose:
     logic-flow: create
     logic: create_form
     ui: create_form
-    bool: true
+    route: true
 
   - module: management
     feature: task
@@ -54,7 +54,7 @@ compose:
     logic-flow: update
     logic: update_form
     ui: update_form
-    bool: true
+    route: true
 
   - module: management
     feature: task

@@ -1,3 +1,9 @@
+## 2.0.0-dev.9
+
+### Improved
+
+- Improve declarative crud template
+
 ## 2.0.0-dev.8
 
 ### Improved

@@ -105,6 +105,26 @@ const config: Config = {
     },
     prism: {
       additionalLanguages: ['dart', 'bash', 'yaml'],
+      magicComments: [
+        // Highlight bawaan
+        {
+          className: 'theme-code-block-highlighted-line',
+          line: 'highlight-next-line',
+          block: {start: 'highlight-start', end: 'highlight-end'},
+        },
+        // Highlight REMOVE (Merah + simbol -)
+        {
+          className: 'code-block-remove-line',
+          line: 'remove-next-line',
+          block: {start: 'remove-start', end: 'remove-end'},
+        },
+        // Highlight ADD (Hijau + simbol +)
+        {
+          className: 'code-block-add-line',
+          line: 'add-next-line',
+          block: {start: 'add-start', end: 'add-end'},
+        },
+      ],
     },
   } satisfies Preset.ThemeConfig,
 };

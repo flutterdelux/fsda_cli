@@ -136,3 +136,85 @@ body {
     padding: 3.7rem 0;
   }
 }
+
+/* Mengatur tinggi maksimal semua code block */
+.theme-code-block pre {
+  max-height: 400px; /* Sesuaikan tinggi maksimal sesuai keinginan */
+  overflow-y: auto;
+}
+
+/* Base layout untuk baris diff */
+.code-block-remove-line,
+.code-block-add-line {
+  display: block;
+  margin: 0 calc(-1 * var(--ifm-pre-padding));
+  padding: 0 var(--ifm-pre-padding);
+  position: relative;
+}
+
+/* --- STYLING REMOVE (MERAH & SIMBOL -) --- */
+.code-block-remove-line {
+  background-color: rgba(255, 0, 0, 0.15);
+  border-left: 3px solid #e53935;
+}
+
+.code-block-remove-line::before {
+  content: '-';
+  position: absolute;
+  left: 6px;
+  color: #e53935;
+  font-weight: bold;
+  user-select: none; /* Agar simbol tidak ikut ter-copy */
+}
+
+/* --- STYLING ADD (HIJAU & SIMBOL +) --- */
+.code-block-add-line {
+  background-color: rgba(0, 200, 83, 0.15);
+  border-left: 3px solid #00c853;
+}
+
+.code-block-add-line::before {
+  content: '+';
+  position: absolute;
+  left: 6px;
+  color: #00c853;
+  font-weight: bold;
+  user-select: none; /* Agar simbol tidak ikut ter-copy */
+}
+
+/* --- PENYESUAIAN DARK MODE --- */
+[data-theme='dark'] .code-block-remove-line {
+  background-color: rgba(255, 82, 82, 0.2);
+}
+
+[data-theme='dark'] .code-block-add-line {
+  background-color: rgba(105, 240, 174, 0.2);
+}
+
+ul.tabs.sticky-tabs,
+.sticky-tabs > ul.tabs {
+  position: sticky;
+  top: var(--ifm-navbar-height, 0px);
+  z-index: 10;
+  background-color: var(--ifm-background-color);
+  border-bottom: 1px solid var(--ifm-toc-border-color);
+  padding-top: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Galeri screenshot horizontal wrap responsif */
+.screenshot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.screenshot-grid img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid var(--ifm-toc-border-color);
+  object-fit: cover;
+  display: block;
+}

@@ -7,8 +7,10 @@ abstract final class ModelPlanTemplate {
   }) {
     return switch (sliceName) {
       'list' => _listResponse(featureName),
-      'detail' =>
-        '${_detailResponse(featureName)}\n  ${_detailParam(featureName)}',
+      'detail' => [
+        '  ${_detailResponse(featureName).trim()}',
+        '  ${_detailParam(featureName).trim()}',
+      ].join('\n'),
       'create' => _createParam(featureName),
       'update' => _updateParam(featureName),
       'delete' => _deleteParam(featureName),
@@ -39,6 +41,7 @@ String _entity(String featureName) =>
       - "String:description"
       - "${featureName.pascalCase}Status:status::${featureName.pascalCase}StatusConverter"
       - "DateTime:created_at::UtcDateTimeConverter"
+      - "DateTime:updated_at::UtcDateTimeConverter"
 ''';
 
 String _listResponse(String featureName) =>

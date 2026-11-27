@@ -58,6 +58,18 @@ An app plan only composes the listed app-side wrappers; the app, module registra
 
 ## Plan scopes and schema
 
+The CLI determines which plan scope to execute based on the combination of top-level root keys in the YAML file (regardless of the file name or directory):
+
+| Root Keys Present | Resolved Scope | Forbidden Keys |
+| --- | --- | --- |
+| `module` | **Module Plan** | `feature`, `slice`, `app` |
+| `module` + `feature` | **Feature Plan** | `slice`, `app` |
+| `module` + `feature` + `slice` | **Slice Plan** | `app` |
+| `app` | **App Compose Plan** | `module`, `feature`, `slice` |
+
+If a YAML file defines an invalid combination (for example, `app` together with `module`, or `slice` without `feature`), `fsda apply` will reject the file with a format error before executing any operations.
+
+
 ### Module plan
 
 The root `module` selects the module. Optional `failure` entries accept either `name`/`message` maps or the supported `name:message` shorthand:

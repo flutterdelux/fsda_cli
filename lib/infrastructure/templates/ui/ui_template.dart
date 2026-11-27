@@ -74,10 +74,9 @@ class $className extends StatelessWidget {
     final propSkeleton = props
         .map((e) {
           return '''
-            AppInfoTileSkeleton(),
-''';
+            AppInfoTileSkeleton()''';
         })
-        .join('\n');
+        .join(',\n');
     return ArtifactGenerationModel(
       name: className,
       path: p.join(
@@ -99,7 +98,6 @@ class $className extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = ${ui.modulePascal}Localizations.of(context)!;
     return const Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
