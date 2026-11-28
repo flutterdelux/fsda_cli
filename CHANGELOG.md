@@ -1,3 +1,19 @@
+## 2.0.0
+
+Stable release of **FSDA CLI v2.0.0**, introducing a unified command architecture and three flexible code generation workflows (Imperative, Declarative, and Batch).
+
+### Highlights
+
+- **3 Generation Modes:**
+  - **Imperative Mode:** Consolidated direct CLI commands (`fsda gen`, `fsda rm`, `fsda reg`, `fsda compose`, `gen-model`, `gen-sequence`, `gen-logic`, `gen-logic-flow`, `gen-input`, `gen-ui`, `ds-remote`, `ds-local`).
+  - **Declarative Mode:** Scaffold and apply structured YAML architecture blueprints under `.fsda/plans/` using `fsda plan` and `fsda apply`.
+  - **Batch Mode:** Execute workspace command scripts (`.fsda/run.sh`) sequentially with real-time terminal streaming via `fsda run` (cross-platform, including Windows Git Bash detection).
+- **Workspace & Maintenance Suite:** Centralized configuration in `.fsda/config.yaml`, monorepo package synchronization (`pkg list`, `pkg add`, `pkg get`, `pkg rm`), and scoped utilities (`drb`, `l10n`, `rebuild`, `refresh`, `fix-import`).
+- **Multi-State Management Support:** Full code generation and composition templates for BLoC/Cubit, Riverpod, and Provider/GetX.
+
+> See `2.0.0-dev.1` through `2.0.0-dev.11` below for the complete granular history of changes and breaking migrations from v1.1.0.
+
+
 ## 2.0.0-dev.11
 
 ### Fix

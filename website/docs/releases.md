@@ -4,28 +4,34 @@ title: Releases & Migration Notes
 slug: /releases
 ---
 
-This page summarizes documentation channels and behavior changes that matter for daily CLI usage.
+This page summarizes documentation channels, new workflows in v2.0.0, and migration notes for daily CLI usage.
 
 ## Version Channels
 
 | Channel | Meaning |
 | --- | --- |
-| `dev` | Current documentation for ongoing development on main branch. |
+| `2.0.0` (Current) | Stable documentation for CLI v2.0.0. |
+| `dev` | Ongoing development on the `main` branch. |
 | `1.1.0` | Historical snapshot for CLI v1.1.0. |
 | `1.0.16` | Historical snapshot for CLI v1.0.16. |
 
 Use the version dropdown in the top-right navbar to switch channels.
-The current v2 prerelease (`2.0.0-dev.11`) is documented under `dev`. These notes describe prerelease behavior and may change before stable `2.0.0`.
+
+## What's New in v2.0.0
+
+FSDA CLI v2.0.0 introduces **3 Generation Modes** tailored to your development workflow:
+
+1. **Imperative Mode** — Execute consolidated CLI commands directly from your terminal (`fsda gen`, `fsda compose`, `gen-model`, `gen-sequence`, `gen-logic`, `gen-ui`).
+2. **Declarative Mode** — Scaffold and apply structured YAML architecture blueprints under `.fsda/plans/` using `fsda plan` and `fsda apply`.
+3. **Batch Mode** — Write and edit multiple CLI commands comfortably in `.fsda/run.sh`, then execute them sequentially in a single step via `fsda run`.
 
 ## Migration Notes
 
-### Upgrading from v1.1.0 to v2.0.0 (prerelease)
+### Upgrading from v1.1.0 to v2.0.0
 
-> v2.0.0 is a prerelease. Verify these changes against the CLI version you install before updating production workflows.
+The command surface was redesigned and consolidated. Existing v1.1.0 scripts need migration:
 
-The command surface was redesigned. Existing v1.1.0 scripts need migration:
-
-| v1.1.0 | v2 prerelease |
+| v1.1.0 | v2.0.0 |
 | --- | --- |
 | `gen-slice` | Use `gen-sequence` for data-to-domain operations, `gen-logic` / `gen-logic-flow` for logic, and `gen-ui` for UI. |
 | `regen-feature` | Removed; no direct replacement. |
@@ -43,16 +49,16 @@ The command surface was redesigned. Existing v1.1.0 scripts need migration:
 Additional migration details:
 
 - Form UI generation now uses `gen-ui -t form`, requires `--model`, and accepts one or more repeatable `--field "input_type:value_type:field_name[:default]"` options. Update scripts using the v1 `--fields` format.
-- Workspace configuration moved from root `fsda.yaml` to `.fsda/config.yaml`; plans are stored below `.fsda/plans/`.
-- `plan` scaffolds YAML plan files for app composition, module failures, feature generation, or slice generation. Use `--example` to populate a template with an example.
+- Workspace configuration moved from root `fsda.yaml` to `.fsda/config.yaml` (using `dart_sdk` for the Dart constraint); plans are stored below `.fsda/plans/`.
+- `plan` scaffolds YAML plan files for app composition, module failures, feature generation, or slice generation. Use `--example` (`-e`) to populate a template with an example.
 - `apply <path>` validates and applies one plan file through the same underlying generation services. Applying feature/slice plans auto-creates missing parent module/feature structures and skips existing artifacts where supported; review the operation report and inspect partial changes before reapplying a plan that failed midway.
 - App plans compose wrappers only. The app, module/feature registration, and source logic/UI slices must already exist.
 - Compose commands generate app-side artifacts but do not synchronize routes. Add or update route wiring in the app separately.
 - App/module/feature/failure generators are grouped under `gen`; app/module registration is grouped under `reg`. Use the live CLI help for the exact options of each branch.
 - New modeling and sequence workflows are available through `gen-model` / `rm-model` and `gen-sequence` / `rm-sequence`.
 - Maintenance operations are available as `drb`, `l10n`, `rebuild`, `refresh`, and `fix-import`, targeting modules, apps, or both where supported.
-- `gen-app` now requires app names in `snake_case`; use `--title` for the display name (`--name` is no longer the option).
-- Workspace automation scripts can now be executed from the root directory via `fsda run`, which runs `.fsda/run.sh` using `bash`. See the [run guide](./commands/run.md).
+- `gen -a <app>` now requires app names in `snake_case`; use `--title` for the display name (`--name` is no longer the option).
+- Workspace automation scripts can now be executed from the root directory via `fsda run`, which streams `.fsda/run.sh` in real time using `bash` (with automatic Git Bash detection on Windows). See the [run guide](./commands/run.md).
 
 
 ### Upgrading from v1.0.x to v1.1.0
