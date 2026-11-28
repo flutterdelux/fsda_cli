@@ -1,9 +1,22 @@
+## 2.0.0-dev.11
+
+### Fix
+
+- Fix missing extension object name at LogicMetadata.
+- Fix Incompatible notifier class for riverpod. set to AutoDisposeNotifier.
+- Fix not found logic by added variant parent class AutoDisposeNotifier for Riverpod.
+
+### Refactor
+
+- rerun behavior for gen failure become idempotent.
+- insert listenManual to form riverpod, so state form will be kept.
+
 ## 2.0.0-dev.10
 
 ### Fix
 
-- Fix miss compose part for getx,provider,riverpod template
-- Fix logic object name at compose target (should be camelCase)
+- Fix missing compose part for getx,provider,riverpod template.
+- Fix logic object name at compose target (should be camelCase).
 
 ## 2.0.0-dev.9
 

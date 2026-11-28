@@ -50,7 +50,7 @@ String _mutationLogic({
 import 'package:riverpod/riverpod.dart';
 import '${logic.stateSnake}.dart';
 
-class ${logic.controllerPascal} extends Notifier<${logic.statePascal}> {
+class ${logic.controllerPascal} extends AutoDisposeNotifier<${logic.statePascal}> {
   final ${uc.ucPascal} _${uc.ucCamel};
 
   ${logic.controllerPascal}({
@@ -93,7 +93,7 @@ String _retrievalLogic({
 import 'package:riverpod/riverpod.dart';
 import '${logic.stateSnake}.dart';
 
-class ${logic.controllerPascal} extends Notifier<${logic.statePascal}> {
+class ${logic.controllerPascal} extends AutoDisposeNotifier<${logic.statePascal}> {
   final ${uc.ucPascal} _${uc.ucCamel};
 
   ${logic.controllerPascal}({
@@ -128,7 +128,7 @@ String _paginationLogic({
 import 'package:riverpod/riverpod.dart';
 import '${logic.stateSnake}.dart';
 
-class ${logic.controllerPascal} extends Notifier<${logic.statePascal}> {
+class ${logic.controllerPascal} extends AutoDisposeNotifier<${logic.statePascal}> {
   final ${uc.ucPascal} _${uc.ucCamel};
 
   ${logic.controllerPascal}({
@@ -192,7 +192,7 @@ import 'package:app_core/app_core.dart';
 import 'package:riverpod/riverpod.dart';
 import '${logic.stateSnake}.dart';
 
-class ${logic.controllerPascal} extends Notifier<${logic.statePascal}> {
+class ${logic.controllerPascal} extends AutoDisposeNotifier<${logic.statePascal}> {
   final ${uc.ucPascal} _${uc.ucCamel};
   StreamSubscription<Result<$entityType>>? _subscription;
 

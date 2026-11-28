@@ -37,6 +37,14 @@ fsda reg \
 
 fsda apply .fsda/plans/apps/crud_riverpod.yaml
 
+cd modules/management
+dart pub add riverpod
+cd ../../
+
+cd apps/crud_riverpod
+dart pub add flutter_riverpod
+cd ../../
+
 fsda fix-import \
     -a crud_riverpod \
     -m management

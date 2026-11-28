@@ -37,6 +37,10 @@ fsda reg \
 
 fsda apply .fsda/plans/apps/crud_provider.yaml
 
+cd apps/crud_provider
+dart pub add provider
+cd ../../
+
 fsda fix-import \
     -a crud_provider \
     -m management

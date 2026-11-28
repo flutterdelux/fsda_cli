@@ -182,69 +182,69 @@ import '../widgets/task_status_update_dialog.dart';
 ...
 
   Widget _buildContent(BuildContext context) {
-    // add-start
-    final colorScheme = ColorScheme.of(context);
-    final appL10n = AppLocalizations.of(context)!;
-    final managementL10n = ManagementLocalizations.of(context)!;
-    // add-end
-    return BlocBuilder<TaskDetailCubit, TaskDetailState>(
-      builder: (_, state) => state.maybeWhen(
-        orElse: () => const TaskDetailSkeleton(),
+    return Obx(
+      () => _taskDetailController.state.maybeWhen(
+        orElse: () => const AppLoading(),
         failure: (failure) => TaskDetailErrorFeedback(
           message: failure.localizeAny(context),
-          onRetry: () => _getTaskDetail(context),
+          onRetry: _getTaskDetail,
         ),
         // add-start
         loaded: (data) => Column(
           children: [
             TaskDetailContent(data: data),
             AppGap.md,
-            AppSection(
-              header: AppSectionHeader(titleText: appL10n.action),
-              margin: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
-              child: AppCard(
-                children: [
-                  AppActionTile(
-                    title: appL10n.update,
-                    leadingIcon: const Icon(Icons.edit),
-                    onTap: () {
-                      ManagementRoute.toTaskUpdate(context, id: data.id).then((
-                        value,
-                      ) {
-                        if (value == 'refres') _getTaskDetail();
-                      });
-                    },
-                  ),
-                  AppActionTile(
-                    title: managementL10n.taskStatus,
-                    leadingIcon: const Icon(Icons.edit),
-                    onTap: () {
-                      TaskStatusUpdateDialog(id: data.id).show(context).then((
-                        value,
-                      ) {
-                        if (value == 'refresh') _getTaskDetail();
-                      });
-                    },
-                  ),
-                  AppActionTile(
-                    title: appL10n.delete,
-                    leadingIcon: Icon(Icons.delete, color: colorScheme.error),
-                    isDestructive: true,
-                    onTap: () {
-                      TaskDeleteDialog(id: data.id).show(context).then((value) {
-                        if (value == 'refresh') _getTaskDetail();
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
+            _buildAction(),
           ],
         ),
         // add-end
       ),
     );
   }
+
+  // add-start
+  Widget _buildAction(BuildContext context) {
+    final colorScheme = ColorScheme.of(context);
+    final appL10n = AppLocalizations.of(context)!;
+    final managementL10n = ManagementLocalizations.of(context)!;
+    return AppSection(
+      header: AppSectionHeader(titleText: appL10n.action),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
+      child: AppCard(
+        children: [
+          AppActionTile(
+            title: appL10n.update,
+            leadingIcon: const Icon(Icons.edit),
+            onTap: () {
+              ManagementRoute.toTaskUpdate(context, id: id).then((value) {
+                if (value == 'refresh') _getTaskDetail(context);
+              });
+            },
+          ),
+          AppActionTile(
+            title: managementL10n.taskStatus,
+            leadingIcon: const Icon(Icons.edit),
+            onTap: () {
+              TaskStatusUpdateDialog(id: id).show(context).then((value) {
+                if (value == 'refresh') _getTaskDetail(context);
+              });
+            },
+          ),
+          AppActionTile(
+            title: appL10n.delete,
+            leadingIcon: Icon(Icons.delete, color: colorScheme.error),
+            isDestructive: true,
+            onTap: () {
+              TaskDeleteDialog(id: id).show(context).then((value) {
+                if (value == 'refresh') _getTaskDetail(context);
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+  // add-end
 ...
 ```
 

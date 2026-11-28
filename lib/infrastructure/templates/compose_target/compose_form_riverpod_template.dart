@@ -68,12 +68,12 @@ class ${param.targetPascal} extends ConsumerStatefulWidget {
 
 class _${param.targetPascal}State extends ConsumerState<${param.targetPascal}> {
   late final _${logicFlow.objectName} =
-      NotifierProvider.autoDispose<${logicFlow.className}, ${featureLogicFlowSlice.pascalCase}State>(    
+      AutoDisposeNotifierProvider<${logicFlow.className}, ${featureLogicFlowSlice.pascalCase}State>(    
     () => sl<${logicFlow.className}>(),
   );
 
   late final _${logic.objectName} =
-      NotifierProvider.autoDispose<${logic.className}, ${featureLogicSlice.pascalCase}State>(
+      AutoDisposeNotifierProvider<${logic.className}, ${featureLogicSlice.pascalCase}State>(
     () => sl<${logic.className}>(),
   );
 
@@ -107,6 +107,12 @@ class _${param.targetPascal}State extends ConsumerState<${param.targetPascal}> {
         Navigator.pop(context, 'refresh');
       },
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    ref.listenManual(_${logic.objectName}, (_, _) {});
   }
 
   @override

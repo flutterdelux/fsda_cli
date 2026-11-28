@@ -45,7 +45,6 @@ Must be executed inside an FSDA workspace root directory where `.fsda/config.yam
 
 ### Rerun Behavior
 
-> This operation injects entries into existing module failure files; it does not scaffold the module's failure files. Check the affected-path report after applying a plan, especially if a previous application stopped partway through.
-
-* If the target module's required files (`<module>_exception.dart`, `<module>_failure.dart`, `<module>_failure_x.dart`) do not exist, the command halts execution immediately with an error.
-* If rerun on an existing setup, it will append duplicate entries to all target files without skipping previously injected names. Make sure to review or revert your changes if you accidentally rerun the command.
+This operation injects entries into existing module failure files; it does not scaffold the module's failure files. Check the affected-path report after applying a plan, especially if a previous application stopped partway through.
+* If the target module's required files (`<module>_exception.dart, <module>_failure.dart, <module>_failure_x.dart`) do not exist, the command halts execution immediately with an error.
+* If rerun on an existing setup, the command safely skips any entries that have already been injected (factory constructors, when arguments, switch cases, enum constants, extension cases, and ARB keys) to prevent duplicates, injecting only missing entries.

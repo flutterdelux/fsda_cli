@@ -7,7 +7,7 @@ import '../../infrastructure/text_modifiers/string_extension.dart';
 import 'prop_list_x.dart';
 
 extension LogicMetadataX on LogicMetadata {
-  String get objectName => className.snakeCase.pascalCase;
+  String get objectName => className.snakeCase.camelCase;
 
   DependencyParamMetadata? get externalParam =>
       parameters.firstWhereOrNull((p) => !p.type.endsWith('UseCase'));

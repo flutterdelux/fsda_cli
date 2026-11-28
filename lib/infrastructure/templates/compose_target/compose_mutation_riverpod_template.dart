@@ -67,7 +67,7 @@ class ${param.targetPascal} extends ConsumerStatefulWidget {
 
 class _${param.targetPascal}State extends ConsumerState<${param.targetPascal}> {
   late final _${logicFlow.objectName} =
-      NotifierProvider.autoDispose<${logicFlow.className}, ${featureLogicFlowSlice.pascalCase}State>(
+      AutoDisposeNotifierProvider<${logicFlow.className}, ${featureLogicFlowSlice.pascalCase}State>(
     () => $slCall,
   );
 

@@ -4,7 +4,7 @@
 ```dart title="TaskUpdatePage"
 ...
 
-class TaskUpdatePage extends StatelessWidget with PageBlocMixin {
+class TaskUpdatePage extends ConsumerStatefulWidget {
   final int id;
   // remove-start
   final String title;
@@ -18,58 +18,65 @@ class TaskUpdatePage extends StatelessWidget with PageBlocMixin {
     required this.title,
     required this.description,
     // remove-end
-  });  
+  });
+...
+
+class _TaskDetailPageState extends ConsumerState<TaskDetailPage> {
+  ...
+  // add-start
+  late final _taskDetailProvider =
+      AutoDisposeNotifierProvider<TaskDetailProvider, TaskDetailState>(
+    () => sl<TaskDetailProvider>(),
+  );
+  // add-end
 
   // add-start
-  void _getTaskDetail(BuildContext context) {
-    context.read<TaskDetailCubit>().getTaskDetail();
+  void _getTaskDetail() {
+    ref.read(_taskDetailProvider.notifier).getTaskDetail(TaskDetailParam(id: widget.id));
   }
   // add-end
 
   ...
 
   @override
-  Widget build(BuildContext context) {
-    final managementL10n = ManagementLocalizations.of(context)!;
-    return buildPage(
-      providers: [
-        // add-start
-        BlocProvider<TaskDetailCubit>(
-          create: (_) =>
-              sl<TaskDetailCubit>(param1: TaskDetailParam(id: id))
-                ..getTaskDetail(),
-        ),
-        // add-end
-        BlocProvider<TaskUpdateCubit>(create: (_) => sl<TaskUpdateCubit>()),
-        BlocProvider<TaskUpdateFormCubit>(
-          create: (_) => sl<TaskUpdateFormCubit>(),
-        ),
-      ],
-      ...
+  void initState() {
+    super.initState();
+    ref.listenManual(_taskUpdateFormProvider, (_, _) {});
+    // add-start
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _getTaskDetail();
+    });
+    // add-end
+  }  
+
+  ...
   
   // add-start
   Widget _buildContent(BuildContext context) {
-    return BlocBuilder<TaskDetailCubit, TaskDetailState>(
-      builder: (_, state) => state.maybeWhen(
-        orElse: () => const AppLoading(),
-        failure: (failure) => TaskDetailErrorFeedback(
-          message: failure.localizeAny(context),
-          onRetry: () => _getTaskDetail(context),
-        ),
-        loaded: (data) => TaskUpdateForm(
-          initialData: TaskUpdateParam(
-            id: data.id,
-            title: data.title,
-            description: data.description,
+    return Consumer(
+      builder: (context, ref, _) {
+        final state = ref.watch(_taskDetailProvider);
+        return state.maybeWhen(
+          orElse: () => const AppLoading(),
+          failure: (failure) => TaskDetailErrorFeedback(
+            message: failure.localizeAny(context),
+            onRetry: _getTaskDetail,
           ),
-          onListen: (context, param, invalidMessage) {
-            context.read<TaskUpdateFormCubit>().updateState(
-              param: param,
-              invalidMessage: invalidMessage,
-            );
-          },
-        ),
-      ),
+          loaded: (data) => TaskUpdateForm(
+            initialData: TaskUpdateParam(
+              id: data.id,
+              title: data.title,
+              description: data.description,
+            ),
+            onListen: (context, param, invalidMessage) {
+              ref
+                  .read(_taskUpdateFormProvider.notifier)
+                  .updateState(param: param, invalidMessage: invalidMessage);
+            },
+          ),
+        );
+      },
     );
   }
   // add-end
@@ -82,7 +89,7 @@ class TaskUpdatePage extends StatelessWidget with PageBlocMixin {
 
 ```dart title="TaskStatusUpdatePage"
 ...
-class TaskStatusUpdateDialog extends StatelessWidget with PageBlocMixin {
+class TaskStatusUpdateDialog extends ConsumerStatefulWidget {
   final int id;
   // remove-next-line
   final TaskStatus status;
@@ -94,54 +101,67 @@ class TaskStatusUpdateDialog extends StatelessWidget with PageBlocMixin {
     required this.status,
   });
 
+...
+
+class _TaskStatusUpdateDialogState
+    extends ConsumerState<TaskStatusUpdateDialog> {
+  ...
+
   // add-start
-  void _getTaskDetail(BuildContext context) {
-    context.read<TaskDetailCubit>().getTaskDetail();
+  late final _taskDetailProvider =
+      AutoDisposeNotifierProvider<TaskDetailProvider, TaskDetailState>(
+        () => sl<TaskDetailProvider>(),
+      );
+  // add-end
+
+  // add-start
+  void _getTaskDetail() {
+    ref
+        .read(_taskDetailProvider.notifier)
+        .getTaskDetail(TaskDetailParam(id: widget.id));
   }
   // add-end
 
   ...
 
   @override
-  Widget build(BuildContext context) {
-    final managementL10n = ManagementLocalizations.of(context)!;
-    return buildPage(
-      providers: [
-        // add-start
-        BlocProvider<TaskDetailCubit>(
-          create: (_) =>
-              sl<TaskDetailCubit>(param1: TaskDetailParam(id: id))
-                ..getTaskDetail(),
-        ),
-        // add-end
-        BlocProvider<TaskStatusUpdateCubit>(
-          create: (_) => sl<TaskStatusUpdateCubit>(),
-        ),
-        BlocProvider<TaskStatusUpdateFormCubit>(
-          create: (_) => sl<TaskStatusUpdateFormCubit>(),
-        ),
-      ],
-      ...
+  void initState() {
+    super.initState();
+    ref.listenManual(_taskStatusUpdateFormProvider, (_, _) {});
+    // add-start
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _getTaskDetail();
+    });
+    // add-end
+  }  
+
+  ...
   
   // add-start
   Widget _buildContent(BuildContext context) {
-    return BlocBuilder<TaskDetailCubit, TaskDetailState>(
-      builder: (_, state) => state.maybeWhen(
-        orElse: () => const AppLoading(),
-        failure: (failure) => TaskDetailErrorFeedback(
-          message: failure.localizeAny(context),
-          onRetry: () => _getTaskDetail(context),
-        ),
-        loaded: (data) => TaskStatusUpdateForm(
-          initialData: TaskStatusUpdateParam(id: data.id, status: data.status),
-          onListen: (context, param, invalidMessage) {
-            context.read<TaskStatusUpdateFormCubit>().updateState(
-              param: param,
-              invalidMessage: invalidMessage,
-            );
-          },
-        ),
-      ),
+    return Consumer(
+      builder: (context, ref, _) {
+        final state = ref.watch(_taskDetailProvider);
+        return state.maybeWhen(
+          orElse: () => const AppLoading(),
+          failure: (failure) => TaskDetailErrorFeedback(
+            message: failure.localizeAny(context),
+            onRetry: _getTaskDetail,
+          ),
+          loaded: (data) => TaskStatusUpdateForm(
+            initialData: TaskStatusUpdateParam(
+              id: data.id,
+              status: data.status,
+            ),
+            onListen: (context, param, invalidMessage) {
+              ref
+                  .read(_taskStatusUpdateFormProvider.notifier)
+                  .updateState(param: param, invalidMessage: invalidMessage);
+            },
+          ),
+        );
+      },
     );
   }
   // add-end
@@ -158,7 +178,7 @@ class TaskStatusUpdateDialog extends StatelessWidget with PageBlocMixin {
         return Stack(
           children: [
             // add-next-line
-            _buildContent(context),
+            _buildContent(),
             _buildOverlay(context),
           ],
         );
@@ -166,18 +186,38 @@ class TaskStatusUpdateDialog extends StatelessWidget with PageBlocMixin {
       ...
 
   // add-start
-  Widget _buildContent(BuildContext context) {
+  Widget _buildContent() {
     return AppConfirmationDialog(
       title: 'Delete',
       message: 'Are you sure want to delete this task?',
       onConfirm: () {
-        _deleteTask(context);
+        _deleteTask();
       },
       isDestructive: true,
     );
   }
   // add-end
   ...
+```
+
+</TabItem>
+
+<TabItem value="Main" label="main">
+
+```dart title="main"
+...
+// add-next-line
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+...
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  LoggingConfig.init();
+  await initDI();
+
+  // add-next-line
+  runApp(const ProviderScope(child: MainApp()));
+}
 ```
 
 </TabItem>

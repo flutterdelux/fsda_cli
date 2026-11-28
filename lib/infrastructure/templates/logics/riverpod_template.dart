@@ -21,7 +21,7 @@ String _content(LogicParam logic) {
 import 'package:riverpod/riverpod.dart';
 import '${logic.stateSnake}.dart';
 
-class ${logic.controllerPascal} extends Notifier<${logic.statePascal}> {
+class ${logic.controllerPascal} extends AutoDisposeNotifier<${logic.statePascal}> {
   @override
   ${logic.statePascal} build() {
     return const ${logic.statePascal}();

@@ -4,7 +4,7 @@
 ```dart title="TaskUpdatePage"
 ...
 
-class TaskUpdatePage extends StatelessWidget with PageBlocMixin {
+class TaskUpdatePage extends StatefulWidget {
   final int id;
   // remove-start
   final String title;
@@ -19,10 +19,15 @@ class TaskUpdatePage extends StatelessWidget with PageBlocMixin {
     required this.description,
     // remove-end
   });  
+}
+
+class _TaskUpdatePageState extends State<TaskUpdatePage>
+    with PageProviderMixin {
+  ...
 
   // add-start
   void _getTaskDetail(BuildContext context) {
-    context.read<TaskDetailCubit>().getTaskDetail();
+    context.read<TaskDetailProvider>().getTaskDetail();
   }
   // add-end
 
@@ -34,23 +39,25 @@ class TaskUpdatePage extends StatelessWidget with PageBlocMixin {
     return buildPage(
       providers: [
         // add-start
-        BlocProvider<TaskDetailCubit>(
+        ChangeNotifierProvider<TaskDetailProvider>(
           create: (_) =>
-              sl<TaskDetailCubit>(param1: TaskDetailParam(id: id))
+              sl<TaskDetailProvider>(param1: TaskDetailParam(id: widget.id))
                 ..getTaskDetail(),
         ),
         // add-end
-        BlocProvider<TaskUpdateCubit>(create: (_) => sl<TaskUpdateCubit>()),
-        BlocProvider<TaskUpdateFormCubit>(
-          create: (_) => sl<TaskUpdateFormCubit>(),
+        ChangeNotifierProvider<TaskUpdateProvider>.value(
+          value: _taskUpdateProvider,
+        ),
+        ChangeNotifierProvider<TaskUpdateFormProvider>.value(
+          value: _taskUpdateFormProvider,
         ),
       ],
       ...
   
   // add-start
   Widget _buildContent(BuildContext context) {
-    return BlocBuilder<TaskDetailCubit, TaskDetailState>(
-      builder: (_, state) => state.maybeWhen(
+    return Consumer<TaskDetailProvider>(
+      builder: (context, provider, _) => provider.state.maybeWhen(
         orElse: () => const AppLoading(),
         failure: (failure) => TaskDetailErrorFeedback(
           message: failure.localizeAny(context),
@@ -63,7 +70,7 @@ class TaskUpdatePage extends StatelessWidget with PageBlocMixin {
             description: data.description,
           ),
           onListen: (context, param, invalidMessage) {
-            context.read<TaskUpdateFormCubit>().updateState(
+            _taskUpdateFormProvider.updateState(
               param: param,
               invalidMessage: invalidMessage,
             );
@@ -82,7 +89,7 @@ class TaskUpdatePage extends StatelessWidget with PageBlocMixin {
 
 ```dart title="TaskStatusUpdatePage"
 ...
-class TaskStatusUpdateDialog extends StatelessWidget with PageBlocMixin {
+class TaskStatusUpdateDialog extends StatefulWidget {
   final int id;
   // remove-next-line
   final TaskStatus status;
@@ -94,9 +101,16 @@ class TaskStatusUpdateDialog extends StatelessWidget with PageBlocMixin {
     required this.status,
   });
 
+  ...
+}
+
+class _TaskStatusUpdateDialogState extends State<TaskStatusUpdateDialog>
+    with PageProviderMixin {
+  ...
+
   // add-start
   void _getTaskDetail(BuildContext context) {
-    context.read<TaskDetailCubit>().getTaskDetail();
+    context.read<TaskDetailProvider>().getTaskDetail();
   }
   // add-end
 
@@ -108,34 +122,37 @@ class TaskStatusUpdateDialog extends StatelessWidget with PageBlocMixin {
     return buildPage(
       providers: [
         // add-start
-        BlocProvider<TaskDetailCubit>(
+        ChangeNotifierProvider<TaskDetailProvider>(
           create: (_) =>
-              sl<TaskDetailCubit>(param1: TaskDetailParam(id: id))
+              sl<TaskDetailProvider>(param1: TaskDetailParam(id: widget.id))
                 ..getTaskDetail(),
         ),
         // add-end
-        BlocProvider<TaskStatusUpdateCubit>(
-          create: (_) => sl<TaskStatusUpdateCubit>(),
+        ChangeNotifierProvider<TaskStatusUpdateProvider>.value(
+          value: _taskStatusUpdateProvider,
         ),
-        BlocProvider<TaskStatusUpdateFormCubit>(
-          create: (_) => sl<TaskStatusUpdateFormCubit>(),
+        ChangeNotifierProvider<TaskStatusUpdateFormProvider>.value(
+          value: _taskStatusUpdateFormProvider,
         ),
       ],
       ...
   
   // add-start
   Widget _buildContent(BuildContext context) {
-    return BlocBuilder<TaskDetailCubit, TaskDetailState>(
-      builder: (_, state) => state.maybeWhen(
+    return Consumer<TaskDetailProvider>(
+      builder: (context, provider, _) => provider.state.maybeWhen(
         orElse: () => const AppLoading(),
         failure: (failure) => TaskDetailErrorFeedback(
           message: failure.localizeAny(context),
           onRetry: () => _getTaskDetail(context),
         ),
         loaded: (data) => TaskStatusUpdateForm(
-          initialData: TaskStatusUpdateParam(id: data.id, status: data.status),
+          initialData: TaskStatusUpdateParam(
+            id: data.id,
+            status: data.status,
+          ),
           onListen: (context, param, invalidMessage) {
-            context.read<TaskStatusUpdateFormCubit>().updateState(
+            _taskStatusUpdateFormProvider.updateState(
               param: param,
               invalidMessage: invalidMessage,
             );

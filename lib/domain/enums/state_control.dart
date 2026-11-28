@@ -20,6 +20,7 @@ enum StateControl {
       'GetxController' => .getx,
       'ChangeNotifier' => .provider,
       'Notifier' => .riverpod,
+      'AutoDisposeNotifier' => .riverpod,
       _ => null,
     };
   }

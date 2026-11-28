@@ -182,11 +182,6 @@ import '../widgets/task_status_update_dialog.dart';
 ...
 
   Widget _buildContent(BuildContext context) {
-    // add-start
-    final colorScheme = ColorScheme.of(context);
-    final appL10n = AppLocalizations.of(context)!;
-    final managementL10n = ManagementLocalizations.of(context)!;
-    // add-end
     return BlocBuilder<TaskDetailCubit, TaskDetailState>(
       builder: (_, state) => state.maybeWhen(
         orElse: () => const TaskDetailSkeleton(),
@@ -199,52 +194,58 @@ import '../widgets/task_status_update_dialog.dart';
           children: [
             TaskDetailContent(data: data),
             AppGap.md,
-            AppSection(
-              header: AppSectionHeader(titleText: appL10n.action),
-              margin: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
-              child: AppCard(
-                children: [
-                  AppActionTile(
-                    title: appL10n.update,
-                    leadingIcon: const Icon(Icons.edit),
-                    onTap: () {
-                      ManagementRoute.toTaskUpdate(context, id: id).then((
-                        value,
-                      ) {
-                        if (value == 'refres') _getTaskDetail(context);
-                      });
-                    },
-                  ),
-                  AppActionTile(
-                    title: managementL10n.taskStatus,
-                    leadingIcon: const Icon(Icons.edit),
-                    onTap: () {
-                      TaskStatusUpdateDialog(id: id).show(context).then((
-                        value,
-                      ) {
-                        if (value == 'refresh') _getTaskDetail(context);
-                      });
-                    },
-                  ),
-                  AppActionTile(
-                    title: appL10n.delete,
-                    leadingIcon: Icon(Icons.delete, color: colorScheme.error),
-                    isDestructive: true,
-                    onTap: () {
-                      TaskDeleteDialog(id: id).show(context).then((value) {
-                        if (value == 'refresh') _getTaskDetail(context);
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
+            _buildAction(context),
           ],
         ),
         // add-end
       ),
     );
   }
+
+  /// add-start
+  Widget _buildAction(BuildContext context) {
+    final colorScheme = ColorScheme.of(context);
+    final appL10n = AppLocalizations.of(context)!;
+    final managementL10n = ManagementLocalizations.of(context)!;
+    return AppSection(
+      header: AppSectionHeader(titleText: appL10n.action),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
+      child: AppCard(
+        children: [
+          AppActionTile(
+            title: appL10n.update,
+            leadingIcon: const Icon(Icons.edit),
+            onTap: () {
+              ManagementRoute.toTaskUpdate(context, id: id).then((value) {
+                if (value == 'refresh') _getTaskDetail(context);
+              });
+            },
+          ),
+          AppActionTile(
+            title: managementL10n.taskStatus,
+            leadingIcon: const Icon(Icons.edit),
+            onTap: () {
+              TaskStatusUpdateDialog(id: id).show(context).then((value) {
+                if (value == 'refresh') _getTaskDetail(context);
+              });
+            },
+          ),
+          AppActionTile(
+            title: appL10n.delete,
+            leadingIcon: Icon(Icons.delete, color: colorScheme.error),
+            isDestructive: true,
+            onTap: () {
+              TaskDeleteDialog(id: id).show(context).then((value) {
+                if (value == 'refresh') _getTaskDetail(context);
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+  // add-end
+
 ...
 ```
 

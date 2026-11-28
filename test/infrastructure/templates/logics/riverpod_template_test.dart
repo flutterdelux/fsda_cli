@@ -77,7 +77,7 @@ void main() {
 import 'package:riverpod/riverpod.dart';
 import 'task_filter_state.dart';
 
-class TaskFilterProvider extends Notifier<TaskFilterState> {
+class TaskFilterProvider extends AutoDisposeNotifier<TaskFilterState> {
   @override
   TaskFilterState build() {
     return const TaskFilterState();
@@ -118,7 +118,7 @@ class TaskFilterProvider extends Notifier<TaskFilterState> {
 import 'package:riverpod/riverpod.dart';
 import 'task_empty_state_state.dart';
 
-class TaskEmptyStateProvider extends Notifier<TaskEmptyStateState> {
+class TaskEmptyStateProvider extends AutoDisposeNotifier<TaskEmptyStateState> {
   @override
   TaskEmptyStateState build() {
     return const TaskEmptyStateState();

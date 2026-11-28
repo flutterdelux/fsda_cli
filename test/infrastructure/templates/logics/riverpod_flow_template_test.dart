@@ -131,7 +131,7 @@ void main() {
           expect(
             artifact.content,
             contains(
-              'class TaskCreateProvider extends Notifier<'
+              'class TaskCreateProvider extends AutoDisposeNotifier<'
               'TaskCreateState>',
             ),
           );

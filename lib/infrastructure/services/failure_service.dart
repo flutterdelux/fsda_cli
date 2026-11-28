@@ -45,12 +45,18 @@ class FailureService {
   }
 
   // ================= Helper with AST Visitor =================
+  // ================= Helper with AST Visitor =================
   Future<void> _injectException(FailureParam failureParam) async {
     final path = failureParam.exceptionPath;
     String content = await _fileService.readAsString(path);
+    final initialContent = content;
     final result = parseString(content: content);
     final unit = result.unit;
 
+    final targetFactoryName = failureParam.nameCamel;
+    final targetCodeConstant = "'${failureParam.nameScreaming}'";
+
+    bool hasFactory = false;
     int? lastFactoryEndOffset;
 
     for (final declaration in unit.declarations) {
@@ -58,14 +64,17 @@ class FailureService {
         for (final member in declaration.body.members) {
           if (member is ConstructorDeclaration &&
               member.factoryKeyword != null) {
+            if (member.name?.lexeme == targetFactoryName) {
+              hasFactory = true;
+            }
             lastFactoryEndOffset = member.end;
           }
         }
       }
     }
 
-    // 1. Injeksi constructor factory di bagian atas (setelah factory terakhir)
-    if (lastFactoryEndOffset != null) {
+    // 1. Injeksi constructor factory jika belum ada
+    if (!hasFactory && lastFactoryEndOffset != null) {
       final factoryCode = FailureTemplate.buildFactory(failureParam);
       content =
           '${content.substring(0, lastFactoryEndOffset)}\n\n$factoryCode${content.substring(lastFactoryEndOffset)}';
@@ -77,40 +86,59 @@ class FailureService {
     int? messageInsertOffset;
     int? toFailureInsertOffset;
     int? switchInsertOffset;
+    bool hasMessageEntry = false;
+    bool hasToFailureEntry = false;
+    bool hasSwitchCase = false;
 
     for (final declaration in updatedUnit.declarations) {
       if (declaration is ClassDeclaration) {
         for (final member in declaration.body.members) {
           if (member is MethodDeclaration) {
-            // Cari getter `message => when(...)`
+            // Cek & cari offset pada getter `message => when(...)`
             if (member.name.lexeme == 'message') {
-              member.visitChildren(
-                WhenArgumentsVisitor((offset) => messageInsertOffset = offset),
+              hasMessageEntry = member.toSource().contains(
+                '$targetFactoryName:',
               );
+              if (!hasMessageEntry) {
+                member.visitChildren(
+                  WhenArgumentsVisitor(
+                    (offset) => messageInsertOffset = offset,
+                  ),
+                );
+              }
             }
-            // Cari method `toFailure() => when(...)`
+            // Cek & cari offset pada method `toFailure() => when(...)`
             if (member.name.lexeme == 'toFailure') {
-              member.visitChildren(
-                WhenArgumentsVisitor(
-                  (offset) => toFailureInsertOffset = offset,
-                ),
+              hasToFailureEntry = member.toSource().contains(
+                '$targetFactoryName:',
               );
+              if (!hasToFailureEntry) {
+                member.visitChildren(
+                  WhenArgumentsVisitor(
+                    (offset) => toFailureInsertOffset = offset,
+                  ),
+                );
+              }
             }
-            // Cari `fromApiResponse` untuk menyisipkan *switch case* sebelum default `_ =>`
+            // Cek & cari offset pada `fromApiResponse`
             if (member.name.lexeme == 'fromApiResponse') {
-              member.visitChildren(
-                SwitchStatementVisitor((offset) => switchInsertOffset = offset),
-              );
+              hasSwitchCase = member.toSource().contains(targetCodeConstant);
+              if (!hasSwitchCase) {
+                member.visitChildren(
+                  SwitchStatementVisitor(
+                    (offset) => switchInsertOffset = offset,
+                  ),
+                );
+              }
             }
           }
         }
       }
     }
 
-    // 2. Injeksi ke getter message di bagian akhir argumen when()
-    if (messageInsertOffset != null) {
+    // 2. Injeksi ke getter message jika belum ada
+    if (!hasMessageEntry && messageInsertOffset != null) {
       final messageCode = FailureTemplate.buildMessage(failureParam);
-      // Cek apakah sebelum penutupan kurung sudah ada koma atau belum
       final preceding = content.substring(0, messageInsertOffset).trimRight();
       final needComma = !preceding.endsWith(',');
       final comma = needComma ? ',' : '';
@@ -119,8 +147,8 @@ class FailureService {
           '${content.substring(0, messageInsertOffset)}$comma\n    $messageCode\n  ${content.substring(messageInsertOffset!)}';
     }
 
-    // Re-parse ulang karena ada perubahan panjang string dari message
-    if (toFailureInsertOffset != null) {
+    // 3. Injeksi ke method toFailure jika belum ada
+    if (!hasToFailureEntry && toFailureInsertOffset != null) {
       final reParsedResult = parseString(content: content);
       int? recomputedToFailureOffset;
       for (final declaration in reParsedResult.unit.declarations) {
@@ -141,7 +169,6 @@ class FailureService {
       final targetOffset = recomputedToFailureOffset ?? toFailureInsertOffset;
       final toFailureCode = FailureTemplate.buildToFailure(failureParam);
 
-      // Cek trailing comma untuk toFailure
       final precedingToFailure = content.substring(0, targetOffset).trimRight();
       final needCommaToFailure = !precedingToFailure.endsWith(',');
       final commaToFailure = needCommaToFailure ? ',' : '';
@@ -150,8 +177,8 @@ class FailureService {
           '${content.substring(0, targetOffset)}$commaToFailure\n    $toFailureCode\n  ${content.substring(targetOffset!)}';
     }
 
-    // Re-parse ulang untuk switch case fromApiResponse
-    if (switchInsertOffset != null) {
+    // 4. Injeksi ke switch case fromApiResponse jika belum ada
+    if (!hasSwitchCase && switchInsertOffset != null) {
       final reParsedResult2 = parseString(content: content);
       int? recomputedSwitchOffset;
       for (final declaration in reParsedResult2.unit.declarations) {
@@ -175,8 +202,11 @@ class FailureService {
           '${content.substring(0, targetSwitchOffset)}${codeResponseCode.trimLeft()}${' ' * 8}${content.substring(targetSwitchOffset!)}';
     }
 
-    await _fileService.writeAsString(path: path, content: content);
-    _reportService.addInjected(path);
+    // Simpan hanya jika ada perubahan
+    if (content != initialContent) {
+      await _fileService.writeAsString(path: path, content: content);
+      _reportService.addInjected(path);
+    }
   }
 
   Future<void> _injectFailureEnum(FailureParam failureParam) async {
@@ -185,10 +215,17 @@ class FailureService {
     final result = parseString(content: content);
     final unit = result.unit;
 
+    final targetEnumName = failureParam.nameCamel;
     int? enumBodyEndOffset;
 
     for (final declaration in unit.declarations) {
       if (declaration is EnumDeclaration) {
+        // Skip jika nilai enum sudah terdaftar
+        final alreadyExists = declaration.body.constants.any(
+          (constant) => constant.name.lexeme == targetEnumName,
+        );
+        if (alreadyExists) return;
+
         enumBodyEndOffset = declaration.endToken.offset;
         break;
       }
@@ -196,17 +233,16 @@ class FailureService {
 
     if (enumBodyEndOffset != null) {
       final enumValueCode = FailureTemplate.buildEnumValue(failureParam);
-      // Cek apakah nilai enum sebelumnya sudah diakhiri dengan koma
       final precedingEnum = content.substring(0, enumBodyEndOffset).trimRight();
       final needEnumComma = !precedingEnum.endsWith(',');
       final enumComma = needEnumComma ? ',' : '';
 
       content =
           '${content.substring(0, enumBodyEndOffset)}$enumComma\n  $enumValueCode\n${content.substring(enumBodyEndOffset)}';
-    }
 
-    await _fileService.writeAsString(path: path, content: content);
-    _reportService.addInjected(path);
+      await _fileService.writeAsString(path: path, content: content);
+      _reportService.addInjected(path);
+    }
   }
 
   Future<void> _injectFailureExtension(FailureParam failureParam) async {
@@ -215,12 +251,16 @@ class FailureService {
     final result = parseString(content: content);
     final unit = result.unit;
 
+    final targetEnumMember = '.${failureParam.nameCamel}';
     int? extensionSwitchInsertOffset;
 
     for (final declaration in unit.declarations) {
       if (declaration is ExtensionDeclaration) {
         for (final member in declaration.body.members) {
           if (member is MethodDeclaration && member.name.lexeme == 'localize') {
+            // Skip jika case enum sudah ada di dalam localize()
+            if (member.toSource().contains(targetEnumMember)) return;
+
             member.visitChildren(
               SwitchExpressionVisitor((insertOffset) {
                 extensionSwitchInsertOffset = insertOffset;
@@ -241,10 +281,10 @@ class FailureService {
 
       content =
           '${content.substring(0, extensionSwitchInsertOffset)}$comma\n      $localizeCode,\n    ${content.substring(extensionSwitchInsertOffset!)}';
-    }
 
-    await _fileService.writeAsString(path: path, content: content);
-    _reportService.addInjected(path);
+      await _fileService.writeAsString(path: path, content: content);
+      _reportService.addInjected(path);
+    }
   }
 
   Future<void> _injectFailureArb(FailureParam failureParam) async {
