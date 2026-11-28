@@ -31,14 +31,24 @@ const config: Config = {
           showLastUpdateAuthor: true,
           showLastUpdateTime: true,
           includeCurrentVersion: true,
-          lastVersion: 'current',
+          lastVersion: '2.0.0',
           versions: {
             current: {
               label: 'dev',
+              path: 'dev',
+              banner: 'unreleased',
+            },
+            '2.0.0': {
+              label: '2.0.0',
               banner: 'none',
+            },
+            '1.1.0': {
+              label: '1.1.0',
+              banner: 'unmaintained',
             },
             '1.0.16': {
               label: '1.0.16',
+              banner: 'unmaintained',
             },
           },
           editUrl: 'https://github.com/flutter-delux/fsda_cli/tree/main/website/',
